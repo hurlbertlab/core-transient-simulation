@@ -74,7 +74,7 @@ make_landscape = function(x=NULL, y=NULL, mod=NULL, d=NULL, prop=0.5, draw_plot=
 # Code is set up so that abundance may be correlated with another variable, but this is currently not implemented.
 # To add a correlation, generate x as a multivariate random normal variable with specified covariance matrix.
 # 	N_S : number of species
-# 	distribution : list of parameters describing the functional form of the SAD
+# 	distribution : named list of parameters describing the functional form of the SAD
 #		type = vector indicating the form of the SAD
 #		maxN = maximum abundance, used to find SAD parameters if not supplied
 #		P_maxN = probability of getting an abundance greater than maxN
@@ -88,8 +88,11 @@ make_sad = function(N_S, distribution){
 	U = pnorm(x)
 
 	# Convert to correct distribution
-	if(distribution$type=='same') abuns = rep(1, N_S)
-	
+	if(distribution$type=='same'){
+		use_p = ifelse(is.null(distribution$p1), 1, distribution$p1)
+		abuns = rep(use_p, N_S)
+	}
+
 	if(distribution$type=='uniform'){
 		if(is.null(distribution$maxN)){ 
 			use_p = distribution$p1
@@ -180,16 +183,25 @@ make_sad = function(N_S, distribution){
 
 
 
+
 # Function that creates a dataframe defining species and matrix holding vital rates
-# d : a vector of length 2 or 3 specifying specialist death rates in the preferred and not preferred habitat, and the generalist rate
-make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type='uniform'), d){
+# S_A : number of specialist species on habitat type A
+# S_B : number of specialist species on habitat type B
+# S_AB : number of generalist species (defaults to 0)
+# dist_b : nameed list describing the distributions from which birth rates should be generated (see make_sad() function). Defaults to uniform on [1,10].
+# m : vector of length 2 or 3 specifying death rates [preferred habitat, not preferred habitat, generalist rate]
+# dist_d : named list of parameters describing distribution from which dispersal kernals should be drawn
+#	mu = mean dispersal distance
+#	var = variance of distribution from which kernals drawn. Defaults to 0 for same dispersal kernal for all species.
+make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type='uniform'), m, dist_d=list(mu=1, var=0)){
 
 	# Catch error if no species specified
 	if(is.null(S_A)|is.null(S_B)) stop('Must specify number of species.')
 
-	# Create array to hold species vital rates
+	# Create array to hold species vital rates (b = birth, m = death, d = dispersal)
+	# Rates are per timestep
 	N_S = S_A + S_B + S_AB
-	species_rates = array(NA, dim=c(N_S, 2, 2), dimnames=list(species=1:N_S, habitat=c('A','B'), rate=c('b','d')))
+	species_rates = array(NA, dim=c(N_S, 2, 3), dimnames=list(species=1:N_S, habitat=c('A','B'), rate=c('b','m','d')))
 
 	# Specialist species birth rates in their preferred habitat ranged from 1 to maxN and are 0 in the unpreferred habitat
 	species_rates[1:S_A, 'A', 'b'] = make_sad(S_A, dist_b)
@@ -201,27 +213,27 @@ make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type=
 	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'b'] = make_sad(2*S_AB, dist_b)
 
 	# Death rates are prespecified constants
-	species_rates[1:S_A, 'A', 'd'] = d[1]
-	species_rates[1:S_A, 'B', 'd'] = d[2]
-	species_rates[(S_A+1):(S_A+S_B), 'B', 'd'] = d[1]
-	species_rates[(S_A+1):(S_A+S_B), 'A', 'd'] = d[2]
+	# This could be modified
+	species_rates[1:S_A, 'A', 'm'] = m[1]
+	species_rates[1:S_A, 'B', 'm'] = m[2]
+	species_rates[(S_A+1):(S_A+S_B), 'B', 'm'] = m[1]
+	species_rates[(S_A+1):(S_A+S_B), 'A', 'm'] = m[2]
 
 	# Generalist death rates default to the death rate for the preferred habitat, but can be specified separately
-	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'d'] = ifelse(length(d)==3, d[3], d[1])
+	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'m'] = ifelse(length(m)==3, m[3], m[1])
 
-	# TO DO: ADD IN DISPERSAL RATE FOR SPECIES AND ALLOW BIRTH AND DISPERSAL RATES TO BE DRAWN FROM CORRELATED DISTRIBUTIONS.
+	# Mean dispersal distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
+	if(dist_d$var==0){
+		species_rates[,,'d'] = dist_d$mu
+	} else {
+		theta = dist_d$var / dist_d$mu
+		k = dist_d$mu / theta
+		species_rates[,,'d'] = rgamma(N_S, shape=k, scale=theta)
+	}
 
-
-
-
+	# Return rates
+	species_rates
 }
-
-
-
-
-
-
-
 
 
 
@@ -237,6 +249,19 @@ make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type=
 
 
 
+disperse = function(mu, sigma, form='gaussian'){
+
+	gaussian
+
+	NE # negative exponential
+
+	IP # inverse power
+
+	ENE # extended negative exponential
+
+	FT # fat tail
+
+}
 
 
 
