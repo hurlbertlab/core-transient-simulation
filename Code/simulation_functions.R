@@ -361,7 +361,7 @@ mygsad = make_sad(dim(mysp)[1], distribution=list(type='same'))
 ####################################################################
 ### Functions for running a simulation
 
-# Function that determines habitat type based on habitat value
+# Function that determines habitat type based on habitat value stored in landscape
 # 	x : numeric habitat value stored in landscape
 get_habitat = function(x){
 	h = NA
@@ -429,7 +429,7 @@ disperse = function(x, y=NULL, propagules, dim_land, d_rates, form=list(type='ga
 		d = d_rates[i]	
 
 		# Stochasticaly choose dispersal distance
-		vec = get_dispersal_dist(d, form)
+		vec = get_dispersal_vec(d, form)
 
 		# Stochastically choose an origin location from within origin cell
 		origin_loc = apply(origin_cell, 1, function(cell) runif(1, cell[1], cell[2]))
@@ -457,7 +457,7 @@ disperse = function(x, y=NULL, propagules, dim_land, d_rates, form=list(type='ga
 #	form : a list defininting the type of dispersal kernel. Currently only implements 'gaussian'.
 #		type = character indicating the type
 #	N : number of vectors to generate. Defaults to 1
-get_dispersal_dist = function(d, form=list(type='gaussian'), N=1){
+get_dispersal_vec = function(d, form=list(type='gaussian'), N=1){
 	
 	# Gaussian kernel
 	if(form$type=='gaussian'){
@@ -478,25 +478,33 @@ get_dispersal_dist = function(d, form=list(type='gaussian'), N=1){
 
 
 # A function that determines which propagules establish in a cell and returns a new community vector
+# Includes potential recruitment from immigrants outside the landscape.
 #	comm : vector (or list) of species present, may contain zeros for an empty space.
 #	propagules : vector of propagules of different species (denoted by numeric value).
 #	r_rates : vector of recruitment rates for each species in this habitat
-establish = function(comm, propagules, r_rates){
+# 	m : immigration rate. Probability that empty space colonized by propagule from outside the landscape. Defaults to 0.
+#	gsad : global species abudance distribution. Defines probability that immigant from outside landscape will belong to a given species. Defaults to equal probability when unspecified.
+establish = function(comm, propagules, r_rates, m=0, gsad=NULL){
 	
 	# Make comm into a vector if not already
 	comm = unlist(comm)
 
+	# If m > 0, but gsad is unspecified, create gsad with equal abundance
+	if(m > 0 & is.null(gsad)) gsad = make_sad(length(r_rates), distribution=list(type='same'))
+
 	# For each empty space in the community
-	empty = comm[comm==0]
+	recruits = comm[comm==0]
 
+	# Select potential recruit from outside the landscape with probability m
+	if(m>0){
+		migrants = runif(length(recruits)) <= m
+		recruits[migrants] = sample(length(gsad), size=sum(migrants), replace=T, prob=gsad)
+	}
+	
 	# Select a potential recruit from the pool of propagules
+	recruits[!migrants] = sample(propagules)[1:sum(!migrants)]
 
-# MAY WANT TO MODIFY THIS SO THAT A NEW INDIVIDUAL IS SELECTED FROM OUTSIDE THE LANDSCAPE WITH PROBABILITY 'm' USING FUNCTION MIGRATE()
-# AND SELECTED FROM THE POOL OF EXISTING PROPAGULES WITH PROBABILITY 1-m.
-
-	recruits = sample(propagules)[1:length(empty)]
-
-	# Probabilistically determin whether propagule established based on species recruitment rates for this habitat
+	# Probabilistically determine whether propagules establish based on species recruitment rates for this habitat
 	established = sapply(recruits, function(sp){
 		ifelse(runif(1) > r_rates[sp] | is.na(sp), 0, sp)
 	})
@@ -521,11 +529,13 @@ die = function(comm, m_rates){
 		}
 	})
 
+	# Return survivors
+	survived
 }
 
-
 # A function that runs a metacommunity on a landscape with a given species pool for one time step
-run_timestep = function(metacomm, land, species, gsad, d_kernel=list(type='gaussian')){
+
+run_timestep = function(metacomm, land, species, gsad, d_kernel=list(type='gaussian'), imm_rate=0){
 
 	# Define dimensions of landscape
 	X = nrow(land)
@@ -534,7 +544,7 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=list(type='gauss
 	# Define array to hold new propagule pools
 	propagule_pools = matrix(list(), nrow=X, ncol=Y)
 
-	# For each cell, new individuals are born and disperse and
+	# For each cell, new individuals are born and disperse
 	for(i in 1:X){
 	for(j in 1:Y){
 
@@ -549,34 +559,135 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=list(type='gauss
 		new_locs = disperse(i, j, this_pool, c(X,Y), species[,this_habitat,'d'], form=d_kernel)
 		for(p in 1:nrow(new_locs)){
 			# Propagules not that disperse off of the landscape are removed
-			if(new_locs[p,1]>0 & new_locs[p,2]>0) propagule_pools[new_locs[p,1], new_locs[p,2]] = list(unlist(c(propagule_pools[new_locs[p,1], new_locs[p,2]], this_pool[p])))
+			if(new_locs[p,1]>0 & new_locs[p,2]>0 & new_locs[p,1]<=X & new_locs[p,2]<=Y ) propagule_pools[new_locs[p,1], new_locs[p,2]] = list(unlist(c(propagule_pools[new_locs[p,1], new_locs[p,2]], this_pool[p])))
 		}
+	}}
+	
+	# Recruits establish from new propagule pools and then all community members experience stochastic mortality
+	for(i in 1:X){
+	for(j in 1:Y){
 
-		# New immigrants enter this pool
-		# MAY WANT TO MODIFY THIS. SEE COMMENTS IN ESTABLISH() FUNCTION
-		##migrant = migrate(imm_rate, gsad)
-		##if(migrant > 0) propagule_pools[i,j] = list(unlist(c(propagule_pools[i,j], migrant)))
-		
+		# Define this community, habitat and pool of propagules
+		this_comm = metacomm[i,j][[1]]
+		this_habitat = get_habitat(land[i,j])
+		this_pool = propagule_pools[i,j][[1]]
+	
+		# Determine which propagules estabish
+		new_comm = list(establish(this_comm, this_pool, species[, this_habitat, 'r'], imm_rate, gsad))
+
+		# Stochasitic mortality
+		new_comm = die(new_comm, species[, this_habitat, 'm'])
+
+		# Save results
+		metacomm[i,j] = list(as.numeric(new_comm))
 	}}
 
+	# Return new metacommunity
+	metacomm
+}
+
+
+# A function that runs a simulation for a given number of time steps
+run_sim = function(steps, metacomm, land, species, gsad, parm_list, save_steps = NULL){
 	
+	# Define simulation
+	X = nrow(land)
+	Y = ncol(land)
+
+	# Create array to save simulations results
+	if(is.null(save_steps)) save_steps = 0:steps
+	sim_results = array(list(), dim=c(X, Y, length(save_steps)),
+		dimnames=list(row=1:X, col=1:X, time=save_steps))
+
+	# Run simulation
+	new_metacomm = metacomm
+	for(step in 1:steps){
+		new_metacomm = run_timestep(new_metacomm, land, species, gsad, parm_list$d_kernel, parm_list$imm_rate)
+		if(step %in% save_steps) sim_results[,,as.character(step)] = new_metacomm
+	}
+
+	# Return results
+	sim_results
+}
+
+
+parm_list = list(
+	d_kernel=list(type='gaussian'),
+	imm_rate = 0.2
+)
+
+
+# TESTING
+
+test_run = run_sim(10, mycomm, myland, mysp, mygsad, parm_list, save_steps=seq(2,10,2))
+
+####################################################################
+### Functions for collecting data from a simulation
+
+
+# A function that calculates species occupancies during a given time window for a given set of locations
+#	locs : two-column matrix of cell locations where species occupancies should be calculated
+#	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
+#	sim : an array of simulation results, as returned by run_sim() function
+#	N_S : number of species
+calc_occupancy = function(locs, t_window, sim, N_S){
+	
+	# Determine which timepoints to evaluate
+	timepoints = as.numeric(dimnames(sim)$time)
+	if(is.list(t_window)){
+		use_times = timepoints[timepoints >= t_window$start & timepoints <= t_window$stop]
+	} else {
+		# Catch error when a time is specified that was not recorded in simulation
+		if(sum(t_window %in% timepoints) < length(t_window)){
+			missing = t_window[!(t_window %in% timepoints)]
+			stop(paste('Trying to measure occurance during timepoints not recorded in simulation. T =', paste(missing, collapse=' ')))
+		}
+
+		use_times = t_window
+	}
+
+
 
 
 
 
 }
 
+# A function that calculates species relative abundances in a landscape
+#	metacomm : matrix of lists of species present in each cell, including 0 for empty spaces
+#	N_S : number of species
+calc_abun = function(metacomm, N_S){
+	# Tally number of individuals of each species present, including empty spaces (0)
+	abun = table(factor(unlist(metacomm), 0:N_S))
 
+	# Calculate relative abundance across all available spaces
+	rel_abun = abun/sum(abun)
 
-
+	# Return abundances
+	rel_abun[as.character(1:N_S)]
+}
 
 
 # TESTING
+abuns = apply(test_run, 3, function(x) calc_abun(x, 28))
+b_rates = rowSums(species[,,'b'])
+plot(b_rates, abuns[,'10'])
+hist(abuns[,'10'], breaks=10)
+ 
 
 
 
 
 
 
-####################################################################
-### Functions for collecting data from a simulation
+
+
+
+
+
+
+
+
+
+
+
