@@ -5,7 +5,7 @@ library(gstat)
 library(sp)
 library(raster)
 library(poweRlaw)
-
+library(fdrtool) # half-normal distribution for gaussian dispersal kernal
 
 
 
@@ -190,18 +190,19 @@ make_sad = function(N_S, distribution){
 # 	S_AB : number of generalist species (defaults to 0)
 # 	dist_b : nameed list describing the distributions from which birth rates should be generated (see make_sad() function). Defaults to uniform on [1,10].
 # 	m : vector of length 2 or 3 specifying death rates [preferred habitat, not preferred habitat, generalist rate]
+# 	r : vector of length 2 or 3 specifying recruitment rates [preferred habitat, not preferred habitat, generalist rate]
 # 	dist_d : named list of parameters describing distribution from which dispersal kernals should be drawn
 #		mu = mean dispersal distance
 #		var = variance of distribution from which kernals drawn. Defaults to 0 for same dispersal kernal for all species.
-make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type='uniform'), m, dist_d=list(mu=1, var=0)){
+make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type='uniform'), m, r, dist_d=list(mu=1, var=0)){
 
 	# Catch error if no species specified
 	if(is.null(S_A)|is.null(S_B)) stop('Must specify number of species.')
 
-	# Create array to hold species vital rates (b = birth, m = death, d = dispersal)
+	# Create array to hold species vital rates (b = birth, m = death, r = recruitment, d = dispersal)
 	# Rates are per timestep
 	N_S = S_A + S_B + S_AB
-	species_rates = array(NA, dim=c(N_S, 2, 3), dimnames=list(species=1:N_S, habitat=c('A','B'), rate=c('b','m','d')))
+	species_rates = array(NA, dim=c(N_S, 2, 4), dimnames=list(species=1:N_S, habitat=c('A','B'), rate=c('b','m','r','d')))
 
 	# Specialist species birth rates in their preferred habitat ranged from 1 to maxN and are 0 in the unpreferred habitat
 	species_rates[1:S_A, 'A', 'b'] = make_sad(S_A, dist_b)
@@ -213,7 +214,7 @@ make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type=
 	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'b'] = make_sad(2*S_AB, dist_b)
 
 	# Death rates are prespecified constants
-	# This could be modified
+	# This could be modified to be drawn from a distribution
 	species_rates[1:S_A, 'A', 'm'] = m[1]
 	species_rates[1:S_A, 'B', 'm'] = m[2]
 	species_rates[(S_A+1):(S_A+S_B), 'B', 'm'] = m[1]
@@ -221,6 +222,16 @@ make_species = function(S_A=NULL, S_B=NULL, S_AB=0, dist_b = list(maxN=10, type=
 
 	# Generalist death rates default to the death rate for the preferred habitat, but can be specified separately
 	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'m'] = ifelse(length(m)==3, m[3], m[1])
+
+	# Specialist species recruitment rates are prespecified constants
+	# This could be modified to be drawn from a distribution
+	species_rates[1:S_A, 'A', 'r'] = r[1]
+	species_rates[1:S_A, 'B', 'r'] = r[2]
+	species_rates[(S_A+1):(S_A+S_B), 'B', 'r'] = r[1]
+	species_rates[(S_A+1):(S_A+S_B), 'A', 'r'] = r[2]
+
+	# Generalist recruitment rates default to the recruitment rate for the preferred habitat, but can be specified separately
+	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'r'] = ifelse(length(r)==3, r[3], r[1])
 
 	# Mean dispersal distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
 	if(dist_d$var==0){
@@ -342,26 +353,216 @@ populate_landscape = function(land, species, gsad=NULL, K, distribution='same', 
 
 
 # TESTING
-mycomm = populate_landscape(land,species,K=matrix(rpois(400,40),ncol=20), p=.3, distribution='uniform')
-
+myland = make_landscape(30,30)
+mysp = make_species(S_A=10, S_B=15, S_AB=3, dist_b = list(maxN=5, P_maxN=0.01, type='poisson'), m=c(0.1, 0.5), r =c(.9,.7), dist_d=list(mu=3, var=0.5))
+mycomm = populate_landscape(myland, mysp, K=100, p=.5, distribution='uniform')
+mygsad = make_sad(dim(mysp)[1], distribution=list(type='same'))
 
 ####################################################################
 ### Functions for running a simulation
 
+# Function that determines habitat type based on habitat value
+# 	x : numeric habitat value stored in landscape
+get_habitat = function(x){
+	h = NA
+	
+	if(x==-1) h = 'A'
+	if(x==1) h = 'B'
+
+	# Return habitat types
+	h
+}
+
+
+# Function that returns the pool of new propagules produce in a cell in a single time step
+#	comm : vector (or list) of species present, may contain zeros for an empty space.
+#	b_rates : vector of birth rates for species.
+reproduce = function(comm, b_rates){
+
+	# Convert to vetor if not already
+	comm = unlist(comm)
+	
+	# Make pool of propagules
+	propagules = sapply(comm[comm>0], function(sp) rep(sp, b_rates[sp]))
+	propagules = unlist(propagules)
+	
+	propagules
+}
+
+# Function that probabilistically adds new immgrants to cell from global pool.
+# 	m : probability that an individual will migrate in from the outside the landscape
+#	gsad : relative abundance of each species globally. Could also represent long-distance dispersal ability. 
+migrate = function(m, gsad){
+	
+	# Stochastically determine whether a migrant arrives
+	arrived = runif(1) <= m
+
+	# If a migrant arrived, choose its identity based on global abundance distribution
+	migrant = ifelse(arrived, sample(length(gsad), 1, prob=gsad), 0)
+
+	# Return the migrant
+	migrant
+
+}
+
+# Function that disperses individual propagules from a given cell and returns a new cell location for each individual propagule.
+# 	x : x coordinate of cell, or vector of length 2 with x and y coordinates
+#	y : y coordinate of cell
+#	propagules : vector of propagules of different species (denoted by numeric value).
+#	dim_land : dimension fo landscape (x,y)
+#	d_rates : vector of species dispersal rates from this cell, in same order as species. Dispersal rates are the mean distance for the given dispersal kernal form.
+#	form : list describing the form of the dispersal kernel. See get_dispersal_dist() function 
+disperse = function(x, y=NULL, propagules, dim_land, d_rates, form=list(type='gaussian')){
+
+	# If only x specified, define y
+	if(length(x)==2){	
+		x = x[1]
+		y = x[2]
+	}
+
+	# Define limits of origin cell
+	origin_cell = rbind(c(x-1, x), c(y-1, y))	
+
+	# For each propagule
+	new_locs = sapply(propagules, function(i){
+		# Get dispersal rate
+		d = d_rates[i]	
+
+		# Stochasticaly choose dispersal distance
+		vec = get_dispersal_dist(d, form)
+
+		# Stochastically choose an origin location from within origin cell
+		origin_loc = apply(origin_cell, 1, function(cell) runif(1, cell[1], cell[2]))
+	
+		# Find cell that propagule lands in
+		# Angles are counter-clockwise from east (as in mathematical notation)
+		dx = vec[1]*sin(vec[2])
+		dy = vec[1]*cos(vec[2])
+	
+		# Calculate destination and cell propagule lands in
+		destination = origin_loc + c(dx, dy)
+		destination_cell = ceiling(destination)
+
+		destination_cell
+	})
+
+	# Return table of new locations
+	t(new_locs)
+
+}
+
+
+# Function that stochastically generates a dispersal vector (distance, direction) for given a dispersal kernal
+#	d : expected distance (mean)
+#	form : a list defininting the type of dispersal kernel. Currently only implements 'gaussian'.
+#		type = character indicating the type
+#	N : number of vectors to generate. Defaults to 1
+get_dispersal_dist = function(d, form=list(type='gaussian'), N=1){
+	
+	# Gaussian kernel
+	if(form$type=='gaussian'){
+	
+		# Calculate theta for mean = d
+		theta = 1/d
+
+		# Generate distance
+		r = rhalfnorm(N, theta)		
+	}
+
+	# Generate random angle (in radians)
+	phi = runif(N, 0, 2*pi)
+
+	# Return vector
+	cbind(r, phi)
+}
+
+
+# A function that determines which propagules establish in a cell and returns a new community vector
+#	comm : vector (or list) of species present, may contain zeros for an empty space.
+#	propagules : vector of propagules of different species (denoted by numeric value).
+#	r_rates : vector of recruitment rates for each species in this habitat
+establish = function(comm, propagules, r_rates){
+	
+	# Make comm into a vector if not already
+	comm = unlist(comm)
+
+	# For each empty space in the community
+	empty = comm[comm==0]
+
+	# Select a potential recruit from the pool of propagules
+
+# MAY WANT TO MODIFY THIS SO THAT A NEW INDIVIDUAL IS SELECTED FROM OUTSIDE THE LANDSCAPE WITH PROBABILITY 'm' USING FUNCTION MIGRATE()
+# AND SELECTED FROM THE POOL OF EXISTING PROPAGULES WITH PROBABILITY 1-m.
+
+	recruits = sample(propagules)[1:length(empty)]
+
+	# Probabilistically determin whether propagule established based on species recruitment rates for this habitat
+	established = sapply(recruits, function(sp){
+		ifelse(runif(1) > r_rates[sp] | is.na(sp), 0, sp)
+	})
+	
+	# Return new community
+	comm[comm==0] = established
+	comm
+}
+
+# A function that determines which individuals die in a community
+#	comm : vector (or list) of species present, may contain zeros for an empty space.
+#	m_rates : vector of mortality rates (per time step) for each species in this habitat 
+die = function(comm, m_rates){
+	
+	# Make comm into a vector if not already
+	comm = unlist(comm)
+
+	# Probabilistically kill each individual with according to death rates in this habitat
+	survived = sapply(comm, function(sp){
+		new_sp = if(sp==0){ 0 } else { 
+			ifelse(runif(1) <= m_rates[sp], 0, sp)
+		}
+	})
+
+}
+
+
+# A function that runs a metacommunity on a landscape with a given species pool for one time step
+run_timestep = function(metacomm, land, species, gsad, d_kernel=list(type='gaussian')){
+
+	# Define dimensions of landscape
+	X = nrow(land)
+	Y = ncol(land)
+
+	# Define array to hold new propagule pools
+	propagule_pools = matrix(list(), nrow=X, ncol=Y)
+
+	# For each cell, new individuals are born and disperse and
+	for(i in 1:X){
+	for(j in 1:Y){
+
+		# Define this community and habitat
+		this_comm = metacomm[i,j][[1]]
+		this_habitat = get_habitat(land[i,j])
+		
+		# New individuals born
+		this_pool = reproduce(this_comm, species[,this_habitat,'b'])
+	
+		# Propagules disperse to new pools
+		new_locs = disperse(i, j, this_pool, c(X,Y), species[,this_habitat,'d'], form=d_kernel)
+		for(p in 1:nrow(new_locs)){
+			# Propagules not that disperse off of the landscape are removed
+			if(new_locs[p,1]>0 & new_locs[p,2]>0) propagule_pools[new_locs[p,1], new_locs[p,2]] = list(unlist(c(propagule_pools[new_locs[p,1], new_locs[p,2]], this_pool[p])))
+		}
+
+		# New immigrants enter this pool
+		# MAY WANT TO MODIFY THIS. SEE COMMENTS IN ESTABLISH() FUNCTION
+		##migrant = migrate(imm_rate, gsad)
+		##if(migrant > 0) propagule_pools[i,j] = list(unlist(c(propagule_pools[i,j], migrant)))
+		
+	}}
+
+	
 
 
 
-disperse = function(mu, sigma, form='gaussian'){
-
-	gaussian
-
-	NE # negative exponential
-
-	IP # inverse power
-
-	ENE # extended negative exponential
-
-	FT # fat tail
 
 }
 
@@ -370,8 +571,7 @@ disperse = function(mu, sigma, form='gaussian'){
 
 
 
-
-
+# TESTING
 
 
 
