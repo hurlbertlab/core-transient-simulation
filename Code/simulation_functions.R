@@ -507,6 +507,8 @@ establish = function(comm, propagules, r_rates, m=0, gsad=NULL){
 	if(m>0){
 		migrants = runif(length(recruits)) <= m
 		recruits[migrants] = sample(length(gsad), size=sum(migrants), replace=T, prob=gsad)
+	} else {
+		migrants = rep(F, length(recruits))
 	}
 	
 	# Select a potential recruit from the pool of propagules
@@ -542,12 +544,20 @@ die = function(comm, m_rates){
 }
 
 # A function that runs a metacommunity on a landscape with a given species pool for one time step
-
+# 	metacomm : a matrix of lists representing the community of individuals in each cell
+#	land : a matrix of habitat values
+#	species : an array containing species vital rates [species number, habitat type, rate type]
+#	gsad : vector giving the global relative abundance of species in same order as species vital rates array
+#	d_kernel : list defining the shape of the dispersal kernel for an individual (see disperse() function). Defaults to Gaussian.
+#	imm_rate : probability that an empty space will be colonized by a propagule from outside the landscape (e.g. drawn from the global species abundance distribution). Defaults to 0.
 run_timestep = function(metacomm, land, species, gsad, d_kernel=list(type='gaussian'), imm_rate=0){
 
 	# Define dimensions of landscape
 	X = nrow(land)
 	Y = ncol(land)
+
+	# Catch error where metacomm and land are different dimensions
+	if(nrow(metacomm)!=X | ncol(metacomm)!=Y) stop(paste0('Dimensions of metacommunity (',paste(dim(metacomm),collapse='x'),') must match dimensions of landscape (',X,'x',Y,').'))
 
 	# Define array to hold new propagule pools
 	propagule_pools = matrix(list(), nrow=X, ncol=Y)
@@ -595,8 +605,18 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=list(type='gauss
 }
 
 
-# A function that runs a simulation for a given number of time steps
-run_sim = function(steps, metacomm, land, species, gsad, parm_list, save_steps = NULL){
+# A function that runs a simulation for a given number of time steps.
+# Returns an array of lists of individuals in each cell at each indicated time step.
+#	steps : number of time steps to run the simulation.
+# 	metacomm : a matrix of lists representing the community of individuals in each cell
+#	land : a matrix of habitat values
+#	species : an array containing species vital rates [species number, habitat type, rate type]
+#	gsad : vector giving the global relative abundance of species in same order as species vital rates array
+#	parm_list : a named list of parameters for running the simulation. Should include:
+#		d_kernel = list defining the shape of the dispersal kernel for an individual (see disperse() function). Defaults to Gaussian.
+#		imm_rate = probability that an empty space will be colonized by a propagule from outside the landscape (e.g. drawn from the global species abundance distribution).
+#	save_steps : vector of timepoints at which to save the simulation. Defaults to all time steps.
+run_sim = function(steps, metacomm, land, species, gsad, parm_list=list(), save_steps = NULL){
 	
 	# Define simulation
 	X = nrow(land)
@@ -606,11 +626,28 @@ run_sim = function(steps, metacomm, land, species, gsad, parm_list, save_steps =
 	if(is.null(save_steps)) save_steps = 0:steps
 	sim_results = array(list(), dim=c(X, Y, length(save_steps)),
 		dimnames=list(row=1:X, col=1:X, time=save_steps))
+	
+	# Define function to run simulation for one time step using given parameters, if they exist
+	run_thissim = function(x){
+		if(length(parm_list)>0){
+			if(with(parm_list, exists('d_kernel')&exists('imm_rate'))){
+				results = run_timestep(x, land, species, gsad, parm_list$d_kernel, parm_list$imm_rate) 
+			} else {
+				results = if(with(parm_list, exists('d_kernel'))) run_timestep(x, land, species, gsad, parm_list$d_kernel) 
+				results = if(with(parm_list, exists('imm_rate'))) run_timestep(x, land, species, gsad, parm_list$imm_rate) 
+			}
+		} else {
+			results = run_timestep(x, land, species, gsad)
+		}
+
+		results
+	}
+
 
 	# Run simulation
 	new_metacomm = metacomm
 	for(step in 1:steps){
-		new_metacomm = run_timestep(new_metacomm, land, species, gsad, parm_list$d_kernel, parm_list$imm_rate)
+		new_metacomm = run_thissim(new_metacomm)
 		if(step %in% save_steps) sim_results[,,as.character(step)] = new_metacomm
 	}
 
@@ -628,6 +665,10 @@ parm_list = list(
 # TESTING
 
 test_run = run_sim(10, mycomm, myland, mysp, mygsad, parm_list, save_steps=seq(2,10,2))
+
+
+test_run = run_sim(2, mycomm, myland, mysp, mygsad, parm_list)
+
 
 ####################################################################
 ### Functions for collecting data from a simulation
