@@ -7,12 +7,9 @@ library(raster)
 library(poweRlaw)
 library(fdrtool) # half-normal distribution for gaussian dispersal kernal
 
-### TO DO
+### TO DO ###
 
-# populate_landscape() throws and error when distribution = 'designated' and which_cells has three columns
-# Change make_species() function so that species can have non-integer dispersal rates
 
-#
 ### Conventions ###
 # NA used for missing value with length 1
 # NULL used for missing lists or other objects larger than length 1
@@ -189,7 +186,6 @@ make_sad = function(N_S, distribution){
 	abuns	
 }
 
-# WANT TO CHANGE THIS FUNCTION SO SPECIES DISPERSAL RATES ARE NOT RESTRICTED TO INTEGERS
 # Function that creates a dataframe defining species and matrix holding vital rates
 # 	S_A : number of specialist species on habitat type A
 # 	S_B : number of specialist species on habitat type B
@@ -366,7 +362,7 @@ populate_landscape = function(land, species, gsad=NULL, K, distribution=NA, p=NA
 			i = which_cells[r,1]
 			j = which_cells[r,2]
 			k = length(unlist(metacomm[i,j]))
-			n = ifelse(ncol(which_cells)==3, which_cells[i,3], floor(k*p)) # THROWS AN ERROR
+			n = ifelse(ncol(which_cells)==3, which_cells[r,3], floor(k*p)) # THROWS AN ERROR
 
 			if(n > k) stop(paste0('More individuals specified than carrying capacity of cell (',i,',',j,')'))
 				
@@ -523,8 +519,9 @@ establish = function(comm, propagules, r_rates, m=0, gsad=NULL){
 		migrants = rep(F, length(recruits))
 	}
 	
+	
 	# Select a potential recruit from the pool of propagules
-	recruits[!migrants] = sample(propagules)[1:sum(!migrants)]
+	if(length(propagules)>0) recruits[!migrants] = sample(propagules)[1:sum(!migrants)]
 
 	# Probabilistically determine whether propagules establish based on species recruitment rates for this habitat
 	established = sapply(recruits, function(sp){
@@ -591,9 +588,11 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, imm_rate=N
 	
 		# Propagules disperse to new pools
 		new_locs = disperse(i, j, this_pool, c(X,Y), species[,this_habitat,'d'], form=d_kernel)
-		for(p in 1:nrow(new_locs)){
-			# Propagules not that disperse off of the landscape are removed
-			if(new_locs[p,1]>0 & new_locs[p,2]>0 & new_locs[p,1]<=X & new_locs[p,2]<=Y ) propagule_pools[new_locs[p,1], new_locs[p,2]] = list(unlist(c(propagule_pools[new_locs[p,1], new_locs[p,2]], this_pool[p])))
+		if(length(new_locs)>0){
+			for(p in 1:nrow(new_locs)){
+				# Propagules that disperse off of the landscape are removed
+				if(new_locs[p,1]>0 & new_locs[p,2]>0 & new_locs[p,1]<=X & new_locs[p,2]<=Y ) propagule_pools[new_locs[p,1], new_locs[p,2]] = list(unlist(c(propagule_pools[new_locs[p,1], new_locs[p,2]], this_pool[p])))
+			}
 		}
 	}}
 	
@@ -644,15 +643,15 @@ run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate
 	
 	# Define function to run simulation for one time step using given parameters, if they exist
 	run_thissim = function(x){
-		if(length(parm_list)>0){
+		if(is.null(d_kernel)&is.null(imm_rate)){
+			results = run_timestep(x, land, species, gsad)			
+		} else {
 			if(!is.null(d_kernel)&!is.na(imm_rate)){
 				results = run_timestep(x, land, species, gsad, d_kernel, imm_rate) 
 			} else {
 				results = if(!is.null(d_kernel)) run_timestep(x, land, species, gsad, d_kernel=d_kernel) 
 				results = if(!is.na(imm_rate)) run_timestep(x, land, species, gsad, imm_rate=imm_rate) 
 			}
-		} else {
-			results = run_timestep(x, land, species, gsad)
 		}
 
 		results
@@ -744,7 +743,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 			this_gsad = gsad_N[[j]]
 			
 			# Distribute species across landscape
-			this_comm = with(parms, {
+			this_metacomm = with(parms, {
 				p = ifelse(exists('prop_full'), prop_full, NA)
 				distribution = ifelse(exists('init_distribute'), init_distribute, NA)
 				if(exists('cells_distribute')){
@@ -755,32 +754,92 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				populate_landscape(this_land, this_species, this_gsad, K, distribution, p, which_cells)
 			})
 			
-		### STILL TESTING HERE
-
 			# Run simulation
-			with(parms, run_sim(nsteps, this_comm, this_land, this_species, this_gsad,
-				d_kernel = ifelse(exists('d_kernel'), d_kernel, NA),
-				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA),
-				save_steps = ifelse(exists('save_steps'), save_steps, NA)
-			))
+			with(parms, {
+				if(!exists('d_kernel')) d_kernel = NULL
+				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
+				if(!exists('save_steps')) save_steps = NULL
+				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps)
+			})
 		})
 
 		stopCluster(cluster)	
 
 	} else {
 
+		# Initialize simulation landscapes
+		lands_N = lapply(1:nruns, function(j){
+			with(parms, {
+				x = dimX
+				y = dimY
+				if(!exists('vgm_mod')) vgm_mod = NULL
+				d = ifelse(exists('vgm_dcorr'), vgm_dcorr, NA)
+				prop = ifelse(exists('habA_prop'), habA_prop, 0.5)
+				make_landscape(x, y, vgm_mod, d, prop, draw_plot=F)
+			})
+		})
 
+		# Initialize species vital rates
+		species_N = lapply(1:nruns, function(j){
+			with(parms, {
+				S_AB = ifelse(exists('S_AB'), S_AB, NULL) 
+				if(!exists('dist_b')) dist_b = NULL
+				m = m_rates
+				r = r_rates 
+				if(!exists('dist_d')) dist_d = NULL
+				make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d)
+			})
+		})
 
+		# Initialize global species abundance distribution	
+		gsad_N = lapply(1:nruns, function(j){
+			with(parms, {
+				N_S = dim(species_N[[j]])[1]
+				if(exists('dist_gsad')){
+					distribution = dist_gsad
+				} else {	
+					distribution = list(type='same')
+				}
 
+				make_sad(N_S, distribution)
+			})
+		})
 
+		# Run simulations
+		sim_results = lapply(1:nruns, function(j){
+			
+			# Define this landscape and species pool
+			this_land = lands_N[[j]]
+			this_species = species_N[[j]]
+			this_gsad = gsad_N[[j]]
+			
+			# Distribute species across landscape
+			this_metacomm = with(parms, {
+				p = ifelse(exists('prop_full'), prop_full, NA)
+				distribution = ifelse(exists('init_distribute'), init_distribute, NA)
+				if(exists('cells_distribute')){
+					which_cells = cells_distribute
+				} else {
+					which_cells = NULL
+				}
+				populate_landscape(this_land, this_species, this_gsad, K, distribution, p, which_cells)
+			})
+			
+			# Run simulation
+			with(parms, {
+				if(!exists('d_kernel')) d_kernel = NULL
+				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
+				if(!exists('save_steps')) save_steps = NULL
+				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps)
+			})
+		})
 	}
 
 	# Save results
-	if(!is.null(save_sim)) save(sim_results, lands_N, species_N, gsad_N, file=paste0(sim_dir, save_sim))
+	if(!is.null(save_sim)) save(sim_results, lands_N, species_N, gsad_N, file=save_sim)
 
 	# Return results
-
- 
+	sim_results 
 }
 
 
