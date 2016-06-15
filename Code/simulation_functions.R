@@ -853,15 +853,19 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 # A function that calculates species relative abundances in a landscape
 #	metacomm : matrix of lists of species present in each cell, including 0 for empty spaces
 #	N_S : number of species
-calc_abun = function(metacomm, N_S){
-	# Tally number of individuals of each species present, including empty spaces (0)
-	abun = table(factor(unlist(metacomm), 0:N_S))
+#	only_species : whether empty spaces should be excluded from consideration. Defaults to FALSE.
+calc_abun = function(metacomm, N_S, only_species=F){
+	# Determine where to start species
+	start = as.numeric(only_species)
 
+	# Tally number of individuals of each species present, including empty spaces (0)
+	abun = table(factor(unlist(metacomm), start:N_S))
+	
 	# Calculate relative abundance across all available spaces
 	rel_abun = abun/sum(abun)
 
 	# Return abundances
-	rel_abun[as.character(1:N_S)]
+	rel_abun
 }
 
 
@@ -1059,11 +1063,16 @@ calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, a
 		abun_profiles = abuns
 	}
 
-	# Number of timepoints measured
-	N_t = dim(abun_profiles)[1]	
+	# Convert to array if necessary
+	if(length(dim(abun_profiles))==2) abun_profiles = add_dim(abun_profiles)
 
 	# Determine which species to examine
 	if(is.null(which_species)) which_species = colnames(abun_profiles)[2:ncol(abun_profiles)]
+
+	# Number of timepoints, species, and sites measured
+	N_t = dim(abun_profiles)[1]	
+	N_s = length(which_species)
+	N_c = dim(abun_profiles)[3]
 
 	# Aggregate timepoints, if specified
 	if(!is.null(agg_times)){
@@ -1078,42 +1087,70 @@ calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, a
 		# Calculate summed abundances across aggregation times
 		# Note that new array will have dimensions  [species, locations, times]
 		agg_abuns = sapply(agg_times, function(rows){
-			rows = rows[rows %in% 1:N_t]
-			if(length(rows)>1) new_abun = apply(abun_profiles[rows,,], 2:3, sum)
-			if(length(rows)==1) new_abun = abun_profiles[rows,,]
+			rows = rows[rows %in% 1:N_t] 
+			use_abun = abun_profiles[rows,,,drop=F]
+			if(length(rows)>1){
+				new_abun = apply(use_abun, 2:3, sum)
+			}
+			if(length(rows)==1) new_abun = use_abun
 			new_abun
 		}, simplify='array')
+		if(N_c==1 & length(agg_times)>1) agg_abuns = add_dim(agg_abuns, 2)
+		dimnames(agg_abuns) = list(dimnames(abun_profiles)[[2]], dimnames(abun_profiles)[[3]], 1:length(agg_times))
+		
 
 		# Calculate richness in each aggregation interval
-		if(length(which_species)>1){
-			if(length(agg_times)==1){
-				rich = apply(agg_abuns[as.character(which_species),,] > 0, 2, sum)
-			} else {
-				rich = apply(agg_abuns[as.character(which_species),,] > 0, 2, colSums)
-			}
-		} else {
-			if(length(agg_times)==1){
-				rich = ifelse(agg_abuns[as.character(which_species),,] > 0, 1, 0)
-			} else {
-				rich = apply(agg_abuns[as.character(which_species),,] > 0, 1, as.numeric)
-			}
-		}
+		rich = apply(agg_abuns[as.character(which_species),,,drop=F] > 0, 2, colSums)
+
 	} else {
 
 		# Calculate richness at each timepoint
-		if(length(which_species)>1){
-			rich = apply(abun_profiles[,as.character(which_species),] > 0, 3, rowSums)
-		} else {
-			rich = apply(abun_profiles[,as.character(which_species),] > 0, 2, as.numeric)
-		}
+		rich = apply(abun_profiles[,as.character(which_species),,drop=F] > 0, 3, rowSums)
 	}
 
 	# Return results as species x site matrix
 	rich
 }
 
+# A function that calculates richness of core and transient species
+calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 
+	# Catch error when abuns and occupancy do not match
+	if(nrow(occupancy)!=dim(abun_profs)[length(dim(abun_profs))]) stop('Abundance matrix and occupancy matrix must be supplied for same ste of sites.')
+	
+	# Convert occupancy to factor based on breakpoints
+	if(breaks[1]!=0) breaks = c(0,breaks)
+	if(breaks[length(breaks)]!=1) breaks = c(breaks, 1)
+	cats = matrix(cut(occupancy, breaks, include.lowest=F, labels=F), nrow=nrow(occupancy), ncol=ncol(occupancy))
+	colnames(cats) = colnames(occupancy)
+		
+	# Number of sites and time windows
+	N_c = dim(abuns)[3]
+	N_t = ifelse(is.null(agg_times), dim(abuns)[1], length(agg_times))
 
+	# Determine time aggregation windows
+	if(is.numeric(agg_times)){
+		if(length(agg_times)>1) stop('To specify non-uniform aggregation use list format.')
+		int = agg_times
+		agg_times = lapply(seq(1,N_t,int), function(x) x:(x+int-1))
+	}
+
+	# Richness of each category for each site during given aggregated time periods. Returns [times, categories, sites]
+	rich_cat = sapply(1:N_c, function(i){
+		sapply(1:(length(breaks)-1), function(cat){
+			these_sp = which(cats[i,]==cat)
+			if(length(these_sp)>0){
+				calc_rich(abuns = abuns[,,i], agg_times = agg_times, which_species = these_sp)
+			} else {
+				rep(0, N_t)
+			}
+		})
+	}, simplify='array')
+	dimnames(rich_cat) = list(1:N_t, levels(cut(0, breaks)), 1:N_c)
+
+	# Return richnes
+	rich_cat
+}
 
 # A function that summarizes results from multiple replicates of a simulation.
 # Also works for a simgle simulation run
@@ -1165,17 +1202,69 @@ summarize_sim_N = function(results, speciesN=NULL, landN=NULL, t_window=NULL, lo
 		this_sim = simN[[k]]
 		this_species = speciesN	[[k]]
 		this_land = landN[[k]]	
-
+		N_S = dim(this_species)[1]
+		
+############ WORKING HERE #####################
 		# Calculate species abundance profiles
-		abun_profs = calc_abun_profile(locs, t_window, this_sim, dim(this_species)[1])
+		abun_profs = calc_abun_profile(locs, t_window, this_sim, N_S)
 
+		# Calculate species occupancy
+		occupancy = calc_occupancy(abuns=abun_profs, agg_times, which_species, do_freq=F)
 
+		# Calculate species total and abundances across landscape
+		rel_abun = sapply(calc_abun(this_sim[,,step], N_S, only_species=T)
+		
+		# Calculate proportion of metacommunity that is full
 
 	})
 
 
 
 }
+
+
+#######################################################
+#### Miscellaneous Functions
+
+
+# Function that adds a dimension on to an array
+add_dim = function(x, where=NULL){
+
+	if(is.null(where)) where = length(dim(x)) + 1
+	
+	# Get original max dimension
+	n = ifelse(is.null(dim(x)), 1, length(dim(x))) 
+	
+	# Determine whether original has dimnames
+	if(n>1) has_names = !is.null(dimnames(x))
+	if(n==1) has_names = !is.null(names(x))
+	
+	# Make new dimensions and names
+	new_dim = as.numeric(1:(length(where)+n) %in% where)
+	new_names = lapply(1:length(new_dim), function(i) ifelse(i %in% where, 1, NA))
+	old_names = which(new_dim==0)
+	
+	if(n==1){
+		if(has_names) new_names[[old_names]] = names(x) 
+		new_dim[new_dim==0] = length(x)
+	} else {
+		if(has_names) for(i in 1:length(old_names)) new_names[[old_names[i]]] = dimnames(x)[[i]] 
+		new_dim[new_dim==0] = dim(x)
+	}
+
+	if(has_names){
+		new_array = array(x, dim=new_dim, dimnames=new_names)
+	} else {
+		new_array = array(x, dim=new_dim)
+	}
+
+	# Return new array
+	new_array	
+}
+
+
+
+
 
 
 
