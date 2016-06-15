@@ -1095,7 +1095,7 @@ calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, a
 			if(length(rows)==1) new_abun = use_abun
 			new_abun
 		}, simplify='array')
-		if(N_c==1 & length(agg_times)>1) agg_abuns = add_dim(agg_abuns, 2)
+		if(N_c==1 & length(agg_times)>1 & length(dim(agg_abuns))==2) agg_abuns = add_dim(agg_abuns, 2)
 		dimnames(agg_abuns) = list(dimnames(abun_profiles)[[2]], dimnames(abun_profiles)[[3]], 1:length(agg_times))
 		
 
