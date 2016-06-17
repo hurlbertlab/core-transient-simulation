@@ -719,17 +719,41 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 		# Send initial landscapes and species to all cluster cores
 		clusterExport(cluster, c('lands_N','species_N'), envir=environment())
 		
-		# Initialize global species abundance distribution	
+		# Initialize global species abundance distribution
+		# dist_gsad can be a generic distribution or 'b_rates' indicating that it should be the same as species birth rates
 		gsad_N = parLapply(cluster, 1:nruns, function(j){
 			with(parms, {
 				N_S = dim(species_N[[j]])[1]
 				if(exists('dist_gsad')){
-					distribution = dist_gsad
+					if(is.list(dist_gsad)){
+						
+						# Use specified distribution to generate abundances
+	 					distribution = dist_gsad
+						gsad_vec = make_sad(N_S, distribution)
+
+					} else {
+
+						# Make global abundaces equal to species birth rates	
+						if(dist_gsad=='b_rates'){
+			
+							A_rates = species_N[[j]][1:S_A,'A','b']
+							B_rates = species_N[[j]][(S_A+1):(S_A+S_B),'B','b']
+							gsad_vec = c(A_rates, B_rates)
+							if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
+					
+						} else {
+							stop('Unrecognized value for parameter dist_gsad.')
+						}
+					}
+
+				# Defaults to same abundance for each species
 				} else {	
 					distribution = list(type='same')
+					gsad_vec = make_sad(N_S, distribution)
 				}
-
-				make_sad(N_S, distribution)
+				
+				# Return vector of global abundances
+				gsad_vec
 			})
 		})
 
@@ -798,12 +822,35 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 			with(parms, {
 				N_S = dim(species_N[[j]])[1]
 				if(exists('dist_gsad')){
-					distribution = dist_gsad
+					if(is.list(dist_gsad)){
+						
+						# Use specified distribution to generate abundances
+	 					distribution = dist_gsad
+						gsad_vec = make_sad(N_S, distribution)
+
+					} else {
+
+						# Make global abundaces equal to species birth rates	
+						if(dist_gsad=='b_rates'){
+			
+							A_rates = species_N[[j]][1:S_A,'A','b']
+							B_rates = species_N[[j]][(S_A+1):(S_A+S_B),'B','b']
+							gsad_vec = c(A_rates, B_rates)
+							if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
+					
+						} else {
+							stop('Unrecognized value for parameter dist_gsad.')
+						}
+					}
+
+				# Defaults to same abundance for each species
 				} else {	
 					distribution = list(type='same')
+					gsad_vec = make_sad(N_S, distribution)
 				}
-
-				make_sad(N_S, distribution)
+				
+				# Return vector of global abundances
+				gsad_vec
 			})
 		})
 
@@ -850,6 +897,73 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 ####################################################################
 ### Functions for collecting data from a simulation
 
+# A function that groups cells together in a regular fashion and returns a list of cell locations.
+#	X : number of rows or a vector of length 2 giving the dimensions of the grid
+#	Y : number of columns
+#	dX : number of rows to aggregate or a vector of length 2 giving the dimensions to aggregate
+#	dY : number of columns to aggregate
+#	form : string indicating how cell aggregations should be formed. Defaults to 'partition'.
+#		'partition' = grid partitioned so that groups are non-overlapping
+#		'window' = sliding window used. Results in overlapping groups. Default is 1 cell in each direction.
+#		'origin' = cells aggregated around a focal cell or set of cells. Default is center cell.
+#	slide : if form='window', the number of cells to slide the window in the x and y directions
+#	locs : if form='origin', a matrix of cell locations that should be the center of aggregated groups.
+aggregate_cells = function(X, Y=NA, dX, dY=NA, form=NA, slide=NULL, locs=NULL){
+	
+	# Catch errors where not enough parameter specified
+	if(length(X)==1 & is.na(Y)) stop('Must specify dimensions of landscape.')
+	if(length(dX)==1 & is.na(dY)) stop('Must specify aggregation dimensions dX x dY.')
+
+	# Define missing parameters to defaults.
+	if(length(X)==2){
+		Y = X[2]
+		X = X[1]
+	}
+
+	if(length(dX)==2){
+		dY = dX[2]
+		dX = dY[1]
+	}
+
+	if(is.na(form)) form = 'partition'
+	
+	if(form=='window'){
+		if(is.null(slide)) slide = c(1,1)
+		if(length(slide)==1) slide = rep(slide, 2)
+	}
+
+	if(form=='origin' & is.null(locs)){
+		locs = matrix(c(ceiling(X/2), ceiling(Y/2)), nrow=1)		
+	}
+	
+	# Aggregate cells
+	if(form=='partition'){
+		
+
+
+	}
+
+	if(form=='window'){
+
+
+
+	}
+
+
+	if(form=='origin'){
+
+
+
+
+	}
+
+
+	# Return list of locations
+	groups
+
+}
+
+
 # A function that calculates species relative abundances in a landscape
 #	metacomm : matrix of lists of species present in each cell, including 0 for empty spaces
 #	N_S : number of species
@@ -871,7 +985,7 @@ calc_abun = function(metacomm, N_S, only_species=F){
 
 # A function that calculates species abundance profiles during a given time window for a given set of locations.
 # Returns an array of species abundances at each location through time [time, species, location]
-#	locs : two-column matrix of cell locations where species occupancies should be calculated
+#	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
 #	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
 #	sim : an array of simulation results, as returned by run_sim() function
 #	N_S : number of species
@@ -890,19 +1004,31 @@ calc_abun_profile = function(locs, t_window, sim, N_S){
 
 		use_times = t_window
 	}
+
+	# Determine whether cells should be aggregated
+	if(!is.list(locs)) locs = list(locs)
 	
 	# For each location:
-	abun_profiles = sapply(1:nrow(locs), function(i){
-		# Convert community profile to matrix
-		x = as.numeric(locs[i,])
-		comm_mat = simplify2array(sim[x[1],x[2],])
+	abun_profiles = sapply(locs, function(cell_block){
+	
+		# For each block of cells to be aggregated
+		each_cell = sapply(1:nrow(cell_block), function(i){
+			
+			# Convert community profile to matrix
+			x = as.numeric(cell_block[i,])
+			comm_mat = simplify2array(sim[x[1],x[2],])
 
-		# Calculate abundance of each species across timesteps
-		abuns = sapply(0:N_S, function(sp) colSums(comm_mat==sp))		
-		colnames(abuns) = 0:N_S
+			# Calculate abundance of each species across timesteps
+			abuns = sapply(0:N_S, function(sp) colSums(comm_mat==sp))		
+			colnames(abuns) = 0:N_S
 
-		# Return abundnaces
-		abuns
+			# Return abundnaces
+			abuns
+		}, simplify='array')
+
+		# Sum across cells and timepoints
+		apply(each_cell, 1:2, sum)
+		
 	}, simplify='array')
 
 	# Return abundance profiles
@@ -962,7 +1088,7 @@ plot_abun = function(prof, lcol=c('royalblue','orchid','orangered')){
 
 
 # A function that calculates species occupancies during a given time window for a given set of locations
-#	locs : two-column matrix of cell locations where species occupancies should be calculated
+#	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
 #	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
 #	sim : an array of simulation results, as returned by run_sim() function
 #	N_S : number of species
@@ -1044,7 +1170,7 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 # can specify which species to consider
 # can specify locations 
 
-#	locs : two-column matrix of cell locations where species occupancies should be calculated
+#	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
 #	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
 #	sim : an array of simulation results, as returned by run_sim() function
 #	N_S : number of species
@@ -1212,7 +1338,7 @@ summarize_sim_N = function(results, speciesN=NULL, landN=NULL, t_window=NULL, lo
 		occupancy = calc_occupancy(abuns=abun_profs, agg_times, which_species, do_freq=F)
 
 		# Calculate species total and abundances across landscape
-		rel_abun = sapply(calc_abun(this_sim[,,step], N_S, only_species=T)
+#		rel_abun = sapply(calc_abun(this_sim[,,step], N_S, only_species=T)
 		
 		# Calculate proportion of metacommunity that is full
 
