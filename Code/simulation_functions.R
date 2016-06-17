@@ -1209,19 +1209,35 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 	t(freqs)
 }
 
-# A function that calculates which species are misclassified as core or transient.
-#	b_rates : matrix of birth rates for each species in each habitat types
+# A function that cross-classifies species by their true vs. observed core/transient status.
+# Returns a contingency table whose rows are the true classification based on birth rates and columns are the observed classes based on occupancy.
+# Can specify a classification matrix or birth rates and habitat types
+#	occupancy : matrix of species occupancies across spatial units (sites X species).
 #	breaks : either a numeric vector of lengtth 1 or 2 giving occupancy breakpoints for transient vs. core status or a named list wuth specific intervals: list(trans=c(), core=c())
-calc_misclass = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classification=NULL){
+#	b_rates : matrix of birth rates for each species in each habitat types.
+#	habitats : vector of habitat types ('A' or 'B') for each spatial unit
+#	classification : matrix classifying each species on each site as 'core' or 'trans'. (sites X species)
+# 	do_each : logical indicating whether one table should be returned across all sites (F) or an array of tables should be returned, one for each spatial unit (T).
+cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classification=NULL, do_each=F){
 
 	# Convert breaks to list of intervals defining core and transient occupancy levels if just specified as numeric
 	if(!is.list(breaks)){
 		if(length(breaks)==1) breaks = rep(breaks,2)
 		breaks = list(trans=c(0,breaks[1]), core=c(breaks[2], 1))
 	}
-		
+
 	# Classify species based on occupancy matrix
-	classes = matrix(cut(occupancy, breaks=c(breaks$trans, breaks$core), include.lowest=T, labels=c('trans',NA,'core')), nrow=nrow(occupancy))
+	
+	if(breaks$trans[2]==breaks$core[1]){
+		
+		# Case when no occupancy levels excluded
+		classes = matrix(cut(occupancy, breaks=c(breaks$trans, breaks$core[2]), include.lowest=T, labels=c('trans','core')), nrow=nrow(occupancy))
+	
+	} else {
+		
+		# Case when intermediate occupancy levels excluded
+		classes = matrix(cut(occupancy, breaks=c(breaks$trans, breaks$core), include.lowest=T, labels=c('trans',NA,'core')), nrow=nrow(occupancy))
+	}
 	colnames(classes) = colnames(occupancy)
 
 	# Get predefined classification or calculate from birth rates
@@ -1237,8 +1253,18 @@ calc_misclass = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classif
 	# Check whether classification matrix matches occupancy matrix
 	if(sum(dim(classification)==dim(classes))<2) stop('Incorrect dimensions for classification matrix. Should be sites x species.')
 
-	
+	# Calculate contingency tables
+	if(do_each){
+		# Calculate for each spatia unit
+		cross_tab = sapply(1:nrow(classes), function(i) table(classification[i,], classes[i,]), simplify='array')
 
+	} else {
+		# Sumarize across all spatial units
+		cross_tab = table(classification, classes)
+	}
+
+	# Return tables
+	cross_tab
 }
 
 

@@ -11,8 +11,8 @@ source(paste0(sim_dir, 'simulation_functions.R'))
 nruns = 3
 nparallel = 2
 simID='test'
-sim_dir = './Research/CT-Sim/GitHub/Code/'
-save_sim = './Research/CT-Sim/testing'
+sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/'
+save_sim = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/testing'
 
 parms = list(
 	dimX = 10,
@@ -23,18 +23,18 @@ parms = list(
 	S_B = 10,
 	S_AB = 5,
 	dist_b = list(type='lognormal', maxN=5, P_maxN=0.001),
-	m_rates = c(.1, .2, .1),
+	m_rates = c(.1, .1, .1),
 	r_rates = c(.9, .5, .9),
-	dist_d = list(mu=1.5, var=0.5),
-	dist_gsad = list(type='same'),
+	dist_d = list(mu=1.5, var=0),
+	dist_gsad = 'b_rates',
 	K = 20,
-	prop_full = .5,
+	prop_full = 1,
 	init_distribute = 'designated',
-	cells_distribute = data.frame(x=5, y=5, n=15),
+	cells_distribute = data.frame(x=5, y=5, n=20),
 	nsteps = 20,
 	d_kernel = list(type='gaussian'),
 	imm_rate = 0.05,
-	save_steps = seq(0, 20, 2)
+	save_steps = seq(1, 20, 1)
 )
 
 sim_results = run_sim_N(nruns, parms, nparallel, simID, sim_dir=sim_dir)
@@ -42,11 +42,25 @@ sim_results = run_sim_N(nruns, parms, nparallel, simID, sim_dir=sim_dir)
 
 ## Examine species richness trajectories through time
 use_locs = as.matrix(expand.grid(x=1:10, y=1:10))
+use_locs = aggregate_cells(X=c(10,10), dX=5, dY=5, form='partition')
 abun_profs = calc_abun_profile(use_locs, t_window=list(start=1, stop=20), sim_results$results[[1]], 25)
 occupancy = calc_occupancy(abuns=abun_profs, do_freq=F)
 tot_rich = calc_rich(abuns=abun_profs)
 ct_rich = calc_rich_CT(abun_profs, occupancy, breaks=c(0.25,.5,.75), agg_times=list(1:5, 2:6, 3:7, 4:8, 5:9, 6:10, 7:11))
 
+
+breaks = c(0.33, 0.66)
+b_rates = sim_results$species[[1]][,,'b']
+this_land = sim_results$lands[[1]]
+habitats = sapply(use_locs, function(x) average_habitat(x, this_land))
+
+cross_classify(occupancy, c(.33, .66), b_rates, habitats, do_each=F)
+cross_classify(occupancy, .5, b_rates, habitats, do_each=F)
+
+occupancy
+
+windows()
+image(matrix(ct_rich[7,1,], nrow=10))
 
 
 # TESTING
