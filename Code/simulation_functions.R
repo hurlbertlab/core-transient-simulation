@@ -382,8 +382,9 @@ populate_landscape = function(land, species, gsad=NULL, K, distribution=NA, p=NA
 get_habitat = function(x){
 	h = NA
 	
-	if(x==-1) h = 'A'
-	if(x==1) h = 'B'
+	if(x<=0) h = 'A'
+	if(x>0) h = 'B'
+	
 
 	# Return habitat types
 	h
@@ -1208,12 +1209,41 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 	t(freqs)
 }
 
+# A function that calculates which species are misclassified as core or transient.
+#	b_rates : matrix of birth rates for each species in each habitat types
+#	breaks : either a numeric vector of lengtth 1 or 2 giving occupancy breakpoints for transient vs. core status or a named list wuth specific intervals: list(trans=c(), core=c())
+calc_misclass = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classification=NULL){
+
+	# Convert breaks to list of intervals defining core and transient occupancy levels if just specified as numeric
+	if(!is.list(breaks)){
+		if(length(breaks)==1) breaks = rep(breaks,2)
+		breaks = list(trans=c(0,breaks[1]), core=c(breaks[2], 1))
+	}
+		
+	# Classify species based on occupancy matrix
+	classes = matrix(cut(occupancy, breaks=c(breaks$trans, breaks$core), include.lowest=T, labels=c('trans',NA,'core')), nrow=nrow(occupancy))
+	colnames(classes) = colnames(occupancy)
+
+	# Get predefined classification or calculate from birth rates
+	if(is.null(classification)){
+		
+		# Catch error where not enough information specified
+		if(is.null(habitats)&is.null(b_rates)) stop('Must specify either a classification of each species in each spatial unit or habitat types and birth rates.')
+
+		cores = t(sapply(habitats, function(h) b_rates[,h]>0))
+		classification = apply(cores, 1:2, function(x) ifelse(x, 'core', 'trans'))		
+	}
+
+	# Check whether classification matrix matches occupancy matrix
+	if(sum(dim(classification)==dim(classes))<2) stop('Incorrect dimensions for classification matrix. Should be sites x species.')
+
+	
+
+}
+
+
 
 # A function that calculates species richness profiles through time
-# can specify time window and whether to aggregate 
-# can specify which species to consider
-# can specify locations 
-
 #	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
 #	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
 #	sim : an array of simulation results, as returned by run_sim() function
@@ -1283,6 +1313,10 @@ calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, a
 }
 
 # A function that calculates richness of core and transient species
+#	abuns : array of abundance profiles returned by calc_abun_profile() function
+#	occupancy : matrix of species occupancies across the same spatial units represented in abuns, as returned by calc_occupancy(abuns, do_freq=F)
+#	breaks : vector of ordered numbers between 0 and 1 denoting breakpoints for occupancy categories
+# 	agg_times : either a single number specifying the number of timepoints that should be aggregated before calculating richness or a list defining exactly which timepoints should be aggregated. Timepoints are relative to times in abuns. Defaults to no aggregation.
 calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 
 	# Catch error when abuns and occupancy do not match
@@ -1321,6 +1355,21 @@ calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 	# Return richnes
 	rich_cat
 }
+
+# A function that calculates the average habitat value for a set of cells
+# 	locs : a matrix of cell locations
+#	land : landscape matrix
+average_habitat = function(locs, land){
+
+	# Get mean value across all cells
+	vals  = apply(locs, 1, function(i) land[i[1], i[2]])
+
+	# Determine habitat type
+	# Note: equal parts 'A' and 'B' gets classified as 'A'
+	get_habitat(mean(vals))
+}
+
+
 
 # A function that summarizes results from multiple replicates of a simulation.
 # Also works for a simgle simulation run
