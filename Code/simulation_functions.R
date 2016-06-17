@@ -938,29 +938,73 @@ aggregate_cells = function(X, Y=NA, dX, dY=NA, form=NA, slide=NULL, locs=NULL){
 	
 	# Aggregate cells
 	if(form=='partition'){
-		
 
+		# Determine starting points
+		Xs = seq(1, X, dX)
+		Ys = seq(1, Y, dY)
+		group_origins = as.matrix(expand.grid(Xs, Ys))
+
+		# For each origin cell, find all cells within dX, dY
+		groups = sapply(1:nrow(group_origins), function(i){
+			o = group_origins[i,]
+			Xcoords = o[1]:min(o[1]+dX-1, X)
+			Ycoords = o[2]:min(o[2]+dY-1, Y)
+			cells = as.matrix(expand.grid(Xcoords, Ycoords))
+			colnames(cells) = c('x','y')
+			list(cells)		
+		})
 
 	}
-
 	if(form=='window'){
+	
+		# Determine starting points
+		Xs = seq(1, X, slide[1])
+		Ys = seq(1, Y, slide[2])
+		group_origins = as.matrix(expand.grid(Xs, Ys))
 
-
-
+		# For each origin cell, find all cells within dX, dY
+		groups = sapply(1:nrow(group_origins), function(i){
+			o = group_origins[i,]
+			Xcoords = o[1]:min(o[1]+dX-1, X)
+			Ycoords = o[2]:min(o[2]+dY-1, Y)
+			cells = as.matrix(expand.grid(Xcoords, Ycoords))
+			colnames(cells) = c('x','y')
+			list(cells)		
+		})
 	}
-
-
 	if(form=='origin'){
 
+		# For each given origin cell, find all cells within dX, dY centered on that cell
+		groups = sapply(1:nrow(locs), function(i){
+			o = locs[i,]
 
+			if(dX%%2==1){
+				Xcoords =(o[1]-floor(dX/2)):(o[1] + floor(dX/2))
+			} else {
+				Xcoords = (o[1]-dX/2+1):(o[1]+dX/2)
+			}
 
-
+			if(dY%%2==1){
+				Ycoords =(o[2]-floor(dY/2)):(o[2] + floor(dY/2))
+			} else {
+				Ycoords = (o[2]-dY/2+1):(o[2]+dY/2)
+			}
+			cells = as.matrix(expand.grid(Xcoords, Ycoords))
+			colnames(cells) = c('x','y')
+			list(cells)	
+		})
 	}
 
+
+## DEBUG: CHECK GROUPS ##
+#	image(0:X,0:Y,matrix(1, nrow=X, ncol=Y))
+#	for(i in 1:length(groups)){
+#		pts = groups[[i]]
+#		text(pts[,1]-.5, pts[,2]-.5, labels=i)
+#	}
 
 	# Return list of locations
 	groups
-
 }
 
 
