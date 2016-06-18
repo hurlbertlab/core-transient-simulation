@@ -631,7 +631,9 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, imm_rate=N
 #	d_kernel = list defining the shape of the dispersal kernel for an individual (see disperse() function). Defaults to Gaussian.
 #	imm_rate = probability that an empty space will be colonized by a propagule from outside the landscape (e.g. drawn from the global species abundance distribution).
 #	save_steps : vector of timepoints at which to save the simulation. Defaults to all time steps.
-run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate=NA, save_steps = NULL){
+# 	report : Number of time steps after which to report status. Defaults to 0, no reporting.
+# 	ID : string defining this simulation run. Used when reporting progress. Defaults to NA.
+run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate=NA, save_steps = NULL, report=0, ID=NA){
 	
 	# Define simulation
 	X = nrow(land)
@@ -666,6 +668,7 @@ run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate
 	for(step in 1:steps){
 		new_metacomm = run_thissim(new_metacomm)
 		if(step %in% save_steps) sim_results[,,as.character(step)] = new_metacomm
+		if(report > 0) if(step %% report == 0) print(paste(Sys.time(), ': Finished', step, 'of', steps, 'from run', ID))
 	}
 
 	# Return results
@@ -680,10 +683,8 @@ run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate
 #	simID : string identifying this simulation run. Defaults to 'test'.
 #	save_sim : file name under which to save simulation results. If none specified simulation results are returned but not saved.
 #	sim_dir : directory where scripts with simulation functions are stored. Defaults to current directory.
-run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim_dir='./'){
-	
-	# Name these runs
-	runs = paste(simID, 1:nruns, sep='_')
+# 	report : Number of time steps after which to report status. Defaults to 0, no reporting.
+run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim_dir='./', report=0){
 
 	if(nparallel > 1){
 		require(parallel)
@@ -704,6 +705,8 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				make_landscape(x, y, vgm_mod, d, prop, draw_plot=F)
 			})
 		})
+	
+		if(report>0) print(paste0(Sys.time(), ': Finished making landscapes.'))
 
 		# Initialize species vital rates
 		species_N = parLapply(cluster, 1:nruns, function(j){
@@ -716,6 +719,8 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d)
 			})
 		})
+
+		if(report>0) print(paste0(Sys.time(), ': Finished making species pools.'))
 
 		# Send initial landscapes and species to all cluster cores
 		clusterExport(cluster, c('lands_N','species_N'), envir=environment())
@@ -758,11 +763,16 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 			})
 		})
 
+		if(report>0) print(paste0(Sys.time(), ': Finished making gsads.'))
+
 		# Send global species abundance distributions to cluster
 		clusterExport(cluster, 'gsad_N', envir=environment())
 
 		# Run simulations
 		sim_results = parLapply(cluster, 1:nruns, function(j){
+
+			if(report>0) print(paste0(Sys.time(), ': Start run ', j))
+
 			
 			# Define this landscape and species pool
 			this_land = lands_N[[j]]
@@ -786,7 +796,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				if(!exists('d_kernel')) d_kernel = NULL
 				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
 				if(!exists('save_steps')) save_steps = NULL
-				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps)
+				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps, report)
 			})
 		})
 
@@ -886,7 +896,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 	}
 
 	# Save results
-	if(!is.null(save_sim)) save(sim_results, lands_N, species_N, gsad_N, file=save_sim)
+	if(!is.null(save_sim)) save(sim_results, lands_N, species_N, gsad_N, file=paste0(save_sim, simID, '.RData'))
 
 	# Return results
 	list(results = sim_results, species = species_N, lands = lands_N, gsads = gsad_N)
@@ -1458,6 +1468,17 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 
 
 
+summarize_sim
+
+# Basic statistics:
+# Abundance and richness of core and transient species, based on occupancy and based on birth rates
+# Relationship between abundance and occupancy across species
+# 
+
+# Each statistic calculated at several spatial scales, including the entire grid.
+
+
+
 # A function that summarizes results from multiple replicates of a simulation.
 # Also works for a simgle simulation run
 #	results : either a list of simulation results return by run_sim_N, a list of simulation results metacommunities from different runs, or a single simulation results metacommunity
@@ -1527,6 +1548,56 @@ summarize_sim_N = function(results, speciesN=NULL, landN=NULL, t_window=NULL, lo
 
 
 }
+
+
+#######################################################
+### Input/Output Functions
+
+# A function that makes a list of parameters for writing to a file or passing to run_sim_N() from a given environment
+# This function needs to be updated whenever new parameters are coded into the simulation
+#	e : environment where parameter values can be found. Defaults to parent environment.
+make_parmlist = function(e=parent.frame()){
+
+# Define list of required parameters
+parms = list(
+	dimX = e$dimX,
+	dimY = e$dimY,
+	S_A = e$S_A, 
+	S_B = e$S_B,
+	m_rates = e$m_rates,
+	r_rates = e$r_rates,
+	K = e$K,								
+	nsteps = e$nsteps,
+	nruns = e$nruns
+)
+
+# Add on optional parameters
+if(exists('vgm_dcorr', e)) parms = c(parms, vgm_dcorr = e$vgm_dcorr)			
+if(exists('vgm_mod', e)) parms = c(parms, vgm_mod = list(e$vgm_mod)) 
+if(exists('habA_prop', e)) parms = c(parms, habA_prop = e$habA_prop)
+if(exists('S_AB', e)) parms = c(parms, S_AB = e$S_AB)
+if(exists('dist_b', e)) parms = c(parms, dist_b = list(e$dist_b))
+if(exists('dist_d', e)) parms = c(parms, dist_d = list(e$dist_d))
+if(exists('dist_gsad',e)){
+	if(is.list(e$dist_gsad)){
+		parms = c(parms, dist_gsad = list(e$dist_gsad))
+	} else {
+		parms = c(parms, dist_gsad = e$dist_gsad)
+	}
+}
+if(exists('prop_full', e)) parms = c(parms, prop_full = e$prop_full)
+if(exists('init_distribute', e)) parms = c(parms, init_distribute = e$init_distribute)
+if(exists('cells_distribute', e)) parms = c(parms, cells_distribute = list(e$cells_distribute))
+if(exists('d_kernel', e)) parms = c(parms, d_kernel = list(e$d_kernel))
+if(exists('imm_rate', e)) parms = c(parms, imm_rate = e$imm_rate)
+if(exists('save_steps', e)) parms = c(parms, save_steps = list(e$save_steps))
+if(exists('simID', e)) parms = c(parms, simID = e$simID)
+
+}
+
+
+
+
 
 
 #######################################################
