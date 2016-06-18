@@ -666,8 +666,13 @@ run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate
 	# Run simulation
 	new_metacomm = metacomm
 	for(step in 1:steps){
+		# Run for a timestep
 		new_metacomm = run_thissim(new_metacomm)
+
+		# Save results
 		if(step %in% save_steps) sim_results[,,as.character(step)] = new_metacomm
+		
+		# Report progress
 		if(report > 0) if(step %% report == 0) print(paste(Sys.time(), ': Finished', step, 'of', steps, 'from run', ID))
 	}
 
