@@ -759,7 +759,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 		})
 
 		# Send global species abundance distributions to cluster
-		clusterExport(cluster, 'gsad_N')
+		clusterExport(cluster, 'gsad_N', envir=environment())
 
 		# Run simulations
 		sim_results = parLapply(cluster, 1:nruns, function(j){
@@ -1394,6 +1394,67 @@ average_habitat = function(locs, land){
 	# Note: equal parts 'A' and 'B' gets classified as 'A'
 	get_habitat(mean(vals))
 }
+
+# A function that returns an incomplete sample of a simulation based on species detectibility.
+# 	abuns : species abundance profiles, as returned by calc_abun_profile(): [timepoints, species, sites]
+# 	probs : probability that an individual is detected. Can be either a single detectability for all species, or a vector with different probabilies for each species. Defaults to 1.
+#	return : a string indicating whener species abundances 'abundance' or presence 'presence' should be returned. Default is abundance.
+sample_sim = function(abuns, probs = NULL, return='abundance'){
+	
+	# Drop empty spaces from abuns, if present.
+	abuns = abuns[,dimnames(abuns)[[2]]!='0',]
+
+	# Determine number of species
+	N_S = dim(abuns)[2]
+
+	# If not specified, detection is 1 and the original abundance profiles are returned
+	if(is.null(probs)){
+		obs = abuns
+		if(return=='presence') obs = abuns>0
+	} else {
+		
+		# Make vector of detectabilities if only one specified.
+		if(length(probs)==1) probs = rep(probs, N_S)
+		
+		# If species presence to be returned		
+		if(return=='presence'){
+
+			# Calculate probability of observing species (1 - P(not observing))
+			# Returns an array: [timepoints, sites, species]
+			P = sapply(1:N_S, function(sp){
+				apply(abuns[,sp,], 1:2, function(x) 1 - (1-probs[sp])^x )
+			}, simplify='array')
+
+			# Stochastically determine which species are observed
+			rands = array(runif(length(P)), dim=dim(P))
+			obs = rands <= P
+
+			# Rearrange dimensions to match abuns
+			obs = aperm(obs, c(1,3,2))	
+		}
+		
+		if(return=='abundance'){
+			
+			# Stochasitically determine which individuals are observed
+			obs = sapply(1:N_S, function(sp){
+				apply(abuns[,sp,], 1:2, function(x){
+					if(x>0){
+						sum(runif(x) <= probs[sp])
+					} else {
+						0
+					}
+
+				})
+			}, simplify='array')
+			
+			# Rearrange dimensions to match abuns
+			obs = aperm(obs, c(1,3,2))
+		}
+	}
+
+	# Return observed sample
+	obs
+} 
 
 
 
