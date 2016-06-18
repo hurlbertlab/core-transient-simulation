@@ -1,0 +1,52 @@
+## An example of a parameter file for running multiple simulations
+## Parameters indicated as optional are set to default values and can be omitted since these deaults are stored within simulation functions
+
+
+## Define the landscape: make_landscape()
+dimX = 10 									# Number of rows
+dimY = 10 									# Number of columns
+vgm_dcorr = min(dimX, dimY)/3 					# (optional) Distance at which habitat is uncorrelated
+vgm_mod = vgm(psill=1, model='Exp', range=vgm_dcorr) 		# (optional) Variogram model controling spatial autocorrelation of habitat types
+habA_prop = 0.5								# Proprotion of landscape that is type 'A'
+
+
+## Define the species pool: make_species() and make_sad()
+S_A = 10									# Number of species specializing on habitat A
+S_B = 10									# Number of species specializing on habitat B
+S_AB = 0									# (optional) Number of generalist species
+dist_b = list(type='uniform', maxN=10)				# (optional) Distribution from which species birth rates are drawn. See make_sad() for options.
+m_rates = c(.1, .1, .1)							# Mortality rates in preferred and unpreferred habitat. Optionally a third number for generalist mortality.
+r_rates = c(.9, .9, .9)							# Recruitment rates in preferred and unpreferred habitat. Optionally a third number of generalist recruitment.
+dist_d = list(mu=1, var=0)						# (optional) List of the mean and variance of the gamma distribution from which species expected dispersal distances are drawn.
+dist_gsad = list(type='same')						# (optional) Distribution from which global species abundances are drawn. See make_sad(). Or, a string indicating that abundances should equal species birth rates.
+
+
+## Define how the simulation is initialized: populate_landscape()
+K = 20									# Integer giving the carrying capacity of each cell. Or, a matrix specifying a capacity for each cell.								
+prop_full = 1								# (optional) Proportion of the carrying capacity to fill initially.					
+init_distribute = 'same'						# (optional) String indicating how individuals should initially be distributed across the landscape: 'same','uniform','designate'. See populate_landscape().
+cells_distribute = data.frame(x=5, y=5, n=20)			# (optional) If init_distribute='designated', this is a matrix giving the locations of cells in which to place individuals. An optional third column gives the number of individuals in each cell.
+
+
+## Define how the simulation should run
+nsteps = 20									# Number of timesteps to run the simulation.
+d_kernel = list(type='gaussian')					# (optional) Distribution defining the shape of an individual's dispersal kernel.
+imm_rate = 0								# (optional) Immigration rate: probability that an empty space is colonized from outside the landscape.
+	
+
+## Define how the simulation should be saved
+nruns = 3									# Number of independent simulation runs to perform with this set of parameters
+save_steps = seq(0, nsteps, 1)					# (optional) Vector of timesteps to save. Including 0 saves the initial metacommunity.
+nparallel = 1								# (optional) Number of threads to run the simulation in parallel.
+simID = 'test'								# (optional) String identifying this run. Used for saving simulation results.
+sim_dir = './'								# (optional) Path to directory where simulation scripts are saved.
+save_sim = NULL								# (optional) Path to directory where simulation results should be save. If not included, results not saved to disk.		
+
+
+
+
+
+
+
+
+ 
