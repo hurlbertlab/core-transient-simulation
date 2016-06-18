@@ -7,7 +7,7 @@ dimX = 10 									# Number of rows
 dimY = 10 									# Number of columns
 vgm_dcorr = min(dimX, dimY)/3 					# (optional) Distance at which habitat is uncorrelated
 vgm_mod = vgm(psill=1, model='Exp', range=vgm_dcorr) 		# (optional) Variogram model controling spatial autocorrelation of habitat types
-habA_prop = 0.5								# Proprotion of landscape that is type 'A'
+habA_prop = 0.5								# (optional) Proportion of landscape that is type 'A'
 
 
 ## Define the species pool: make_species() and make_sad()
