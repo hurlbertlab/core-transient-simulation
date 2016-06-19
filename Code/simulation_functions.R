@@ -472,7 +472,7 @@ disperse = function(x, y=NA, propagules, dim_land, d_rates, form=list(type='gaus
 
 # Function that stochastically generates a dispersal vector (distance, direction) for given a dispersal kernal
 #	d : expected distance (mean)
-#	form : a list defininting the type of dispersal kernel. Currently only implements 'gaussian'.
+#	form : a list defining the type of dispersal kernel. Currently only implements 'gaussian'.
 #		type = character indicating the type
 #	N : number of vectors to generate. Defaults to 1
 get_dispersal_vec = function(d, form=list(type='gaussian'), N=1){
@@ -484,11 +484,41 @@ get_dispersal_vec = function(d, form=list(type='gaussian'), N=1){
 		theta = 1/d
 
 		# Generate distance
-		r = rhalfnorm(N, theta)		
+		r = rhalfnorm(N, theta)	
+
+		# Generate random angle (in radians)
+		phi = runif(N, 0, 2*pi)	
+
 	}
 
-	# Generate random angle (in radians)
-	phi = runif(N, 0, 2*pi)
+	# Adjacent cell dispersal
+	# d is the probability that a propagule will leave its origin cell
+	# form$moves = maximum number of moves that a propagule will complete in one timestep
+	if(form$type=='adjacent'){
+
+		# Generate random set of directional moves
+		moves = sapply(1:N, function(n){
+			sample(0:1, size=form$moves, prob= c(1-d, d), replace=T) * sample(1:4, size=form$moves, replace=T)
+		})
+
+		# Calculate distance and angle
+		dX = apply(moves, 2, function(x) -1*sum(x==3) + 1*sum(x==1))
+		dY = apply(moves, 2, function(x) -1*sum(x==4) + 1*sum(x==2))
+		r = sqrt(dX^2 + dY^2)
+		phi = atan2(dY,dX)
+	}
+
+	# Uniform: implements no disersal limitation
+	# d is the maximum dispersal distance
+	if(form$type=='uniform'){
+	
+		# Generate distance
+		r = runif(N, 0, d)
+
+		# Generate random angle		
+		phi = runif(N, 0, 2*pi)	
+	}
+
 
 	# Return vector
 	cbind(r, phi)
@@ -802,7 +832,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				if(!exists('d_kernel')) d_kernel = NULL
 				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
 				if(!exists('save_steps')) save_steps = NULL
-				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps, report)
+				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps, report, ID=j)
 			})
 		})
 
@@ -825,7 +855,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 		# Initialize species vital rates
 		species_N = lapply(1:nruns, function(j){
 			with(parms, {
-				S_AB = ifelse(exists('S_AB'), S_AB, NULL) 
+				S_AB = ifelse(exists('S_AB'), S_AB, NA) 
 				if(!exists('dist_b')) dist_b = NULL
 				m = m_rates
 				r = r_rates 
@@ -853,7 +883,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 							A_rates = species_N[[j]][1:S_A,'A','b']
 							B_rates = species_N[[j]][(S_A+1):(S_A+S_B),'B','b']
 							gsad_vec = c(A_rates, B_rates)
-							if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
+							if(exists('S_AB')) if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
 					
 						} else {
 							stop('Unrecognized value for parameter dist_gsad.')
@@ -896,7 +926,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				if(!exists('d_kernel')) d_kernel = NULL
 				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
 				if(!exists('save_steps')) save_steps = NULL
-				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps)
+				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps, report, ID=j)
 			})
 		})
 	}
@@ -1077,7 +1107,7 @@ calc_abun_profile = function(locs, t_window, sim, N_S){
 			
 			# Convert community profile to matrix
 			x = as.numeric(cell_block[i,])
-			comm_mat = simplify2array(sim[x[1],x[2],])
+			comm_mat = simplify2array(sim[x[1],x[2],as.character(use_times)])
 
 			# Calculate abundance of each species across timesteps
 			abuns = sapply(0:N_S, function(sp) colSums(comm_mat==sp))		
@@ -1234,7 +1264,8 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 #	habitats : vector of habitat types ('A' or 'B') for each spatial unit
 #	classification : matrix classifying each species on each site as 'core' or 'trans'. (sites X species)
 # 	do_each : logical indicating whether one table should be returned across all sites (F) or an array of tables should be returned, one for each spatial unit (T).
-cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classification=NULL, do_each=F){
+#	return : character indicating whether a table of 'counts' or lists of species IDs ('ids') should be returned. Default is 'counts'.
+cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classification=NULL, do_each=F, return='counts'){
 
 	# Convert breaks to list of intervals defining core and transient occupancy levels if just specified as numeric
 	if(!is.list(breaks)){
@@ -1271,12 +1302,28 @@ cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classi
 
 	# Calculate contingency tables
 	if(do_each){
-		# Calculate for each spatia unit
-		cross_tab = sapply(1:nrow(classes), function(i) table(classification[i,], classes[i,]), simplify='array')
-
+		# Calculate for each spatial unit
+		if(return=='counts') cross_tab = sapply(1:nrow(classes), function(i) table(classification=classification[i,], occupancy=classes[i,]), simplify='array')
+		if(return=='ids'){
+			cross_tab = sapply(1:nrow(classes), function(i){
+				this_tab = array(list(), dim=c(2,2), dimnames=list(classification=c('core','trans'), occupancy=c('core','trans')))
+				this_tab['core','core'] = list(as.character(which(classes[i,]=='core' & classification[i,]=='core')))
+				this_tab['core','trans'] = list(as.character(which(classes[i,]=='trans' & classification[i,]=='core')))
+				this_tab['trans','core'] = list(as.character(which(classes[i,]=='core' & classification[i,]=='trans')))
+				this_tab['trans','trans'] = list(as.character(which(classes[i,]=='trans' & classification[i,]=='trans')))
+				this_tab
+			}, simplify='array')
+		}
 	} else {
 		# Sumarize across all spatial units
-		cross_tab = table(classification, classes)
+		if(return=='count') cross_tab = table(classification=classification, occupancy=classes)
+		if(return=='ids'){
+			cross_tab = array(list(), dim=c(2,2), dimnames=list(classification=c('core','trans'), occupancy=c('core','trans')))
+			cross_tab['core','core'] = list(as.character(which(classification=='core'&classes=='core')))
+			cross_tab['core','trans'] = list(as.character(which(classification=='core'&classes=='trans')))
+			cross_tab['trans','core'] = list(as.character(which(classification=='trans'&classes=='core')))
+			cross_tab['trans','trans'] = list(as.character(which(classification=='trans'&classes=='trans')))
+		}
 	}
 
 	# Return tables
@@ -1362,7 +1409,7 @@ calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, a
 calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 
 	# Catch error when abuns and occupancy do not match
-	if(nrow(occupancy)!=dim(abun_profs)[length(dim(abun_profs))]) stop('Abundance matrix and occupancy matrix must be supplied for same ste of sites.')
+	if(nrow(occupancy)!=dim(abuns)[length(dim(abuns))]) stop('Abundance matrix and occupancy matrix must be supplied for same set of sites.')
 	
 	# Convert occupancy to factor based on breakpoints
 	if(breaks[1]!=0) breaks = c(0,breaks)
@@ -1414,7 +1461,7 @@ average_habitat = function(locs, land){
 # A function that returns an incomplete sample of a simulation based on species detectibility.
 # 	abuns : species abundance profiles, as returned by calc_abun_profile(): [timepoints, species, sites]
 # 	probs : probability that an individual is detected. Can be either a single detectability for all species, or a vector with different probabilies for each species. Defaults to 1.
-#	return : a string indicating whener species abundances 'abundance' or presence 'presence' should be returned. Default is abundance.
+#	return : a string indicating whether species abundances 'abundance' or presence 'presence' should be returned. Default is abundance.
 sample_sim = function(abuns, probs = NULL, return='abundance'){
 	
 	# Drop empty spaces from abuns, if present.
@@ -1473,8 +1520,71 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 } 
 
 
+# DEBUGGING
+#sim = sim_results$results[[1]]
+#locs = scale_locs[[3]]
+#t_window=list(start=76, stop=100)
+#species = sim_results$species[[1]]
+# habitats = sapply(locs, function(x) average_habitat(x, sim_results$lands[[1]]))
 
-#summarize_sim
+t_window : timepoints to consider
+agg_times_occ : timepoints to aggregate before calculating occupancy
+agg_times_sum : timepoints to aggregate before calculating richness or abundance
+
+summarize_sim = function(what, sim, species, land, gsad, locs, t_window, agg_times_occ, agg_times_sum, breaks, P_obs=NULL){
+	
+	# Get species birth rates
+	b_rates = species[,,'b']
+	
+	# Get habitat types for spatial units
+	habitats = sapply(locs, function(x) average_habitat(x, land))
+
+	# Calculate classification of species based on birth rates
+	cores = t(sapply(habitats, function(h) b_rates[,h]>0))
+	classification = apply(cores, 1:2, function(x) ifelse(x, 'core', 'trans'))	
+
+	# Calculate abundance profiles
+	abuns_act = calc_abun_profile(locs, t_window, sim, dim(species)[1])
+	
+	# Calculate occupancy
+	occ_act = calc_occupancy(abuns=abuns_act, agg_times=agg_times_occ, do_freq=F)
+
+	# Cross-classify species in spatial units
+	# May not need this
+	cross_class_ids = cross_classify(occ_act, breaks, classification=classification, do_each=T, return='ids')
+
+	# Calculate abundance of each class of species across spatial units
+	
+
+	# Calculate richness of each occupancy class across spatial units
+	rich_occ_act = calc_rich_CT(abuns_act, occ_act, breaks, agg_times_sum)
+
+	# Calculate abundance of each occupancy class across spatial units
+
+	# Calculate richness of each biological classification across spatial units
+	rich_bio_act = calc_rich_CT(abuns_act, apply(classification, 1:2, function(x) ifelse(x=='core', 1, 0)), breaks, agg_times_sum)
+
+	# Calculate means across temporal units
+	# THESE ARE NOT MATCHING UP_ DOES THIS MAKE SENSE??
+	#apply(rich_occ_act, 2:3, mean)
+	#apply(rich_bio_act, 2:3, mean)
+
+
+	# If detection probability is given, sample the abundance profiles and return comparison between actual and observed
+	if(!is.null(P_obs)){
+
+
+
+	 abuns_obs = sample_sim(abuns_act, probs=P_obs, return='abundance')
+	}
+
+
+	
+
+
+}
+
+
 
 # Basic statistics:
 # Abundance and richness of core and transient species, based on occupancy and based on birth rates
@@ -1564,41 +1674,40 @@ summarize_sim_N = function(results, speciesN=NULL, landN=NULL, t_window=NULL, lo
 #	e : environment where parameter values can be found. Defaults to parent environment.
 make_parmlist = function(e=parent.frame()){
 
-# Define list of required parameters
-parms = list(
-	dimX = e$dimX,
-	dimY = e$dimY,
-	S_A = e$S_A, 
-	S_B = e$S_B,
-	m_rates = e$m_rates,
-	r_rates = e$r_rates,
-	K = e$K,								
-	nsteps = e$nsteps,
-	nruns = e$nruns
-)
+	# Define list of required parameters
+	parms = list(
+		dimX = e$dimX,
+		dimY = e$dimY,
+		S_A = e$S_A, 
+		S_B = e$S_B,
+		m_rates = e$m_rates,
+		r_rates = e$r_rates,
+		K = e$K,								
+		nsteps = e$nsteps,
+		nruns = e$nruns
+	)
 
-# Add on optional parameters
-if(exists('vgm_dcorr', e)) parms = c(parms, vgm_dcorr = e$vgm_dcorr)			
-if(exists('vgm_mod', e)) parms = c(parms, vgm_mod = list(e$vgm_mod)) 
-if(exists('habA_prop', e)) parms = c(parms, habA_prop = e$habA_prop)
-if(exists('S_AB', e)) parms = c(parms, S_AB = e$S_AB)
-if(exists('dist_b', e)) parms = c(parms, dist_b = list(e$dist_b))
-if(exists('dist_d', e)) parms = c(parms, dist_d = list(e$dist_d))
-if(exists('dist_gsad',e)){
-	if(is.list(e$dist_gsad)){
-		parms = c(parms, dist_gsad = list(e$dist_gsad))
-	} else {
-		parms = c(parms, dist_gsad = e$dist_gsad)
+	# Add on optional parameters
+	if(exists('vgm_dcorr', e)) parms = c(parms, vgm_dcorr = e$vgm_dcorr)			
+	if(exists('vgm_mod', e)) parms = c(parms, vgm_mod = list(e$vgm_mod)) 
+	if(exists('habA_prop', e)) parms = c(parms, habA_prop = e$habA_prop)
+	if(exists('S_AB', e)) parms = c(parms, S_AB = e$S_AB)
+	if(exists('dist_b', e)) parms = c(parms, dist_b = list(e$dist_b))
+	if(exists('dist_d', e)) parms = c(parms, dist_d = list(e$dist_d))
+	if(exists('dist_gsad',e)){
+		if(is.list(e$dist_gsad)){
+			parms = c(parms, dist_gsad = list(e$dist_gsad))
+		} else {
+			parms = c(parms, dist_gsad = e$dist_gsad)
+		}
 	}
-}
-if(exists('prop_full', e)) parms = c(parms, prop_full = e$prop_full)
-if(exists('init_distribute', e)) parms = c(parms, init_distribute = e$init_distribute)
-if(exists('cells_distribute', e)) parms = c(parms, cells_distribute = list(e$cells_distribute))
-if(exists('d_kernel', e)) parms = c(parms, d_kernel = list(e$d_kernel))
-if(exists('imm_rate', e)) parms = c(parms, imm_rate = e$imm_rate)
-if(exists('save_steps', e)) parms = c(parms, save_steps = list(e$save_steps))
-if(exists('simID', e)) parms = c(parms, simID = e$simID)
-
+	if(exists('prop_full', e)) parms = c(parms, prop_full = e$prop_full)
+	if(exists('init_distribute', e)) parms = c(parms, init_distribute = e$init_distribute)
+	if(exists('cells_distribute', e)) parms = c(parms, cells_distribute = list(e$cells_distribute))
+	if(exists('d_kernel', e)) parms = c(parms, d_kernel = list(e$d_kernel))
+	if(exists('imm_rate', e)) parms = c(parms, imm_rate = e$imm_rate)
+	if(exists('save_steps', e)) parms = c(parms, save_steps = list(e$save_steps))
+	if(exists('simID', e)) parms = c(parms, simID = e$simID)
 }
 
 
