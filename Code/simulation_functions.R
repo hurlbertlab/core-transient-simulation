@@ -6,6 +6,7 @@ library(sp)
 library(raster)
 library(poweRlaw)
 library(fdrtool) # half-normal distribution for gaussian dispersal kernal
+library(sads) # qls()
 
 ### TO DO ###
 
@@ -716,7 +717,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 		# Initialize species vital rates
 		species_N = parLapply(cluster, 1:nruns, function(j){
 			with(parms, {
-				S_AB = ifelse(exists('S_AB'), S_AB, NULL) 
+				S_AB = ifelse(exists('S_AB'), S_AB, NA) 
 				if(!exists('dist_b')) dist_b = NULL
 				m = m_rates
 				r = r_rates 
@@ -750,7 +751,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 							A_rates = species_N[[j]][1:S_A,'A','b']
 							B_rates = species_N[[j]][(S_A+1):(S_A+S_B),'B','b']
 							gsad_vec = c(A_rates, B_rates)
-							if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
+							if(exists('S_AB')) if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
 					
 						} else {
 							stop('Unrecognized value for parameter dist_gsad.')
@@ -1473,7 +1474,7 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 
 
 
-summarize_sim
+#summarize_sim
 
 # Basic statistics:
 # Abundance and richness of core and transient species, based on occupancy and based on birth rates
