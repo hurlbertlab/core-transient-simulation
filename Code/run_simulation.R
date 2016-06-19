@@ -18,7 +18,6 @@ results_dir = ifelse(is.na(args[4]), './Results/', args[4])
 
 # Load simulation scripts
 source(paste0(sim_dir, 'simulation_functions.R'))
-source(paste0(sim_dir, 'control_functions.R'))
 
 # Read in parameter files
 # Parameter files are designated by starting with 'p_'
@@ -36,6 +35,6 @@ for(f in file_list){
 	parm_list = make_parmlist()
 
 	# Run CAMM
-	sim_results = run_sim_N(nruns, parm_list, ncores, simID, sim_dir=sim_dir, save_sim=results_dir)
+	sim_results = run_sim_N(nruns, parm_list, ncores, simID, sim_dir=sim_dir, save_sim=results_dir, report=10)
 }
 
