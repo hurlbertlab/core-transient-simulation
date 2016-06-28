@@ -1,7 +1,7 @@
 ## This script contains functions for running the Core-Transient Simulation
 
 ## Required packages
-library(gstat)
+library(gstat)#, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
 library(sp)
 library(raster)
 library(poweRlaw)
@@ -191,13 +191,16 @@ make_sad = function(N_S, distribution){
 # 	S_A : number of specialist species on habitat type A
 # 	S_B : number of specialist species on habitat type B
 # 	S_AB : number of generalist species (defaults to 0)
-# 	dist_b : nameed list describing the distributions from which birth rates should be generated (see make_sad() function). Defaults to uniform on [1,10].
+# 	dist_b : named list describing the distributions from which birth rates should be generated (see make_sad() function). Defaults to uniform on [1,10].
 # 	m : vector of length 2 or 3 specifying death rates [preferred habitat, not preferred habitat, generalist rate]
 # 	r : vector of length 2 or 3 specifying recruitment rates [preferred habitat, not preferred habitat, generalist rate]
-# 	dist_d : named list of parameters describing distribution from which dispersal kernals should be drawn
+# 	dist_d : named list of parameters describing distribution from which propagule dispersal kernals should be drawn
 #		mu = mean dispersal distance
 #		var = variance of distribution from which kernals drawn. Defaults to 0 for same dispersal kernal for all species.
-make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NULL){
+#	dist_v : named list of parameters describing distribution from which movement kernals should be drawn
+#		mu = vector of length 2 or 3 specifying mean movement distance [preferred habitat, not preferred habitat, generalist rate]
+#		var = vector of length 2 or 3 specifying variance in mean movement distance [preferred habitat, not preferred habitat, generalist rate]. Defaults to 0 (same dispersal kernal for all species).
+make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NULL, dist_v=NULL){
 
 	# Catch error if no species specified
 	if(is.na(S_A)|is.na(S_B)) stop('Must specify number of species.')
@@ -208,20 +211,18 @@ make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NUL
 	# Set distributions to defaults if undefined
 	if(is.null(dist_b)) dist_b = list(maxN=10, type='uniform')
 	if(is.null(dist_d)) dist_d = list(mu=1, var=0)
+	if(is.null(dist_v)) dist_v = list(mu=rep(0,3), var=rep(0,3))
 
-	# Create array to hold species vital rates (b = birth, m = death, r = recruitment, d = dispersal)
+	# Create array to hold species vital rates (b = birth, m = death, r = recruitment, d = dispersal, v = movement)
 	# Rates are per timestep
 	N_S = S_A + S_B + S_AB
-	species_rates = array(NA, dim=c(N_S, 2, 4), dimnames=list(species=1:N_S, habitat=c('A','B'), rate=c('b','m','r','d')))
+	species_rates = array(NA, dim=c(N_S, 2, 5), dimnames=list(species=1:N_S, habitat=c('A','B'), rate=c('b','m','r','d','v')))
 
 	# Specialist species birth rates in their preferred habitat ranged from 1 to maxN and are 0 in the unpreferred habitat
 	species_rates[1:S_A, 'A', 'b'] = make_sad(S_A, dist_b)
 	species_rates[1:S_A, 'B', 'b'] = 0
 	species_rates[(S_A+1):(S_A+S_B), 'B', 'b'] = make_sad(S_B, dist_b)
 	species_rates[(S_A+1):(S_A+S_B), 'A', 'b'] = 0
-
-	# Generalist birth rates range from 1 to maxN in both habitats, but is not necessarily the same in both habitats
-	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'b'] = make_sad(2*S_AB, dist_b)
 
 	# Death rates are prespecified constants
 	# This could be modified to be drawn from a distribution
@@ -230,18 +231,12 @@ make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NUL
 	species_rates[(S_A+1):(S_A+S_B), 'B', 'm'] = m[1]
 	species_rates[(S_A+1):(S_A+S_B), 'A', 'm'] = m[2]
 
-	# Generalist death rates default to the death rate for the preferred habitat, but can be specified separately
-	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'m'] = ifelse(length(m)==3, m[3], m[1])
-
 	# Specialist species recruitment rates are prespecified constants
 	# This could be modified to be drawn from a distribution
 	species_rates[1:S_A, 'A', 'r'] = r[1]
 	species_rates[1:S_A, 'B', 'r'] = r[2]
 	species_rates[(S_A+1):(S_A+S_B), 'B', 'r'] = r[1]
 	species_rates[(S_A+1):(S_A+S_B), 'A', 'r'] = r[2]
-
-	# Generalist recruitment rates default to the recruitment rate for the preferred habitat, but can be specified separately
-	if(S_AB > 0) species_rates[(N_S-S_AB+1):N_S, ,'r'] = ifelse(length(r)==3, r[3], r[1])
 
 	# Mean dispersal distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
 	if(dist_d$var==0){
@@ -250,6 +245,54 @@ make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NUL
 		theta = dist_d$var / dist_d$mu
 		k = dist_d$mu / theta
 		species_rates[,,'d'] = rgamma(N_S, shape=k, scale=theta)
+	}
+
+	# Mean movement distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'.
+	# Preferred habitat
+	if(dist_v$var[1]==0){
+		species_rates[1:S_A, 'A', 'v'] = dist_v$mu[1]
+		species_rates[(S_A+1):(S_A+S_B), 'B', 'v'] = dist_v$mu[1]
+	} else {
+		theta = dist_v$var[1] / dist_v$mu[1]
+		k = dist_v$mu[1] / theta
+		species_rates[1:S_A, 'A', 'v'] = rgamma(S_A, shape=k, scale=theta)
+		species_rates[(S_A+1):(S_A+S_B), 'B', 'v'] = rgamma(S_B, shape=k, scale=theta)
+	}
+	# Unpreferred habitat
+	if(dist_v$var[2]==0){
+		species_rates[1:S_A, 'B', 'v'] = dist_v$mu[2]
+		species_rates[(S_A+1):(S_A+S_B), 'A', 'v'] = dist_v$mu[2]
+	} else {
+		theta = dist_v$var[2] / dist_v$mu[2]
+		k = dist_v$mu[2] / theta
+		species_rates[1:S_A, 'B', 'v'] = rgamma(S_A, shape=k, scale=theta)
+		species_rates[(S_A+1):(S_A+S_B), 'A', 'v'] = rgamma(S_B, shape=k, scale=theta)
+	}
+	
+
+	# Assign rates for generalists, if they exist
+	if(S_AB > 0){
+	
+		# Generalist birth rates range from 1 to maxN in both habitats, but is not necessarily the same in both habitats
+		species_rates[(N_S-S_AB+1):N_S, ,'b'] = make_sad(2*S_AB, dist_b)
+	
+		# Generalist death rates default to the death rate for the preferred habitat, but can be specified separately
+		species_rates[(N_S-S_AB+1):N_S, ,'m'] = ifelse(length(m)==3, m[3], m[1])
+
+		# Generalist recruitment rates default to the recruitment rate for the preferred habitat, but can be specified separately
+		species_rates[(N_S-S_AB+1):N_S, ,'r'] = ifelse(length(r)==3, r[3], r[1])
+
+		# Generalist movement rates are the same in both habitat types and default to the movement rate in the preferred habitat, but can be specificed separately
+		if(length(dist_v$mu)==2) dist_v$mu = c(dist_v$mu, dist_v$mu[1])
+		if(length(dist_v$var)==2) dist_v$var = c(dist_v$var, dist_v$var[1])
+
+		if(dist_v$var[3]==0){
+			species_rates[(N_S-S_AB+1):N_S, , 'v'] = dist_v$mu[3]
+		} else {
+			theta = dist_v$var[3] / dist_v$mu[3]
+			k = dist_v$mu[3] / theta
+			species_rates[(N_S-S_AB+1):N_S, ,'v'] = rgamma(S_AB, shape=k, scale=theta)
+		}
 	}
 
 	# Return rates
@@ -727,7 +770,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 		cluster = makeCluster(nparallel, outfile=paste0(simID, '.Rout'))	
 		
 		# Send required functions and objects to each node
-		clusterExport(cluster, c('parms','simID','runs','save_sim','sim_dir'), envir=environment())
+		clusterExport(cluster, c('parms','simID','save_sim','sim_dir','report'), envir=environment())
 		clusterEvalQ(cluster, source(paste0(sim_dir, 'simulation_functions.R')))
 		
 		# Initialize simulation landscapes
@@ -752,7 +795,8 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				m = m_rates
 				r = r_rates 
 				if(!exists('dist_d')) dist_d = NULL
-				make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d)
+				if(!exists('dist_v')) dist_v = NULL
+				make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)
 			})
 		})
 
@@ -860,7 +904,8 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				m = m_rates
 				r = r_rates 
 				if(!exists('dist_d')) dist_d = NULL
-				make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d)
+				if(!exists('dist_v')) dist_v = NULL
+				make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)
 			})
 		})
 
@@ -1527,9 +1572,9 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 #species = sim_results$species[[1]]
 # habitats = sapply(locs, function(x) average_habitat(x, sim_results$lands[[1]]))
 
-t_window : timepoints to consider
-agg_times_occ : timepoints to aggregate before calculating occupancy
-agg_times_sum : timepoints to aggregate before calculating richness or abundance
+#t_window : timepoints to consider
+#agg_times_occ : timepoints to aggregate before calculating occupancy
+#agg_times_sum : timepoints to aggregate before calculating richness or abundance
 
 summarize_sim = function(what, sim, species, land, gsad, locs, t_window, agg_times_occ, agg_times_sum, breaks, P_obs=NULL){
 	
@@ -1694,6 +1739,7 @@ make_parmlist = function(e=parent.frame()){
 	if(exists('S_AB', e)) parms = c(parms, S_AB = e$S_AB)
 	if(exists('dist_b', e)) parms = c(parms, dist_b = list(e$dist_b))
 	if(exists('dist_d', e)) parms = c(parms, dist_d = list(e$dist_d))
+	if(exists('dist_v', e)) parms = c(parms, dist_v=list(e$dist_v))
 	if(exists('dist_gsad',e)){
 		if(is.list(e$dist_gsad)){
 			parms = c(parms, dist_gsad = list(e$dist_gsad))
@@ -1705,6 +1751,7 @@ make_parmlist = function(e=parent.frame()){
 	if(exists('init_distribute', e)) parms = c(parms, init_distribute = e$init_distribute)
 	if(exists('cells_distribute', e)) parms = c(parms, cells_distribute = list(e$cells_distribute))
 	if(exists('d_kernel', e)) parms = c(parms, d_kernel = list(e$d_kernel))
+	if(exists('v_kernel', e)) parms = c(parms, v_kernel = list(e$v_kernel))
 	if(exists('imm_rate', e)) parms = c(parms, imm_rate = e$imm_rate)
 	if(exists('save_steps', e)) parms = c(parms, save_steps = list(e$save_steps))
 	if(exists('simID', e)) parms = c(parms, simID = e$simID)
