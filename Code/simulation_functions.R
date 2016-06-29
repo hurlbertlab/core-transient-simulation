@@ -486,23 +486,33 @@ disperse = function(x, y=NA, propagules, dim_land, d_rates, form=list(type='gaus
 
 	# For each propagule
 	new_locs = sapply(propagules, function(i){
-		# Get dispersal rate
-		d = d_rates[i]	
 
-		# Stochasticaly choose dispersal distance
-		vec = get_dispersal_vec(d, form)
+		# If the propagule has no species (i.e. and empty space)
+		if(i == 0){
 
-		# Stochastically choose an origin location from within origin cell
-		origin_loc = apply(origin_cell, 1, function(cell) runif(1, cell[1], cell[2]))
+			destination_cell = c(NA, NA)
+
+		# Otherwise determine dispersal based on species dispersal rate
+		} else {
+
+			# Get dispersal rate
+			d = d_rates[i]	
+
+			# Stochasticaly choose dispersal distance
+			vec = get_dispersal_vec(d, form)
+
+			# Stochastically choose an origin location from within origin cell
+			origin_loc = apply(origin_cell, 1, function(cell) runif(1, cell[1], cell[2]))
 	
-		# Find cell that propagule lands in
-		# Angles are counter-clockwise from east (as in mathematical notation)
-		dx = vec[1]*sin(vec[2])
-		dy = vec[1]*cos(vec[2])
+			# Find cell that propagule lands in
+			# Angles are counter-clockwise from east (as in mathematical notation)
+			dx = vec[1]*sin(vec[2])
+			dy = vec[1]*cos(vec[2])
 	
-		# Calculate destination and cell propagule lands in
-		destination = origin_loc + c(dx, dy)
-		destination_cell = ceiling(destination)
+			# Calculate destination and cell propagule lands in
+			destination = origin_loc + c(dx, dy)
+			destination_cell = ceiling(destination)	
+		}
 
 		destination_cell
 	})
@@ -634,7 +644,7 @@ die = function(comm, m_rates){
 #	gsad : vector giving the global relative abundance of species in same order as species vital rates array
 #	d_kernel : list defining the shape of the dispersal kernel for an individual (see disperse() function). Defaults to Gaussian.
 #	imm_rate : probability that an empty space will be colonized by a propagule from outside the landscape (e.g. drawn from the global species abundance distribution). Defaults to 0.
-run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, imm_rate=NA){
+run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA){
 
 	# Define dimensions of landscape
 	X = nrow(land)
@@ -645,33 +655,63 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, imm_rate=N
 
 	# Define individual dispersal parameters if unspecified
 	if(is.null(d_kernel)) d_kernel = list(type='gaussian')
+	if(is.null(v_kernel)) v_kernel = list(type='gaussian')
 	if(is.na(imm_rate)) imm_rate = 0
 
 	# Define array to hold new propagule pools
 	propagule_pools = matrix(list(), nrow=X, ncol=Y)
 
-	# For each cell, new individuals are born and disperse
+	# For each cell, new individuals are born and disperse and existing individuals move around
 	for(i in 1:X){
 	for(j in 1:Y){
 
 		# Define this community and habitat
 		this_comm = metacomm[i,j][[1]]
 		this_habitat = get_habitat(land[i,j])
-		
+
+		# Stochasitic mortality
+		new_comm = die(this_comm, species[, this_habitat, 'm'])
+
 		# New individuals born
-		this_pool = reproduce(this_comm, species[,this_habitat,'b'])
+		this_pool = reproduce(new_comm, species[,this_habitat,'b'])
 	
 		# Propagules disperse to new pools
-		new_locs = disperse(i, j, this_pool, c(X,Y), species[,this_habitat,'d'], form=d_kernel)
-		if(length(new_locs)>0){
-			for(p in 1:nrow(new_locs)){
+		prop_locs = disperse(i, j, this_pool, c(X,Y), species[,this_habitat,'d'], form=d_kernel)
+		if(length(prop_locs)>0){
+			for(p in 1:nrow(prop_locs)){
 				# Propagules that disperse off of the landscape are removed
-				if(new_locs[p,1]>0 & new_locs[p,2]>0 & new_locs[p,1]<=X & new_locs[p,2]<=Y ) propagule_pools[new_locs[p,1], new_locs[p,2]] = list(unlist(c(propagule_pools[new_locs[p,1], new_locs[p,2]], this_pool[p])))
+				if(prop_locs[p,1]>0 & prop_locs[p,2]>0 & prop_locs[p,1]<=X & prop_locs[p,2]<=Y ) propagule_pools[prop_locs[p,1], prop_locs[p,2]] = list(unlist(c(propagule_pools[prop_locs[p,1], prop_locs[p,2]], this_pool[p])))
 			}
 		}
+
+		# Previously established individuals have the opportunity to move 
+		move_locs = disperse(i, j, new_comm, c(X,Y), species[,this_habitat,'v'], form=v_kernel)
+		for(p in 1:length(new_comm)){
+			
+			# If the individual exists (i.e. this is not an empty place)
+			if(new_comm[p]>0){	
+
+			# If the individual moves to a different cell
+			if(move_locs[p,1]!=i | move_locs[p,2]!=j){		
+
+			# If if individual doesn't move off the landscape
+			if(move_locs[p,1]>0 & move_locs[p,2]>0 & move_locs[p,1]<=X & move_locs[p,2]<=Y ){
+				
+				# Add individual to pool of propagules in the new cell
+				propagule_pools[move_locs[p,1],move_locs[p,2]] = list(unlist(c(propagule_pools[move_locs[p,1],move_locs[p,2]], new_comm[p])))
+
+				# Remove the individual from the current cell
+				new_comm[p] = 0
+		
+			}}} # closes all three if clauses
+		}
+
+		# Save existing metacommunity
+		metacomm[i,j] = list(as.numeric(new_comm))
+
 	}}
 	
-	# Recruits establish from new propagule pools and then all community members experience stochastic mortality
+	# Recruits establish from propagule pools (combination of new births and previously established individuals that moved)
 	for(i in 1:X){
 	for(j in 1:Y){
 
@@ -681,10 +721,7 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, imm_rate=N
 		this_pool = propagule_pools[i,j][[1]]
 	
 		# Determine which propagules estabish
-		new_comm = list(establish(this_comm, this_pool, species[, this_habitat, 'r'], imm_rate, gsad))
-
-		# Stochasitic mortality
-		new_comm = die(new_comm, species[, this_habitat, 'm'])
+		new_comm = establish(this_comm, this_pool, species[, this_habitat, 'r'], imm_rate, gsad)
 
 		# Save results
 		metacomm[i,j] = list(as.numeric(new_comm))
@@ -702,12 +739,13 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, imm_rate=N
 #	land : a matrix of habitat values
 #	species : an array containing species vital rates [species number, habitat type, rate type]
 #	gsad : vector giving the global relative abundance of species in same order as species vital rates array
-#	d_kernel = list defining the shape of the dispersal kernel for an individual (see disperse() function). Defaults to Gaussian.
+#	d_kernel = list defining the shape of the dispersal kernel for a new propagule (see disperse() function). Defaults to Gaussian.
+#	v_kernel = list defining the shape of the movement kernel for an established individual (see disperse() function). Defaults to Gaussian.
 #	imm_rate = probability that an empty space will be colonized by a propagule from outside the landscape (e.g. drawn from the global species abundance distribution).
 #	save_steps : vector of timepoints at which to save the simulation. Defaults to all time steps.
 # 	report : Number of time steps after which to report status. Defaults to 0, no reporting.
 # 	ID : string defining this simulation run. Used when reporting progress. Defaults to NA.
-run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate=NA, save_steps = NULL, report=0, ID=NA){
+run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA, save_steps = NULL, report=0, ID=NA){
 	
 	# Define simulation
 	X = nrow(land)
@@ -718,22 +756,6 @@ run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate
 	sim_results = array(list(), dim=c(X, Y, length(save_steps)),
 		dimnames=list(row=1:X, col=1:X, time=save_steps))
 	
-	# Define function to run simulation for one time step using given parameters, if they exist
-	run_thissim = function(x){
-		if(is.null(d_kernel)&is.null(imm_rate)){
-			results = run_timestep(x, land, species, gsad)			
-		} else {
-			if(!is.null(d_kernel)&!is.na(imm_rate)){
-				results = run_timestep(x, land, species, gsad, d_kernel, imm_rate) 
-			} else {
-				results = if(!is.null(d_kernel)) run_timestep(x, land, species, gsad, d_kernel=d_kernel) 
-				results = if(!is.na(imm_rate)) run_timestep(x, land, species, gsad, imm_rate=imm_rate) 
-			}
-		}
-
-		results
-	}
-
 	# Save initial step
 	if(0 %in% save_steps) sim_results[,,'0'] = metacomm
 
@@ -741,7 +763,7 @@ run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, imm_rate
 	new_metacomm = metacomm
 	for(step in 1:steps){
 		# Run for a timestep
-		new_metacomm = run_thissim(new_metacomm)
+		new_metacomm = run_timestep(new_metacomm, land, species, gsad, d_kernel, v_kernel, imm_rate)
 
 		# Save results
 		if(step %in% save_steps) sim_results[,,as.character(step)] = new_metacomm
