@@ -1,7 +1,7 @@
 ## This script contains functions for running the Core-Transient Simulation
 
 ## Required packages
-library(gstat)#, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
+library(gstat, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
 library(sp)
 library(raster)
 library(poweRlaw)
@@ -896,9 +896,10 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 			# Run simulation
 			with(parms, {
 				if(!exists('d_kernel')) d_kernel = NULL
+				if(!exists('v_kernel')) v_kernel = NULL
 				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
 				if(!exists('save_steps')) save_steps = NULL
-				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps, report, ID=j)
+				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, v_kernel, imm_rate, save_steps, report, ID=j)
 			})
 		})
 
@@ -918,6 +919,8 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 			})
 		})
 
+		if(report>0) print(paste0(Sys.time(), ': Finished making landscapes.'))
+
 		# Initialize species vital rates
 		species_N = lapply(1:nruns, function(j){
 			with(parms, {
@@ -930,6 +933,8 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 				make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)
 			})
 		})
+
+		if(report>0) print(paste0(Sys.time(), ': Finished making species pools.'))
 
 		# Initialize global species abundance distribution	
 		gsad_N = lapply(1:nruns, function(j){
@@ -968,9 +973,13 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 			})
 		})
 
+		if(report>0) print(paste0(Sys.time(), ': Finished making gsads.'))
+
 		# Run simulations
 		sim_results = lapply(1:nruns, function(j){
 			
+			if(report>0) print(paste0(Sys.time(), ': Start run ', j))
+
 			# Define this landscape and species pool
 			this_land = lands_N[[j]]
 			this_species = species_N[[j]]
@@ -991,9 +1000,10 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 			# Run simulation
 			with(parms, {
 				if(!exists('d_kernel')) d_kernel = NULL
+				if(!exists('v_kernel')) v_kernel = NULL
 				imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
 				if(!exists('save_steps')) save_steps = NULL
-				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, imm_rate, save_steps, report, ID=j)
+				run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, v_kernel, imm_rate, save_steps, report, ID=j)
 			})
 		})
 	}

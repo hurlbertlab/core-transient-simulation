@@ -4,6 +4,22 @@
 sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/'
 source(paste0(sim_dir, 'simulation_functions.R'))
 
+load('C:/Users/jrcoyle/Documents/Research/CT-Sim/Results/run1.RData')
+
+scale_locs = sapply(2^c(0:3), function(fact){
+	aggregate_cells(X=c(16,16), dX=fact, dY=fact, form='origin', locs=expand.grid(x=c(4,12), y=c(4,12)))
+})
+
+scale_locs = sapply(2^c(0:3), function(fact) aggregate_cells(X=c(16,16), dX=fact, dY=fact, form='partition'))
+
+abun_profiles = calc_abun_profile(scale_locs[[1]], list(start=75, stop=100), sim_results$results[[1]], 20)
+occupancy = calc_occupancy(abuns=abun_profiles, do_freq=F)
+
+b_rates = sim_results$species[[1]][,,'b']
+this_land = sim_results$lands[[1]]
+habitats = sapply(scale_locs[[1]], function(x) average_habitat(x, this_land))
+
+cross_classify(occupancy, c(.33, .66), b_rates, habitats, do_each=F)
 
 
 # TESTING
@@ -49,6 +65,9 @@ tot_rich = calc_rich(abuns=abun_profs)
 ct_rich = calc_rich_CT(abun_profs, occupancy, breaks=c(0.25,.5,.75), agg_times=list(1:5, 2:6, 3:7, 4:8, 5:9, 6:10, 7:11))
 
 sample_sim(abun_profs, probs=0.01, return='presence')
+
+
+
 
 
 breaks = c(0.33, 0.66)

@@ -18,6 +18,7 @@ dist_b = list(type='uniform', maxN=10)				# (optional) Distribution from which s
 m_rates = c(.1, .1, .1)							# Mortality rates in preferred and unpreferred habitat. Optionally a third number for generalist mortality.
 r_rates = c(.9, .9, .9)							# Recruitment rates in preferred and unpreferred habitat. Optionally a third number of generalist recruitment.
 dist_d = list(mu=1, var=0)						# (optional) List of the mean and variance of the gamma distribution from which species expected dispersal distances are drawn.
+dist_v = list(mu=c(0, 0, 0), var=c(0, 0, 0))				# (optional) List of vectors of the means and variances for the gamma distributions from which species expected movement distances are drawn [preferred, unpreferred, (optional) generalist].
 dist_gsad = list(type='same')						# (optional) Distribution from which global species abundances are drawn. See make_sad(). Or, a string indicating that abundances should equal species birth rates.
 
 
@@ -31,6 +32,7 @@ cells_distribute = data.frame(x=5, y=5, n=20)			# (optional) If init_distribute=
 ## Define how the simulation should run
 nsteps = 20									# Number of timesteps to run the simulation.
 d_kernel = list(type='gaussian')					# (optional) Distribution defining the shape of an individual's dispersal kernel.
+v_kernel = list(type='gaussian')					# (optional) Distribution defining the shape of an individual's movement kernel.
 imm_rate = 0								# (optional) Immigration rate: probability that an empty space is colonized from outside the landscape.
 	
 

@@ -35,6 +35,9 @@ for(f in file_list){
 	parm_list = make_parmlist()
 
 	# Run CAMM
-	sim_results = run_sim_N(nruns, parm_list, ncores, simID, sim_dir=sim_dir, save_sim=results_dir, report=10)
+	sim_results = run_sim_N(nruns, parm_list, ncores, simID, sim_dir=sim_dir, save_sim=results_dir, report=100)
+
+	# Summarize simulation
+
 }
 
