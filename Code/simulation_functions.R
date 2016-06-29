@@ -1,7 +1,7 @@
 ## This script contains functions for running the Core-Transient Simulation
 
 ## Required packages
-library(gstat, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
+library(gstat)#, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
 library(sp)
 library(raster)
 library(poweRlaw)
@@ -1021,6 +1021,27 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, sim
 ####################################################################
 ### Functions for collecting data from a simulation
 
+# A function that returns of vector defining species habitat affinities
+#	b_rates : a two column matrix of species birth rates in habitats A and B
+get_sptype = function(b_rates){
+
+	# Define empty vector
+	sptype = rep(NA, nrow(b_rates))
+	
+	# Assign habitat affinities based on birth rates
+	sptype[b_rates[,1]>0] = 'A'
+	sptype[b_rates[,2]>0] = 'B'
+	sptype[b_rates[,1]<0 & b_rates[,2]>0] = 'AB'
+
+	# Assign species names
+	names(sptype) = rownames(b_rates)
+
+	# Return classification
+	sptype
+}
+
+
+
 # A function that groups cells together in a regular fashion and returns a list of cell locations.
 #	X : number of rows or a vector of length 2 giving the dimensions of the grid
 #	Y : number of columns
@@ -1208,7 +1229,7 @@ calc_abun_profile = function(locs, t_window, sim, N_S){
 #	prof : a matrix of species abundance through time. Rows are timepoints and columns are species.
 #	sp_type : a vector of chacters indicating whether species are specialists on 'A' or 'B' or generalists ('AB').
 #	lcol : vector of length 2 or 3 giving line colors for specialists and generalists. Defaults to blue, red, purple
-plot_abun = function(prof, lcol=c('royalblue','orchid','orangered')){
+plot_abun_stacked = function(prof, sp_type, lform ='type', lcol=c('royalblue','orangered'), fill=NA, fillcol=NULL, lty=c(1,5,3), axis_labs=T){
 	
 	# Total number of individuals in each time step
 	N = rowSums(prof)
@@ -1230,26 +1251,69 @@ plot_abun = function(prof, lcol=c('royalblue','orchid','orangered')){
 		rownames(cum_prof) = sps
 	}
 
-	# Define colors
-	names(lcol) = levels(factor(sp_type))
+	# Define how lines should be colored
+	if(lform=='type'){
+		types = levels(factor(sp_type))
+		use_lcol = colorRampPalette(lcol)(length(types))
+		names(use_lcol) = types
+	}
+	if(lform=='sp'){
+		use_lcol = colorRampPalette(lcol)(length(sps))
+		names(use_lcol) = sps
+	}
+
+	# Define how polygons should be filled
+	if(!is.na(fill)){
+
+		# If color not specified, use lighter version of line color
+		if(is.null(fillcol)){
+			fillcol = sapply(lcol, col2rgb)
+			fillcol = apply(fillcol, 1:2, function(x) x + .2*(255-x)) # Make lighter
+			fillcol = apply(fillcol, 2, function(x) rgb(x[1], x[2], x[3], maxColorValue=255))
+		}
+
+		if(fill=='type'){
+			types = levels(factor(sp_type))
+			use_fillcol = colorRampPalette(fillcol)(length(types))
+			names(use_fillcol) = types
+		}
+
+		if(fill=='sp'){
+			use_fillcol = colorRampPalette(fillcol)(length(sps))
+			names(use_fillcol) = sps
+		}
+	}
+
+	# Define names for line types
+	names(lty) = levels(factor(sp_type))
 
 	# Set up plot and axes
 	plot.new()
 	plot.window(xlim=c(.5, nrow(prof)+.5), ylim=c(0,max(N))) 
 
 	axis(1, at=times, labels=rownames(prof))
-	mtext('Time', 1, 2.5)
+	if(axis_labs) mtext('Time', 1, 2.5)
 	abline(h=par('usr')[3], lwd=3)
 	axis(2, las=1)
 	abline(v=par('usr')[1], lwd=3)
-	mtext('Num. Individuals', 2, 3)
+	if(axis_labs) mtext('Num. Individuals', 2, 3)
 
 	# Add lines for each species colored by type
-	for(i in rownames(cum_prof)){
+	for(i in rev(rownames(cum_prof))){
+		# Add pologons
+		if(!is.na(fill)){
+			if(i!='0'){
+				xvals = c(times,rev(times))
+				yvals = c(cum_prof[i,], rep(0, length(times)))
+				if(fill=='type') polygon(xvals, yvals, border=NA, col=use_fillcol[sp_type[i]])
+				if(fill=='sp') polygon(xvals, yvals, border=NA, col=use_fillcol[i])
+			}
+		}
 		if(i=='0'){
-			lines(times, cum_prof[i,], col='black')
+			lines(times, cum_prof[i,], col='black', lwd=2)
 		} else {
-			lines(times, cum_prof[i,], col=lcol[sp_type[i]], lend=1)
+			if(lform=='type') lines(times, cum_prof[i,], col=use_lcol[sp_type[i]], lty=lty[sp_type[i]], lend=1, lwd=2)
+			if(lform=='sp') lines(times, cum_prof[i,], col=use_lcol[i], lty=lty[sp_type[i]], lend=1, lwd=2)
 		}	
 	}
 }
@@ -1336,7 +1400,7 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 # Returns a contingency table whose rows are the true classification based on birth rates and columns are the observed classes based on occupancy.
 # Can specify a classification matrix or birth rates and habitat types
 #	occupancy : matrix of species occupancies across spatial units (sites X species).
-#	breaks : either a numeric vector of lengtth 1 or 2 giving occupancy breakpoints for transient vs. core status or a named list wuth specific intervals: list(trans=c(), core=c())
+#	breaks : either a numeric vector of lengtth 1 or 2 giving occupancy breakpoints for transient vs. core status or a named list with specific intervals: list(trans=c(), core=c()).
 #	b_rates : matrix of birth rates for each species in each habitat types.
 #	habitats : vector of habitat types ('A' or 'B') for each spatial unit
 #	classification : matrix classifying each species on each site as 'core' or 'trans'. (sites X species)
@@ -1349,6 +1413,9 @@ cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classi
 		if(length(breaks)==1) breaks = rep(breaks,2)
 		breaks = list(trans=c(0,breaks[1]), core=c(breaks[2], 1))
 	}
+
+	# Remove species that were never observed at a site
+	occupancy[occupancy==0] = NA
 
 	# Classify species based on occupancy matrix
 	
@@ -1393,7 +1460,7 @@ cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classi
 		}
 	} else {
 		# Sumarize across all spatial units
-		if(return=='count') cross_tab = table(classification=classification, occupancy=classes)
+		if(return=='counts') cross_tab = table(classification=classification, occupancy=classes)
 		if(return=='ids'){
 			cross_tab = array(list(), dim=c(2,2), dimnames=list(classification=c('core','trans'), occupancy=c('core','trans')))
 			cross_tab['core','core'] = list(as.character(which(classification=='core'&classes=='core')))

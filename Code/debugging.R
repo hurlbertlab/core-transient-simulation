@@ -1,17 +1,119 @@
-## This script is used to run a Core-Transient Simulation
+## This script is used to debug the Core-Transient Simulation
 
 
 sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/'
+
 source(paste0(sim_dir, 'simulation_functions.R'))
 
-load('C:/Users/jrcoyle/Documents/Research/CT-Sim/Results/run1.RData')
+load('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/run1.RData')
 
-scale_locs = sapply(2^c(0:3), function(fact){
+setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/')
+
+
+# locations from the center of the grid- NOT WORKING
+scale_locs = sapply(2^c(0:2), function(fact){
 	aggregate_cells(X=c(16,16), dX=fact, dY=fact, form='origin', locs=expand.grid(x=c(4,12), y=c(4,12)))
 })
 
+# locations are a partition of the grid
 scale_locs = sapply(2^c(0:3), function(fact) aggregate_cells(X=c(16,16), dX=fact, dY=fact, form='partition'))
 
+
+
+# Examine simulation through time to determine burnin
+
+# Plot species abundances
+use_locs = scale_locs[[1]]
+abuns = sapply(1:nruns, function(i) calc_abun_profile(use_locs, list(start=0, stop=100), sim_results[[i]], 20), simplify='array')
+
+
+pdf('abun_profs_scale1_run3.pdf', height=40, width=40) 
+par(mfrow=c(16,16))
+par(mar=c(2,2,0,0))
+par(oma=c(2,2,1,1))
+for(i in 1:(16*16)){
+	plot_abun_stacked(abuns[,,i,3], sp_type=get_sptype(species_N[[1]][,,'b']), axis_labs=F,
+		lform='sp', fill='sp', lcol='black', 
+		fillcol=c('darkblue','cyan','green','yellow','orange','red','violet'))
+}
+dev.off()
+
+pdf('habitat_scale1_run3.pdf', height=4, width=6)
+	par(mar=c(2,2,2,5))
+	plot(lands_N[[3]], col=c('darkblue','violet'), axes=F)
+
+dev.off()
+
+# Plot species richness
+occs = sapply(1:nruns, function(i) calc_occupancy(abuns=abuns[,,,i], do_freq=F), simplify='array')
+
+
+n=1
+
+sptype = get_sptype(species_N[[n]][,,'b'])
+tot_rich = calc_rich(abuns=abuns[,,,n])
+ct_rich = calc_rich_CT(abuns[,,,n], occs[,,n], breaks=c(0.33,.66))
+ab_rich = sapply(c('A','B'), function(x) calc_rich(abuns=abuns[,,,n], which_species = names(which(sptype==x))), simplify='array')
+
+hab_cols = c('blue','violet')
+names(hab_cols)=c('A','B')
+
+pdf('richness_scale1.pdf', height=40, width=40)
+par(mfrow=c(16,16))
+par(mar=c(2,2,0,0))
+par(oma=c(2,2,1,1))
+for(i in 1:(16*16)){
+	times = 1:nrow(tot_rich)
+	this_hab = get_habitat(lands_N[[n]][i])
+
+	# Set up plot and axes
+	plot.new()
+	plot.window(xlim=c(.5, nrow(tot_rich)+.5), ylim=c(0,length(sptype))) 
+
+	axis(1, at=times, labels=rownames(tot_rich))
+#	abline(h=par('usr')[3], lwd=3)
+	axis(2, las=1)
+#	abline(v=par('usr')[1], lwd=3)
+	box(col=hab_cols[this_hab], lwd=2)
+		
+	# Line for total richness
+	lines(times, tot_rich[,i], lwd=3, col='black')
+	
+	# Lines for richness in occupancy classes
+	lines(times, ct_rich[,1,i], lty=5, col='black')
+	lines(times, ct_rich[,3,i], lty=1, col='black')
+
+	# Lines for richness in habitat preference classes
+	lines(times, ab_rich[,i,'A'], col='darkblue', lty=ifelse(this_hab=='A', 1, 5), lwd=2)
+	lines(times, ab_rich[,i,'B'], col='violet', lty=ifelse(this_hab=='B', 1, 5), lwd=2)	
+}
+dev.off()
+
+
+
+# At each scale
+nruns = length(sim_results)
+for(s in 1:length(scale_locs)){
+	use_locs = scale_locs[[s]]
+	
+	# Calculate abundance for each run
+	abuns = sapply(1:nruns, function(i) calc_abun_profile(use_locs, list(start=75, stop=100), sim_results[[i]], 20), simplify='array')
+
+	# Calculate occupancy
+	occs = sapply(1:nruns, function(i) calc_occupancy(abuns=abuns[,,,i], do_freq=F), simplify='array')
+
+	# Cross-classify occupancy vs resident status
+	xclass = sapply(1:nruns, function(i){
+		b_rates = species_N[[i]][,,'b']
+		this_land = lands_N[[i]]
+		habitats = sapply(use_locs, function(x) average_habitat(x, this_land))
+		cross_classify(occs[,,i], c(0.33, .66), b_rates, habitats, do_each=F, return='counts')
+	}, simplify='array')
+	
+
+}
+
+# For use when sim_results contains multiple objects (results, lands, species)
 abun_profiles = calc_abun_profile(scale_locs[[1]], list(start=75, stop=100), sim_results$results[[1]], 20)
 occupancy = calc_occupancy(abuns=abun_profiles, do_freq=F)
 
@@ -20,6 +122,23 @@ this_land = sim_results$lands[[1]]
 habitats = sapply(scale_locs[[1]], function(x) average_habitat(x, this_land))
 
 cross_classify(occupancy, c(.33, .66), b_rates, habitats, do_each=F)
+
+
+
+
+# Load simulation scripts
+source(paste0(sim_dir, 'simulation_functions.R'))
+
+# Read in parameters
+parm_file = paste0(parm_dir, 'p_runtest.txt')
+source(parm_file)
+parm_list = make_parmlist()
+
+sim_results = run_sim_N(nruns, parm_list, 1, simID, sim_dir=sim_dir, report=10)
+
+sim_results$results[[1]][1,1,]
+
+abun_profiles = calc_abun_profiles(
 
 
 # TESTING
@@ -42,6 +161,7 @@ parms = list(
 	m_rates = c(.1, .1, .1),
 	r_rates = c(.9, .5, .9),
 	dist_d = list(mu=1.5, var=0),
+	dist_v = list(mu=c(0,1), var=c(0,0),
 	dist_gsad = 'b_rates',
 	K = 20,
 	prop_full = 1,
