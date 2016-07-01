@@ -19,6 +19,7 @@ scale_locs = sapply(2^c(0:2), function(fact){
 scale_locs = sapply(2^c(0:3), function(fact) aggregate_cells(X=c(16,16), dX=fact, dY=fact, form='partition'))
 
 
+nruns = 3 
 
 # Examine simulation through time to determine burnin
 
@@ -44,21 +45,55 @@ pdf('habitat_scale1_run3.pdf', height=4, width=6)
 
 dev.off()
 
-# Plot species richness
-occs = sapply(1:nruns, function(i) calc_occupancy(abuns=abuns[,,,i], do_freq=F), simplify='array')
-
-
-n=1
+# Calculate occupancy across sliding time windows of 25 years
+t_window = 25
+use_times = t_window:100
+	
+occs_slide = sapply(use_times, function(step){
+	use_abuns = abuns[as.character((step-t_window+1):step),,,]
+	sapply(1:nruns, function(i) calc_occupancy(abuns=use_abuns[,,,i], do_freq=F), simplify='array')
+}, simplify='array')
 
 sptype = get_sptype(species_N[[n]][,,'b'])
+
+# Plot occupancy of each species
+hab_cols = c('blue','violet')
+names(hab_cols)=c('A','B')
+
+pdf(paste0('occupancy_25yrs_scale1.pdf'), height=40, width=40)
+par(mfrow=c(16,16))
+par(mar=c(2,2,0,0))
+par(oma=c(2,2,1,1))
+for(i in 1:(16*16)){
+	this_hab = get_habitat(lands_N[[n]][i])
+
+	# Set up plot and axes
+	plot.new()
+	plot.window(xlim=range(use_times)+c(-.5, .5), ylim=c(0,1)) 
+
+	axis(1)#, at=use_times)
+#	abline(h=par('usr')[3], lwd=3)
+	axis(2, las=1)
+#	abline(v=par('usr')[1], lwd=3)
+	box(col=hab_cols[this_hab], lwd=2)
+	
+	# Lines for each species
+	for(sp in 1:length(sptype)){
+		lines(use_times, occs_slide[i,sp,n,], col=hab_cols[sptype[sp]], lwd=2)
+	}
+}
+
+dev.off()
+
+
+# Plot species richness
+occs = sapply(1:nruns, function(i) calc_occupancy(abuns=abuns[as.character(use_steps),,,i], do_freq=F), simplify='array')
+
 tot_rich = calc_rich(abuns=abuns[,,,n])
 ct_rich = calc_rich_CT(abuns[,,,n], occs[,,n], breaks=c(0.33,.66))
 ab_rich = sapply(c('A','B'), function(x) calc_rich(abuns=abuns[,,,n], which_species = names(which(sptype==x))), simplify='array')
 
-hab_cols = c('blue','violet')
-names(hab_cols)=c('A','B')
-
-pdf('richness_scale1.pdf', height=40, width=40)
+pdf(paste0('richness_scale1.pdf'), height=40, width=40)
 par(mfrow=c(16,16))
 par(mar=c(2,2,0,0))
 par(oma=c(2,2,1,1))
@@ -84,11 +119,51 @@ for(i in 1:(16*16)){
 	lines(times, ct_rich[,3,i], lty=1, col='black')
 
 	# Lines for richness in habitat preference classes
-	lines(times, ab_rich[,i,'A'], col='darkblue', lty=ifelse(this_hab=='A', 1, 5), lwd=2)
-	lines(times, ab_rich[,i,'B'], col='violet', lty=ifelse(this_hab=='B', 1, 5), lwd=2)	
+	lines(times, ab_rich[,i,'A'], col=hab_cols['A'], lty=ifelse(this_hab=='A', 1, 5), lwd=2)
+	lines(times, ab_rich[,i,'B'], col=hab_cols['B'], lty=ifelse(this_hab=='B', 1, 5), lwd=2)	
 }
 dev.off()
 
+
+
+# Average and variance across spatial units
+tot_rich_agg = apply(tot_rich, 1, function(x) c(mean(x), var(x)))
+rownames(tot_rich_agg) = c('mean','var')
+
+ct_rich_agg = apply(ct_rich, 1:2, function(x) c(mean(x), var(x)))
+dimnames(ct_rich_agg)[[1]] = c('mean','var')
+
+ab_rich_agg = apply(ab_rich, c(1,3), function(x) c(mean(x), var(x)))
+dimnames(ab_rich_agg)[[1]] = c('mean','var')
+
+# Plot averages and variances through time
+use_times = as.numeric(colnames(tot_rich_agg))
+
+plot.new()
+plot.window(xlim=range(use_times)+c(-.5, .5), ylim=c(0,length(sptype)))
+axis(1)
+axis(2, las=1)
+box() 
+
+# CIs
+draw_ints = function(m, v, use_col){
+	up = 1.96*sqrt(v)+m
+	down = -1.96*sqrt(v)+m
+	xvals = as.numeric(names(m))
+	polygon(c(xvals, rev(xvals)), c(up, rev(down)), border=NA, col=use_col)
+}
+
+draw_ints(tot_rich_agg['mean',], tot_rich_agg['var',], use_col='#00000050')
+draw_ints(ct_rich_agg['mean',,1], ct_rich_agg['var',,1], use_col='#00000050')
+draw_ints(ct_rich_agg['mean',,3], ct_rich_agg['var',,3], use_col='#00000050')
+draw_ints(ab_rich_agg['mean',,'A'], ab_rich_agg['var',,'A'], use_col='#00000050')
+draw_ints(ab_rich_agg['mean',,'B'], ab_rich_agg['var',,'B'], use_col='#00000050')
+
+lines(use_times, tot_rich_agg['mean',], lwd=2)
+lines(use_times, ct_rich_agg['mean',,1], lwd=1, lty=5)
+lines(use_times, ct_rich_agg['mean',,3], lwd=1, lty=1)
+lines(use_times, ab_rich_agg['mean',,'A'], col=hab_cols['A'])
+lines(use_times, ab_rich_agg['mean',,'B'], col=hab_cols['B'])
 
 
 # At each scale
