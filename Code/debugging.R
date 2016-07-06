@@ -2,12 +2,26 @@
 
 
 sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/'
+run_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/Runs/'
+parm_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/'
 
-source(paste0(sim_dir, 'simulation_functions.R'))
+
+source(file.path(sim_dir, 'simulation_functions.R'))
 
 load('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/run1.RData')
 
 setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/')
+
+
+# Read in parameters
+parm_file = file.path(parm_dir, 'p_run3.txt')
+source(parm_file)
+parm_list = make_parmlist()
+
+# Run CAMM
+sim_results = run_sim_N(nruns, parm_list, 2, simID, sim_dir=sim_dir, report=5, return_results=T, restart=T)
+
+
 
 
 # locations from the center of the grid- NOT WORKING
