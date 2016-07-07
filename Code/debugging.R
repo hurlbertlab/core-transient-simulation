@@ -32,6 +32,9 @@ locs = scale_locs[[3]]
 t_window=list(start=975, stop=1000)
 P_obs = list(1,.9,.5,.1)
 breaks=c(.33, .66)
+sum_parms=list(time_sum='last', quants=c(0.025, .5, .975))
+
+sim_sum = summarize_sim(sim, breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms) 
 
 
 

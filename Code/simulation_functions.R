@@ -8,6 +8,7 @@ library(poweRlaw)
 library(fdrtool) # half-normal distribution for gaussian dispersal kernal
 library(sads) # qls()
 library(reshape2)
+library(abind)
 
 ### TO DO ###
 
@@ -1599,7 +1600,7 @@ calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, a
 		abun_profiles = abuns
 	}
 
-	# Convert to array if necessary
+	# Convert to array if necessary (e.g., if this is a matrix of abundances from a single site)
 	if(length(dim(abun_profiles))==2) abun_profiles = add_dim(abun_profiles)
 
 	# Determine which species to examine
@@ -1627,11 +1628,15 @@ calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, a
 			use_abun = abun_profiles[rows,,,drop=F]
 			if(length(rows)>1){
 				new_abun = apply(use_abun, 2:3, sum)
+				new_abun = add_dim(new_abun, 1)
 			}
 			if(length(rows)==1) new_abun = use_abun
 			new_abun
 		}, simplify='array')
-		if(N_c==1 & length(agg_times)>1 & length(dim(agg_abuns))==2) agg_abuns = add_dim(agg_abuns, 2)
+		
+		# Fix dimensions
+		agg_abuns = adrop(agg_abuns, drop=1)
+		if(N_c==1 & length(agg_times)>1 & length(dim(agg_abuns))==2) agg_abuns = add_dim(agg_abuns, 2)		
 		dimnames(agg_abuns) = list(dimnames(abun_profiles)[[2]], dimnames(abun_profiles)[[3]], 1:length(agg_times))
 		
 
@@ -1833,27 +1838,18 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 } 
 
 
-# DEBUGGING
-#sim = sim_results$results[[1]]
-
-
-#species = sim_results$species[[1]]
-# habitats = sapply(locs, function(x) average_habitat(x, sim_results$lands[[1]]))
-
-#t_window : timepoints to consider
-#agg_times_occ : timepoints to aggregate before calculating occupancy
-#agg_times_sum : timepoints to aggregate before calculating richness or abundance
-
 # A function that summarizes the output of a single simulation run
 #	sim : either a filename for a simulation run or and array of results from a simulation run
 #	breaks : vector of ordered numbers between 0 and 1 denoting breakpoints for occupancy categories
 #	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
 #	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
-# 	agg_times : either a single number specifing the number of timepoints that should be aggregated before calculating occupancy or a list defining exactly which timepoints should be aggregated. Timepoints are relative t_window. Defaults to no aggregation.
+# 	agg_times : either a single number specifying the number of timepoints that should be aggregated before calculating occupancy or a list defining exactly which timepoints should be aggregated. Timepoints are relative t_window. Defaults to no aggregation.
 #	which_species : a vector indicating which species should be examined. Defaults to all species.
 #	P_obs : list of detection probabilities over which to calculate statistics. Each list element can be a single number or a vector with different probabilities for each species.
 #	sum_parms : list of parameters used for summarizing across spatial and temporal units
 #		agg_times = specifies how time points should be aggregated before calculating richness. See calc_rich_CT function.
+#		time_sum = character indicating which time window should be used in summary statistics: 'mean' (all windows), 'last' (most recent) 
+#		quants = vector of qunatiles desired for each statitistic
 summarize_sim = function(sim, breaks, species=NULL, land=NULL, gsad=NULL, locs=NULL, t_window=NULL, agg_times=NULL, which_species=NULL, P_obs=NULL, sum_parms=NULL){
 	
 	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
@@ -1875,7 +1871,7 @@ summarize_sim = function(sim, breaks, species=NULL, land=NULL, gsad=NULL, locs=N
 
 	# Calculate species abundance profiles at the spatial and temporal resolution given by locs and t_window
 	abuns_act = calc_abun_profile(locs, t_window, results, N_S)
-	
+
 	# Apply observation bias
 	abuns_obs = sapply(P_obs, function(p){
 		sample_sim(abuns_act, probs = p, return='abundance')
@@ -1885,10 +1881,8 @@ summarize_sim = function(sim, breaks, species=NULL, land=NULL, gsad=NULL, locs=N
 	# Calculate species occupancy
 	occ = sapply(1:length(P_obs), function(i) calc_occupancy(abuns=abuns_obs[,,,i], agg_times, do_freq=F), simplify='array')
 
-	# Calculate richness in each occupancy category
+	# Calculate richness and in each occupancy category
 	rich_ct = sapply(1:length(P_obs), function(i) calc_rich_CT(abuns_obs[,,,i], occ[,,i], breaks, agg_times=sum_parms$agg_times), simplify='array')
-	
-	# Calculate abundance in each occupancy category
 	abun_ct = sapply(1:length(P_obs), function(i) calc_abun_CT(abuns_obs[,,,i], occ[,,i], breaks, agg_times=sum_parms$agg_times), simplify='array')
 
 	# Get species birth rates
@@ -1912,10 +1906,51 @@ summarize_sim = function(sim, breaks, species=NULL, land=NULL, gsad=NULL, locs=N
 		acast(melt(tabs, varnames=c('bio','occ','sp_unit')), sp_unit ~ bio+occ)
 	}, simplify='array')
 
+	# Determine which time window to use for summary
+	# Defaults to mean
+	if(is.null(sum_parms$time_sum)){ time_sum = 'mean' } else { time_sum = sum_parms$time_sum }
+
+	# Average across time windows
+	if(time_sum=='mean'){
+		rich_ab = apply(rich_ab, 2:4, mean)
+		rich_ct = apply(rich_ct, 2:4, mean)
+		abun_ab = apply(abun_ab, 2:4, mean)
+		abun_ct = apply(abun_ct, 2:4, mean)
+	}
+	
+	# Only use the last time window
+	if(time_sum=='last'){
+		N_t = dim(rich_ab)[1]		
+		rich_ab = rich_ab[N_t,,,]
+		rich_ct = rich_ct[N_t,,,]
+		abun_ab = abun_ab[N_t,,,]
+		abun_ct = abun_ct[N_t,,,]
+	}
+
+	# Catch error if time_sum given does not match an available method.
+	if(length(dim(rich_ab))>3) stop('Incorrect temporal summary method given in sum_parms.')
+
 	# Calculate means and variances across spatial units
+	calc_stats = function(dat, dim, quants=sum_parms$quants){
+		keep_dims = 1:length(dim(dat))
+		keep_dims = keep_dims[keep_dims!=dim]
+		
+		apply(dat, keep_dims, function(x){
+			stats = c(mean=mean(x), var=var(x))
+			if(!is.null(quants)) stats = c(stats, quantile(x, quants))
+			stats
+		})
+	}
 
+	bio_stats = abind(calc_stats(rich_ab, 2), calc_stats(abun_ab, 2), along=0, 
+		new.names=list(c('rich','abun'), NULL, c('trans','core'), P_obs))
+	occ_stats = abind(calc_stats(rich_ct, 2), calc_stats(abun_ct, 2), along=0,
+		new.names=list(c('rich','abun'), NULL, NULL, P_obs))		
+	xclass_stats = calc_stats(xclass, 1)
+	dimnames(xclass_stats)[[3]] = P_obs
 
-
+	# Return list of statistics
+	list(bio=bio_stats, occ=occ_stats, xclass=xclass_stats)
 }
 
 
