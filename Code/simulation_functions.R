@@ -1838,19 +1838,21 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 } 
 
 
-# A function that summarizes the output of a single simulation run
-#	sim : either a filename for a simulation run or and array of results from a simulation run
+# A function that summarizes the output of a single simulation run.
+# Returns richness and abundance of species groups based on birth-rate classification ('bio') or based on temporal occupancy ('occ')
+# Returns cross-classification table showing number of species classified as core or transient based on biological or occupancy classification. 
+# These components are summarized across spatial units and returned in a list.
+#	sim : either a filename for a simulation run or and array of results from a simulation run. If an array, must specify species, land, and gsad.
 #	breaks : vector of ordered numbers between 0 and 1 denoting breakpoints for occupancy categories
 #	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
 #	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
 # 	agg_times : either a single number specifying the number of timepoints that should be aggregated before calculating occupancy or a list defining exactly which timepoints should be aggregated. Timepoints are relative t_window. Defaults to no aggregation.
-#	which_species : a vector indicating which species should be examined. Defaults to all species.
 #	P_obs : list of detection probabilities over which to calculate statistics. Each list element can be a single number or a vector with different probabilities for each species.
 #	sum_parms : list of parameters used for summarizing across spatial and temporal units
 #		agg_times = specifies how time points should be aggregated before calculating richness. See calc_rich_CT function.
 #		time_sum = character indicating which time window should be used in summary statistics: 'mean' (all windows), 'last' (most recent) 
 #		quants = vector of qunatiles desired for each statitistic
-summarize_sim = function(sim, breaks, species=NULL, land=NULL, gsad=NULL, locs=NULL, t_window=NULL, agg_times=NULL, which_species=NULL, P_obs=NULL, sum_parms=NULL){
+summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, gsad=NULL, agg_times=NULL, P_obs=list(1), sum_parms=NULL){
 	
 	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
 	if(is.character(sim)){
@@ -1954,83 +1956,93 @@ summarize_sim = function(sim, breaks, species=NULL, land=NULL, gsad=NULL, locs=N
 }
 
 
-
-# Basic statistics:
-# Abundance and richness of core and transient species, based on occupancy and based on birth rates
-# Relationship between abundance and occupancy across species
-# 
-
-# Each statistic calculated at several spatial scales, including the entire grid.
-
-
-
 # A function that summarizes results from multiple replicates of a simulation.
-# Also works for a simgle simulation run
-#	results : either a list of simulation results return by run_sim_N, a list of simulation results metacommunities from different runs, or a single simulation results metacommunity
-summarize_sim_N = function(results, speciesN=NULL, landN=NULL, t_window=NULL, locs=NULL, agg_times=NULL, which_species=NULL, do_freq=F){
+# An optional function (sum_func) can be used to summarize statistics across runs.
+#	sim : either a list of simulation results return by run_sim_N or a directory where multiple runs are saved
+#	breaks : vector of ordered numbers between 0 and 1 denoting breakpoints for occupancy categories
+#	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
+#	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
+# 	agg_times : either a single number specifying the number of timepoints that should be aggregated before calculating occupancy or a list defining exactly which timepoints should be aggregated. Timepoints are relative t_window. Defaults to no aggregation.
+#	which_species : a vector indicating which species should be examined. Defaults to all species.
+#	P_obs : list of detection probabilities over which to calculate statistics. Each list element can be a single number or a vector with different probabilities for each species.
+#	sum_parms : list of parameters used for summarizing across spatial and temporal units
+#		agg_times = specifies how time points should be aggregated before calculating richness. See calc_rich_CT function.
+#		time_sum = character indicating which time window should be used in summary statistics: 'mean' (all windows), 'last' (most recent) 
+#		quants = vector of qunatiles desired for each statitistic
+#	sum_func : function used to summarize statistics across runs.
+summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=list(1), sum_parms=NULL, sum_func=NULL){
 
-	# Check whether species are given
-	if(!with(results, exists('species'))&is.null(speciesN)) stop('Must specify species vital rates lists if not included in results.')	
-	if(!with(results, exists('lands'))&is.null(landN)) stop('Must specify landscapes lists if not included in results.')	
+	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
+	if(is.character(sim)){
 
-	# Assign species to internal objects
-	if(with(results, exists('results'))){
-		simN = results$results
-		speciesN = results$species
-		landN = results$lands
-	} else {
+		# Find all simulation runs in ths directory
+		runfiles = list.files(sim, '*.RData')
 		
-		if(is.null(speciesN)) stop('Must specify species vital rates.')
-		if(is.null(landN)) stop('Must specify landscapes.')
+		# Read in first file
+		this_run = file.path(sim, runfiles[1])
+		this_sum = summarize_sim(this_run, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
 
-		# If this is a single simulation convert to a list
-		if(!is.null(dim(results))){
-			simN = list(results)
-			speciesN = list(speciesN)
-			landN = list(landN)
-		} else {
-			simN = results
+		# Create arrays to hold summaries
+		bio_arr = this_sum$bio
+		occ_arr = this_sum$occ
+		xclass_arr = this_sum$xclass
+
+		if(length(runfiles)>1){
+			for(i in 2:length(runfiles)){
+				f = runfiles[i]
+				this_run = file.path(sim, f)
+				this_sum = summarize_sim(this_run, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+				bio_arr = abind(bio_arr, this_sum$bio, along=ifelse(i==2, 0, 1))	
+				occ_arr = abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
+				xclass_arr = abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))	
+			}
+		}
+	}
+	
+	# If sim is a list returned by run_sim_N()
+	if(is.list(sim)){
+		
+		# Extract first run
+		this_sum = summarize_sim(sim$results[[1]], species=sim$species[[1]], land=sim$lands[[1]], gsad=sim$gsads[[1]],
+			breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+		
+		# Create arrays to hold summaries
+		bio_arr = this_sum$bio
+		occ_arr = this_sum$occ
+		xclass_arr = this_sum$xclass
+		
+		if(length(sim$results)>1){
+			for(i in 2:length(sim$results)){
+				this_sum = summarize_sim(sim$results[[i]], species=sim$species[[i]], land=sim$lands[[i]], gsad=sim$gsads[[i]],
+					breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+				bio_arr = abind(bio_arr, this_sum$bio, along=ifelse(i==2, 0, 1))	
+				occ_arr = abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
+				xclass_arr = abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))	
+			}
 		}
 	}
 
-	# For unspecified parameters define to default values
-	if(is.null(t_window)){
-		times = dimnames(simN[[1]])$time
-		t_window = list(start=as.numeric(times[1]), stop=as.numeric(times[length(times)]))
-	} 
-	if(is.null(locs)){
-		X = dim(results[[1]])[1]
-		Y = dim(results[[1]])[2]
-		locs = as.matrix(expand.grid(x=1:X, y=1:Y))
+	if(is.null(sum_func)){
+		
+		# Return arrays where first dimension is the run
+		return(list(bio=bio_arr, occ=occ_arr, xclass=xclass_arr))
+
+	} else {
+		if(!is.function(sum_func)) stop('Argument sum_func must be a function.')
+		
+		bio_sum = apply(bio_arr, 2:length(dim(bio_arr)), sum_func)
+		occ_sum = apply(occ_arr, 2:length(dim(occ_arr)), sum_func)
+		xclass_sum = apply(xclass_arr, 2:length(dim(xclass_arr)), sum_func)	
+		
+		# Return summaries across runs. If sum_func returns a vector, then the first dimension is the summaries across runs.	
+		return(list(bio=bio_sum, occ=occ_sum, xclass=xclass_sum))
 	}
+}
 
-	# Determine number of simulation replicates
-	nsim = length(simN)
+# A function used to summarize statistics across simulation runs
+default_sum_func = function(x){
 
-	# For each simulation replicate
-	sapply(1:nsim, function(k){
-
-		# Define this simulation
-		this_sim = simN[[k]]
-		this_species = speciesN	[[k]]
-		this_land = landN[[k]]	
-		N_S = dim(this_species)[1]
-		
-############ WORKING HERE #####################
-		# Calculate species abundance profiles
-		abun_profs = calc_abun_profile(locs, t_window, this_sim, N_S)
-
-		# Calculate species occupancy
-		occupancy = calc_occupancy(abuns=abun_profs, agg_times, which_species, do_freq=F)
-
-		# Calculate species total and abundances across landscape
-#		rel_abun = sapply(calc_abun(this_sim[,,step], N_S, only_species=T)
-		
-		# Calculate proportion of metacommunity that is full
-
-	})
-
-
+	c(mean=mean(x), var=var(x), quantile(x, c(0.025, 0.5, 0.975)))
 
 }
 

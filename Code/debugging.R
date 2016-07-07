@@ -8,8 +8,6 @@ parm_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/'
 
 source(file.path(sim_dir, 'simulation_functions.R'))
 
-
-
 setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/')
 
 ## Testing run_sim_N function
@@ -36,6 +34,7 @@ sum_parms=list(time_sum='last', quants=c(0.025, .5, .975))
 
 sim_sum = summarize_sim(sim, breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms) 
 
+sim = file.path(run_dir, simID)
 
 
 ## Testing summary functions
