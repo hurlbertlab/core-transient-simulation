@@ -7,6 +7,7 @@ library(raster)
 library(poweRlaw)
 library(fdrtool) # half-normal distribution for gaussian dispersal kernal
 library(sads) # qls()
+library(reshape2)
 
 ### TO DO ###
 
@@ -1446,7 +1447,7 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 	N_t = dim(abun_profiles)[1]	
 
 	# Determine which species to examine
-	if(is.null(which_species)) which_species = colnames(abun_profiles)[2:ncol(abun_profiles)]
+	if(is.null(which_species)) which_species = colnames(abun_profiles)[colnames(abun_profiles)!='0']
 
 	# Aggregate timepoints, if specified
 	if(!is.null(agg_times)){
@@ -1663,9 +1664,12 @@ calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 	cats = matrix(cut(occupancy, breaks, include.lowest=F, labels=F), nrow=nrow(occupancy), ncol=ncol(occupancy))
 	colnames(cats) = colnames(occupancy)
 		
-	# Number of sites and time windows
+	# If agg_times undefined, defaults to each timestep
+	if(is.null(agg_times)) agg_times = 1
+
+	# Number of sites and time points
 	N_c = dim(abuns)[3]
-	N_t = ifelse(is.null(agg_times), dim(abuns)[1], length(agg_times))
+	N_t = dim(abuns)[1]
 
 	# Determine time aggregation windows
 	if(is.numeric(agg_times)){
@@ -1673,6 +1677,12 @@ calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 		int = agg_times
 		agg_times = lapply(seq(1,N_t,int), function(x) x:(x+int-1))
 	}
+	
+	# Names of aggregated times
+	agg_time_names = sapply(agg_times, function(x) paste(dimnames(abuns)[[1]][x], collapse='-'))
+
+	# Number of time windows
+	N_tw = length(agg_times)
 
 	# Richness of each category for each site during given aggregated time periods. Returns [times, categories, sites]
 	rich_cat = sapply(1:N_c, function(i){
@@ -1681,15 +1691,72 @@ calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 			if(length(these_sp)>0){
 				calc_rich(abuns = abuns[,,i], agg_times = agg_times, which_species = these_sp)
 			} else {
-				rep(0, N_t)
+				rep(0, N_tw)
 			}
 		})
 	}, simplify='array')
-	dimnames(rich_cat) = list(1:N_t, levels(cut(0, breaks)), 1:N_c)
+	dimnames(rich_cat) = list(agg_time_names, levels(cut(0, breaks)), 1:N_c)
 
 	# Return richnes
 	rich_cat
 }
+
+
+# A function that calculates abundance of core and transient species
+#	abuns : array of abundance profiles returned by calc_abun_profile() function
+#	occupancy : matrix of species occupancies across the same spatial units represented in abuns, as returned by calc_occupancy(abuns, do_freq=F)
+#	breaks : vector of ordered numbers between 0 and 1 denoting breakpoints for occupancy categories
+# 	agg_times : either a single number specifying the number of timepoints that should be aggregated before calculating richness or a list defining exactly which timepoints should be aggregated. Timepoints are relative to times in abuns. Defaults to no aggregation.
+calc_abun_CT = function(abuns, occupancy, breaks, agg_times=NULL){
+
+	# Catch error when abuns and occupancy do not match
+	if(nrow(occupancy)!=dim(abuns)[length(dim(abuns))]) stop('Abundance matrix and occupancy matrix must be supplied for same set of sites.')
+	
+	# Convert occupancy to factor based on breakpoints
+	if(breaks[1]!=0) breaks = c(0,breaks)
+	if(breaks[length(breaks)]!=1) breaks = c(breaks, 1)
+	cats = matrix(cut(occupancy, breaks, include.lowest=F, labels=F), nrow=nrow(occupancy), ncol=ncol(occupancy))
+	colnames(cats) = colnames(occupancy)
+	
+	# If agg_times undefined, defaults to each timestep
+	if(is.null(agg_times)) agg_times = 1
+
+	# Number of sites and time points
+	N_c = dim(abuns)[3]
+	N_t = dim(abuns)[1]
+
+	# Determine time aggregation windows
+	if(is.numeric(agg_times)){
+		if(length(agg_times)>1) stop('To specify non-uniform aggregation use list format.')
+		int = agg_times
+		agg_times = lapply(seq(1,N_t,int), function(x) x:(x+int-1))
+	}
+	
+	# Names of aggregated times
+	agg_time_names = sapply(agg_times, function(x) paste(dimnames(abuns)[[1]][x], collapse='-'))
+
+	# Number of time windows
+	N_tw = length(agg_times)
+
+	# Abundance of each category for each site during given aggregated time periods. Returns [times, categories, sites]
+	abun_cat = sapply(1:N_c, function(i){
+		sapply(1:(length(breaks)-1), function(cat){
+			these_sp = which(cats[i,]==cat)
+			if(length(these_sp)>0){
+				sapply(agg_times, function(j){
+					sum(abuns[j,as.character(these_sp),i])
+				})
+			} else {
+				rep(0, N_tw)
+			}
+		})
+	}, simplify='array')
+	dimnames(abun_cat) = list(agg_time_names, levels(cut(0, breaks)), 1:N_c)
+
+	# Return richnes
+	abun_cat
+}
+
 
 # A function that calculates the average habitat value for a set of cells
 # 	locs : a matrix of cell locations
@@ -1768,8 +1835,8 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 
 # DEBUGGING
 #sim = sim_results$results[[1]]
-#locs = scale_locs[[3]]
-#t_window=list(start=76, stop=100)
+
+
 #species = sim_results$species[[1]]
 # habitats = sapply(locs, function(x) average_habitat(x, sim_results$lands[[1]]))
 
@@ -1777,8 +1844,53 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 #agg_times_occ : timepoints to aggregate before calculating occupancy
 #agg_times_sum : timepoints to aggregate before calculating richness or abundance
 
-summarize_sim = function(what, sim, species, land, gsad, locs, t_window, agg_times_occ, agg_times_sum, breaks, P_obs=NULL){
+# A function that summarizes the output of a single simulation run
+#	sim : either a filename for a simulation run or and array of results from a simulation run
+#	breaks : vector of ordered numbers between 0 and 1 denoting breakpoints for occupancy categories
+#	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
+#	t_window : either a list of start and stop times specifying all collected timepoints in a given interval or an explicit vector of timepoints to be considered
+# 	agg_times : either a single number specifing the number of timepoints that should be aggregated before calculating occupancy or a list defining exactly which timepoints should be aggregated. Timepoints are relative t_window. Defaults to no aggregation.
+#	which_species : a vector indicating which species should be examined. Defaults to all species.
+#	P_obs : list of detection probabilities over which to calculate statistics. Each list element can be a single number or a vector with different probabilities for each species.
+#	sum_parms : list of parameters used for summarizing across spatial and temporal units
+#		agg_times = specifies how time points should be aggregated before calculating richness. See calc_rich_CT function.
+summarize_sim = function(sim, breaks, species=NULL, land=NULL, gsad=NULL, locs=NULL, t_window=NULL, agg_times=NULL, which_species=NULL, P_obs=NULL, sum_parms=NULL){
 	
+	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
+	if(is.character(sim)){
+		load(sim)
+		species = this_species
+		land = this_land
+		gsad = this_gsad
+	}
+	
+	# If sim is an array of simulation results, then must specify species, land, gsad
+	if(is.array(sim)){
+		if(is.null(species)|is.null(land)|is.null(gsad)) stop('If sim is an array, must supply species, land, and gsad.')
+		results = sim
+	}
+
+	# Number of species
+	N_S = dim(species)[1]
+
+	# Calculate species abundance profiles at the spatial and temporal resolution given by locs and t_window
+	abuns_act = calc_abun_profile(locs, t_window, results, N_S)
+	
+	# Apply observation bias
+	abuns_obs = sapply(P_obs, function(p){
+		sample_sim(abuns_act, probs = p, return='abundance')
+	}, simplify='array')
+	dimnames(abuns_obs)[[2]] = 1:N_S # Name columns with species names
+
+	# Calculate species occupancy
+	occ = sapply(1:length(P_obs), function(i) calc_occupancy(abuns=abuns_obs[,,,i], agg_times, do_freq=F), simplify='array')
+
+	# Calculate richness in each occupancy category
+	rich_ct = sapply(1:length(P_obs), function(i) calc_rich_CT(abuns_obs[,,,i], occ[,,i], breaks, agg_times=sum_parms$agg_times), simplify='array')
+	
+	# Calculate abundance in each occupancy category
+	abun_ct = sapply(1:length(P_obs), function(i) calc_abun_CT(abuns_obs[,,,i], occ[,,i], breaks, agg_times=sum_parms$agg_times), simplify='array')
+
 	# Get species birth rates
 	b_rates = species[,,'b']
 	
@@ -1789,43 +1901,19 @@ summarize_sim = function(what, sim, species, land, gsad, locs, t_window, agg_tim
 	cores = t(sapply(habitats, function(h) b_rates[,h]>0))
 	classification = apply(cores, 1:2, function(x) ifelse(x, 'core', 'trans'))	
 
-	# Calculate abundance profiles
-	abuns_act = calc_abun_profile(locs, t_window, sim, dim(species)[1])
-	
-	# Calculate occupancy
-	occ_act = calc_occupancy(abuns=abuns_act, agg_times=agg_times_occ, do_freq=F)
+	# Calculate richness and abundnace of biologically core vs transient species
+	occ_ab = apply(classification, 1:2, function(x) ifelse(x=='core', 1, .1))
+	rich_ab = sapply(1:length(P_obs), function(i) calc_rich_CT(abuns_obs[,,,i], occ_ab, 0.5, agg_times=sum_parms$agg_times), simplify='array')
+	abun_ab = sapply(1:length(P_obs), function(i) calc_abun_CT(abuns_obs[,,,i], occ_ab, 0.5, agg_times=sum_parms$agg_times), simplify='array')
 
-	# Cross-classify species in spatial units
-	# May not need this
-	cross_class_ids = cross_classify(occ_act, breaks, classification=classification, do_each=T, return='ids')
+	# Calculate proportion mis-classified
+	xclass = sapply(1:length(P_obs), function(i){
+		tabs = cross_classify(occ[,,i], breaks, classification=classification, do_each=T, return='counts')
+		acast(melt(tabs, varnames=c('bio','occ','sp_unit')), sp_unit ~ bio+occ)
+	}, simplify='array')
 
-	# Calculate abundance of each class of species across spatial units
-	
+	# Calculate means and variances across spatial units
 
-	# Calculate richness of each occupancy class across spatial units
-	rich_occ_act = calc_rich_CT(abuns_act, occ_act, breaks, agg_times_sum)
-
-	# Calculate abundance of each occupancy class across spatial units
-
-	# Calculate richness of each biological classification across spatial units
-	rich_bio_act = calc_rich_CT(abuns_act, apply(classification, 1:2, function(x) ifelse(x=='core', 1, 0)), breaks, agg_times_sum)
-
-	# Calculate means across temporal units
-	# THESE ARE NOT MATCHING UP_ DOES THIS MAKE SENSE??
-	#apply(rich_occ_act, 2:3, mean)
-	#apply(rich_bio_act, 2:3, mean)
-
-
-	# If detection probability is given, sample the abundance profiles and return comparison between actual and observed
-	if(!is.null(P_obs)){
-
-
-
-	 abuns_obs = sample_sim(abuns_act, probs=P_obs, return='abundance')
-	}
-
-
-	
 
 
 }

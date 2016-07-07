@@ -8,21 +8,35 @@ parm_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/'
 
 source(file.path(sim_dir, 'simulation_functions.R'))
 
-load('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/run1.RData')
+
 
 setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/')
 
-
+## Testing run_sim_N function
 # Read in parameters
 parm_file = file.path(parm_dir, 'p_run3.txt')
 source(parm_file)
 parm_list = make_parmlist()
 
 # Run CAMM
-sim_results = run_sim_N(nruns, parm_list, 2, simID, sim_dir=sim_dir, report=5, return_results=T, restart=T)
+sim_results = run_sim_N(3, parm_list, 1, simID, sim_dir=sim_dir, report=5, return_results=T, restart=F)
 
 
 
+## Testing summary functions from runs saved seapartely.
+simID = 'converge32'
+scale_locs = sapply(2^c(0:4), function(fact) aggregate_cells(X=c(32,32), dX=fact, dY=fact, form='partition'))
+
+sim = file.path(run_dir, simID, paste0(simID, '_run1.RData'))
+locs = scale_locs[[3]]
+t_window=list(start=975, stop=1000)
+P_obs = list(1,.9,.5,.1)
+breaks=c(.33, .66)
+
+
+
+## Testing summary functions
+load('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/run1.RData')
 
 # locations from the center of the grid- NOT WORKING
 scale_locs = sapply(2^c(0:2), function(fact){
