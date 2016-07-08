@@ -14,7 +14,7 @@ args = commandArgs(trailingOnly=T)
 run_dir = ifelse(is.na(args[1]), './', args[1])
 parm_dir = ifelse(is.na(args[2]), './', args[2])
 sim_dir = ifelse(is.na(args[3]), './', args[3])
-results_dir = ifelse(is.na(args[4]), './Results/', args[4])
+results_dir = ifelse(is.na(args[4]), './Summaries/', args[4])
 
 # Load simulation scripts
 source(file.path(sim_dir, 'simulation_functions.R'))
@@ -25,6 +25,7 @@ file_list = list.files(parm_dir, '^s_')
 
 # Run summaries for each parameter file
 for(f in file_list){
+	print(paste('Started', f))
 	
 	# Read in parameters
 	parm_file = file.path(parm_dir, f)
@@ -37,7 +38,7 @@ for(f in file_list){
 	sim_sum = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms, sum_func=sum_func)
 	
 	# Save
-	save(sim_sum_ind, sim_sum, file=file.path(results_dir, paste0(sumID,'summary.RData')))
+	save(sim_sum_ind, sim_sum, file=file.path(results_dir, paste0(sumID,'_summary.RData')))
 
 }
 

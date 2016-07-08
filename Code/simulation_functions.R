@@ -556,6 +556,10 @@ get_dispersal_vec = function(d, form=list(type='gaussian'), N=1){
 			sample(0:1, size=form$moves, prob= c(1-d, d), replace=T) * sample(1:4, size=form$moves, replace=T)
 		})
 
+		# Add a dimension if necessary (e.g. form$moves = 1)
+		if(!is.matrix(moves)) moves = add_dim(moves, 1)
+
+
 		# Calculate distance and angle
 		dX = apply(moves, 2, function(x) -1*sum(x==3) + 1*sum(x==1))
 		dY = apply(moves, 2, function(x) -1*sum(x==4) + 1*sum(x==2))
@@ -1551,7 +1555,11 @@ cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classi
 	# Calculate contingency tables
 	if(do_each){
 		# Calculate for each spatial unit
-		if(return=='counts') cross_tab = sapply(1:nrow(classes), function(i) table(classification=classification[i,], occupancy=classes[i,]), simplify='array')
+		if(return=='counts'){
+			cross_tab = sapply(1:nrow(classes), function(i){
+				table(classification=factor(classification[i,], levels=c('core','trans')), occupancy=factor(classes[i,], levels=c('core','trans')))
+			}, simplify='array')
+		}
 		if(return=='ids'){
 			cross_tab = sapply(1:nrow(classes), function(i){
 				this_tab = array(list(), dim=c(2,2), dimnames=list(classification=c('core','trans'), occupancy=c('core','trans')))
@@ -1564,7 +1572,7 @@ cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classi
 		}
 	} else {
 		# Sumarize across all spatial units
-		if(return=='counts') cross_tab = table(classification=classification, occupancy=classes)
+		if(return=='counts') cross_tab = table(classification=factor(classification, levels=c('core','trans')), occupancy=factor(classes, levels=c('core','trans')))
 		if(return=='ids'){
 			cross_tab = array(list(), dim=c(2,2), dimnames=list(classification=c('core','trans'), occupancy=c('core','trans')))
 			cross_tab['core','core'] = list(as.character(which(classification=='core'&classes=='core')))
@@ -1850,7 +1858,7 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 #	P_obs : list of detection probabilities over which to calculate statistics. Each list element can be a single number or a vector with different probabilities for each species.
 #	sum_parms : list of parameters used for summarizing across spatial and temporal units
 #		agg_times = specifies how time points should be aggregated before calculating richness. See calc_rich_CT function.
-#		time_sum = character indicating which time window should be used in summary statistics: 'mean' (all windows), 'last' (most recent) 
+#		time_sum = character indicating which time window should be used in summary statistics: 'mean' (all windows), 'last' (most recent), 'none' (no summary across time) 
 #		quants = vector of qunatiles desired for each statitistic
 summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, gsad=NULL, agg_times=NULL, P_obs=list(1), sum_parms=NULL){
 	
@@ -1918,6 +1926,9 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		rich_ct = apply(rich_ct, 2:4, mean)
 		abun_ab = apply(abun_ab, 2:4, mean)
 		abun_ct = apply(abun_ct, 2:4, mean)
+
+		# Define dimension that stores spatial units
+		sp_dim = 2
 	}
 	
 	# Only use the last time window
@@ -1927,10 +1938,19 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		rich_ct = rich_ct[N_t,,,]
 		abun_ab = abun_ab[N_t,,,]
 		abun_ct = abun_ct[N_t,,,]
+	
+		# Define dimension that stores spatial units
+		sp_dim = 2
+	}
+
+	# Do not summarize across time windows
+	if(time_sum=='none'){
+		# Define dimension that stores spatial units
+		sp_dim = 3
 	}
 
 	# Catch error if time_sum given does not match an available method.
-	if(length(dim(rich_ab))>3) stop('Incorrect temporal summary method given in sum_parms.')
+	if(!(time_sum %in% c('none','last','mean'))) stop('Incorrect temporal summary method given in sum_parms.')
 
 	# Calculate means and variances across spatial units
 	calc_stats = function(dat, dim, quants=sum_parms$quants){
@@ -1944,9 +1964,9 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		})
 	}
 
-	bio_stats = abind(calc_stats(rich_ab, 2), calc_stats(abun_ab, 2), along=0, 
+	bio_stats = abind(calc_stats(rich_ab, sp_dim), calc_stats(abun_ab, sp_dim), along=0, 
 		new.names=list(c('rich','abun'), NULL, c('trans','core'), P_obs))
-	occ_stats = abind(calc_stats(rich_ct, 2), calc_stats(abun_ct, 2), along=0,
+	occ_stats = abind(calc_stats(rich_ct, sp_dim), calc_stats(abun_ct, sp_dim), along=0,
 		new.names=list(c('rich','abun'), NULL, NULL, P_obs))		
 	xclass_stats = calc_stats(xclass, 1)
 	dimnames(xclass_stats)[[3]] = P_obs
@@ -2031,8 +2051,13 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		if(!is.function(sum_func)) stop('Argument sum_func must be a function.')
 		
 		bio_sum = apply(bio_arr, 2:length(dim(bio_arr)), sum_func)
+		names(dimnames(bio_sum)) = c('cross_run', 'comm_stat','cross_space','category','p_obs')
+
 		occ_sum = apply(occ_arr, 2:length(dim(occ_arr)), sum_func)
+		names(dimnames(occ_sum)) = c('cross_run', 'comm_stat','cross_space','category','p_obs')
+
 		xclass_sum = apply(xclass_arr, 2:length(dim(xclass_arr)), sum_func)	
+		names(dimnames(xclass_sum)) = c('cross_run','cross_space','ab_ct','p_obs')
 		
 		# Return summaries across runs. If sum_func returns a vector, then the first dimension is the summaries across runs.	
 		return(list(bio=bio_sum, occ=occ_sum, xclass=xclass_sum))
