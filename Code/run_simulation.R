@@ -36,8 +36,7 @@ for(f in file_list){
 
 	# Run CAMM
 	sim_results = run_sim_N(nruns, parm_list, ncores, simID, sim_dir=sim_dir, save_sim=results_dir, report=100, return_results=F)
-
-	# Summarize simulation
-
 }
+
+quit('no')
 
