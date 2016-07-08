@@ -2043,7 +2043,12 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 	}
 
 	if(is.null(sum_func)){
-		
+
+		# Name the dimensions
+		names(dimnames(bio_arr)) = c('run', 'comm_stat','cross_space','category','p_obs')
+		names(dimnames(occ_arr)) = c('run', 'comm_stat','cross_space','category','p_obs')
+		names(dimnames(xclass_arr)) = c('run','cross_space','ab_ct','p_obs')
+
 		# Return arrays where first dimension is the run
 		return(list(bio=bio_arr, occ=occ_arr, xclass=xclass_arr))
 
