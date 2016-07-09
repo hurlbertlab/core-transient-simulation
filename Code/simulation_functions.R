@@ -1,7 +1,7 @@
 ## This script contains functions for running the Core-Transient Simulation
 
 ## Required packages
-library(gstat, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
+library(gstat)#, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
 library(sp)
 library(raster)
 library(poweRlaw)
