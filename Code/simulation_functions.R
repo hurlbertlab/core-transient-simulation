@@ -1,7 +1,7 @@
 ## This script contains functions for running the Core-Transient Simulation
 
 ## Required packages
-library(gstat)#, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
+library(gstat, lib.loc='/nas02/home/j/r/jrcoyle/Rlibs/')
 library(sp)
 library(raster)
 library(poweRlaw)
@@ -1996,7 +1996,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 	if(is.character(sim)){
 
 		# Find all simulation runs in ths directory
-		runfiles = list.files(sim, '*.RData')
+		runfiles = list.files(sim, '*run[0-9]+.RData')
 		
 		# Read in first file
 		this_run = file.path(sim, runfiles[1])
