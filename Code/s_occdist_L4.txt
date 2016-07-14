@@ -29,3 +29,5 @@ sum_parms=list(
 	quants=c(0.025, 0.25, .5, 0.75, .975)
 )
 
+# Function used to summarize across runs
+sum_func = default_sum_func
