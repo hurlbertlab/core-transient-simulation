@@ -25,7 +25,7 @@ sim_results = run_sim_N(3, parm_list, 1, simID, sim_dir=sim_dir, report=5, retur
 simID = 'converge32'
 scale_locs = sapply(2^c(0:4), function(fact) aggregate_cells(X=c(32,32), dX=fact, dY=fact, form='partition'))
 
-sim = file.path(run_dir, simID, paste0(simID, '_run1.RData'))
+sim = file.path(run_dir, 'converge32_d-9', paste0(simID, '_run1.RData'))
 locs = scale_locs[[3]]
 t_window=list(start=975, stop=1000)
 P_obs = list(1,.9,.5,.1)
@@ -36,6 +36,13 @@ sim_sum = summarize_sim(sim, breaks, locs=locs, t_window=t_window, P_obs=P_obs, 
 
 sim = file.path(run_dir, simID)
 
+
+sapply(1:5, function(i) summarize_land(sim, scale_locs[[i]]))
+
+# Check landscapes
+sim = file.path(run_dir, 'converge32_d-9', paste0(simID, '_run2.RData'))
+load(sim)
+plot(this_land)
 
 ## Testing summary functions
 load('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/run1.RData')

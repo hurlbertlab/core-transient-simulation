@@ -253,7 +253,7 @@ dev.off()
 
 ## Examine variation across time and between runs
 
-sumID = 'converge32_d-4'
+sumID = 'converge64_d-9'
 
 # Define times and scales
 endTs = seq(25, 1000, 25)

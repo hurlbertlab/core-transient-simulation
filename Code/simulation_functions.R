@@ -1996,28 +1996,61 @@ summarize_land = function(sim, locs){
 	# Convert matrix of cell locations to list if necessary.
 	if(!is.list(locs)) locs = list(locs)
 	
-	# For each location, summarize habitats
-	habitats = sapply(locs, function(cell_block){
+	# For each location, count the number of cells in each habitat
+	hab_tab = sapply(locs, function(cell_block){
 		
+		# Get values and convert to habitat types
 		hab_vals = land[cell_block]
-
-		# Get average habitat value
-		hab_mean = mean(hab_vals)
-
-		# Get dominant habitat type
 		hab_types = sapply(hab_vals, get_habitat)
-		hab_freq = table(hab_types)
-		hab_freq = hab_freq[1]/length(hab_types)
-		if(hab_freq <0.5) hab_freq = 1-hab_freq
+		
+		# Table the types
+		hab_tab = table(factor(hab_types, levels=c('A','B')))
 
-		# Return mean value and dominant precentage
-		c(mean = hab_mean, prop = as.numeric(hab_freq))
+		# Return counts and total
+		c(hab_tab, n=sum(hab_tab))
 	})
 
-	# WORKING HERE- TRYING TO DECIDE WHETHER TO USE PREVIOUS INFO TO CALCULATE HETEROGENEITY METRICS
-	# OR, TO SIMPLIFY AND JUST CALCULATE PROPORTION OF DOMINANT HABITAT COVER ACROSS LOCS
+	# Calculate which habitat type dominates in each spatial unit
+	habitats = apply(hab_tab, 2, function(x){ 
+		dom = x[c('A','B')]/x['n'] > 0.5
+		if(sum(dom)==0){
+			sample(c('A','B'), 1)
+		} else {
+			names(which(dom))
+		}
+	})
 
+	# Calculate proportion of dominant habitat cover
+	hab_count = table(habitats)	
+	hab_prop = hab_count[1]/sum(hab_count)
+	if(hab_prop < 0.5) hab_prop = hab_count[2]/sum(hab_count)
+
+	# Calculate variance- assumes Bernoulli distribution
+	hab_var = hab_prop*(1-hab_prop)
+
+	# DECIDED NOT TO USE SPATIALLY EXPLICIT MEASURES (E.G. REQUIRING DISTANCES) B/C LOCS ALLOWS FLEXIBLE SPECIFICATION OF SPATIAL UNITS ARE NOT NECESSARITY ON REGULAR GRID
+	# INSTEAD USING MEASURE OF HETEROGENEITY FROM Shiyomi and Yoshimura 2000 Ecological Research 15: 13-20
+	# Calculate heterogeneity if all spatial units sample the same number of cells
+	if(length(unique(hab_tab['n',]))==1){
+		# Dominant habitat type
+		use_hab = names(hab_prop)
+	
+		# Number of cells in each spatial unit
+		n = hab_tab['n',1]
+
+		# Calculate mean and variance of frequency of dominant habitat type
+		m = mean(hab_tab[use_hab,])
+		v = var(hab_tab[use_hab,])
+
+		# Calculate index based on variance to mean ratio
+		hab_het = (v/(m*(1-(m/n)))) - 1
+	} else {
+		hab_het=NA	
+	}
+
+	c(prop=as.numeric(hab_prop), var=as.numeric(hab_var), het=as.numeric(hab_het))
 }
+
 
 
 # A function that summarizes results from multiple replicates of a simulation.
@@ -2050,6 +2083,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		bio_arr = this_sum$bio
 		occ_arr = this_sum$occ
 		xclass_arr = this_sum$xclass
+		land_arr = summarize_land(this_run, locs=locs)
 
 		if(length(runfiles)>1){
 			for(i in 2:length(runfiles)){
@@ -2058,7 +2092,9 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 				this_sum = summarize_sim(this_run, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
 				bio_arr = abind(bio_arr, this_sum$bio, along=ifelse(i==2, 0, 1))	
 				occ_arr = abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
-				xclass_arr = abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))	
+				xclass_arr = abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))
+
+				land_arr = abind(land_arr, summarize_land(this_run, locs=locs), along=ifelse(i==2, 0, 1))	
 			}
 		}
 	}
@@ -2074,6 +2110,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		bio_arr = this_sum$bio
 		occ_arr = this_sum$occ
 		xclass_arr = this_sum$xclass
+		land_arr = summarize_land(sim$lands[[1]], locs=locs)
 		
 		if(length(sim$results)>1){
 			for(i in 2:length(sim$results)){
@@ -2081,7 +2118,9 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 					breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
 				bio_arr = abind(bio_arr, this_sum$bio, along=ifelse(i==2, 0, 1))	
 				occ_arr = abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
-				xclass_arr = abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))	
+				xclass_arr = abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))
+
+				land_arr = abind(land_arr, summarize_land(sim$lands[[i]], locs=locs), along=ifelse(i==2, 0, 1))	
 			}
 		}
 	}
@@ -2092,9 +2131,10 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		names(dimnames(bio_arr)) = c('run', 'comm_stat','cross_space','category','p_obs')
 		names(dimnames(occ_arr)) = c('run', 'comm_stat','cross_space','category','p_obs')
 		names(dimnames(xclass_arr)) = c('run','cross_space','ab_ct','p_obs')
+		names(dimnames(land_arr)) = c('run','stat')
 
 		# Return arrays where first dimension is the run
-		return(list(bio=bio_arr, occ=occ_arr, xclass=xclass_arr))
+		return(list(bio=bio_arr, occ=occ_arr, xclass=xclass_arr, land=land_arr))
 
 	} else {
 		if(!is.function(sum_func)) stop('Argument sum_func must be a function.')
@@ -2107,9 +2147,11 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 
 		xclass_sum = apply(xclass_arr, 2:length(dim(xclass_arr)), sum_func)	
 		names(dimnames(xclass_sum)) = c('cross_run','cross_space','ab_ct','p_obs')
+
+		land_sum = apply(land_arr, 2, sum_func)
 		
 		# Return summaries across runs. If sum_func returns a vector, then the first dimension is the summaries across runs.	
-		return(list(bio=bio_sum, occ=occ_sum, xclass=xclass_sum))
+		return(list(bio=bio_sum, occ=occ_sum, xclass=xclass_sum, land=land_sum))
 	}
 }
 
