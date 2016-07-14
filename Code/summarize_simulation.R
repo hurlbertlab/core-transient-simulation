@@ -35,7 +35,7 @@ for(f in file_list){
 	sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms)
 	
 	# Summaries across runs
-	sim_sum = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms, sum_func=sum_func)
+	sim_sum = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms, sum_func=ifelse(exists(sum_func), sum_func, NULL))
 	
 	# Save
 	save(sim_sum_ind, sim_sum, file=file.path(results_dir, paste0(sumID,'_summary.RData')))
