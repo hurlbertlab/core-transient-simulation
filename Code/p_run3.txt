@@ -3,8 +3,8 @@
 
 
 ## Define the landscape: make_landscape()
-dimX = 64 									# Number of rows
-dimY = 64 									# Number of columns
+dimX = 8 									# Number of rows
+dimY = 8 									# Number of columns
 habA_prop = 0.5								# Proprotion of landscape that is type 'A'
 
 
@@ -20,22 +20,22 @@ dist_gsad = 'b_rates'							# (optional) Distribution from which global species 
 
 
 ## Define how the simulation is initialized: populate_landscape()
-K = 100									# Integer giving the carrying capacity of each cell. Or, a matrix specifying a capacity for each cell.								
+K = 50									# Integer giving the carrying capacity of each cell. Or, a matrix specifying a capacity for each cell.								
 prop_full = 1								# (optional) Proportion of the carrying capacity to fill initially.					
 init_distribute = 'same'						# (optional) String indicating how individuals should initially be distributed across the landscape: 'same','uniform','designate'. See populate_landscape().
 
 
 ## Define how the simulation should run
-nsteps = 1000								# Number of timesteps to run the simulation.
+nsteps = 10								# Number of timesteps to run the simulation.
 d_kernel = list(type='gaussian')					# (optional) Distribution defining the shape of an individual's dispersal kernel.
 v_kernel = list(type='gaussian')					# (optional) Distribution defining the shape of an individual's movement kernel.
 imm_rate = 0.01								# (optional) Immigration rate: probability that an empty space is colonized from outside the landscape.
 	
 
 ## Define how the simulation should be saved
-nruns = 8									# Number of independent simulation runs to perform with this set of parameters
+nruns = 4									# Number of independent simulation runs to perform with this set of parameters
 save_steps = seq(0, nsteps, 1)					# (optional) Vector of timesteps to save. Including 0 saves the initial metacommunity.
-simID = 'converge'								# (optional) String identifying this run. Used for saving simulation results.
+simID = 'run3'								# (optional) String identifying this run. Used for saving simulation results.
 
 
 
