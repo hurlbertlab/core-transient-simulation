@@ -1859,7 +1859,7 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 #	sum_parms : list of parameters used for summarizing across spatial and temporal units
 #		agg_times = specifies how time points should be aggregated before calculating richness. See calc_rich_CT function.
 #		time_sum = character indicating which time window should be used in summary statistics: 'mean' (all windows), 'last' (most recent), 'none' (no summary across time) 
-#		quants = vector of qunatiles desired for each statitistic
+#		quants = vector of quantiles desired for each statitistic
 summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, gsad=NULL, agg_times=NULL, P_obs=list(1), sum_parms=NULL){
 	
 	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
@@ -1973,6 +1973,50 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 
 	# Return list of statistics
 	list(bio=bio_stats, occ=occ_stats, xclass=xclass_stats)
+}
+
+
+# Function that summarizes the landscape on which a simulation was run
+#	sim : either a filename for a simulation run or a raster landscape on which the simulation was run 
+#	locs : two-column matrix of cell locations where species occupancies should be calculated or a list of cell locations that should be aggregated.
+ 
+summarize_land = function(sim, locs){
+
+	# If sim is a file, then read in simulation run.
+	if(is.character(sim)){
+		load(sim)
+		land = this_land
+	}
+	
+	# If sim is a landscape
+	if(class(sim) %in% c('RasterLayer', 'matrix')){
+		land = sim
+	}
+
+	# Convert matrix of cell locations to list if necessary.
+	if(!is.list(locs)) locs = list(locs)
+	
+	# For each location, summarize habitats
+	habitats = sapply(locs, function(cell_block){
+		
+		hab_vals = land[cell_block]
+
+		# Get average habitat value
+		hab_mean = mean(hab_vals)
+
+		# Get dominant habitat type
+		hab_types = sapply(hab_vals, get_habitat)
+		hab_freq = table(hab_types)
+		hab_freq = hab_freq[1]/length(hab_types)
+		if(hab_freq <0.5) hab_freq = 1-hab_freq
+
+		# Return mean value and dominant precentage
+		c(mean = hab_mean, prop = as.numeric(hab_freq))
+	})
+
+	# WORKING HERE- TRYING TO DECIDE WHETHER TO USE PREVIOUS INFO TO CALCULATE HETEROGENEITY METRICS
+	# OR, TO SIMPLIFY AND JUST CALCULATE PROPORTION OF DOMINANT HABITAT COVER ACROSS LOCS
+
 }
 
 
