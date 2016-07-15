@@ -1,0 +1,47 @@
+## An example of a parameter file for running multiple simulations
+## Parameters indicated as optional are set to default values and can be omitted since these deaults are stored within simulation functions
+
+
+## Define the landscape: make_landscape()
+dimX = 64 									# Number of rows
+dimY = 64 									# Number of columns
+habA_prop = 0.5								# Proprotion of landscape that is type 'A'
+
+
+## Define the species pool: make_species() and make_sad()
+S_A = 20									# Number of species specializing on habitat A
+S_B = 20									# Number of species specializing on habitat B
+dist_b = list(type='lognormal', maxN=8, P_maxN=0.001)		# (optional) Distribution from which species birth rates are drawn. See make_sad() for options.
+m_rates = c(.1, .1, .1)							# Mortality rates in preferred and unpreferred habitat. Optionally a third number for generalist mortality.
+r_rates = c(.9, .9, .9)							# Recruitment rates in preferred and unpreferred habitat. Optionally a third number of generalist recruitment.
+dist_d = list(mu=9.9125, var=0)					# (optional) List of the mean and variance of the gamma distribution from which species expected dispersal distances are drawn.
+dist_v = list(mu=c(0,9.9125), var=c(0,0))
+dist_gsad = 'b_rates'							# (optional) Distribution from which global species abundances are drawn. See make_sad(). Or, a string indicating that abundances should equal species birth rates.
+
+
+## Define how the simulation is initialized: populate_landscape()
+K = 100									# Integer giving the carrying capacity of each cell. Or, a matrix specifying a capacity for each cell.								
+prop_full = 1								# (optional) Proportion of the carrying capacity to fill initially.					
+init_distribute = 'same'						# (optional) String indicating how individuals should initially be distributed across the landscape: 'same','uniform','designate'. See populate_landscape().
+
+
+## Define how the simulation should run
+nsteps = 1000								# Number of timesteps to run the simulation.
+d_kernel = list(type='gaussian')					# (optional) Distribution defining the shape of an individual's dispersal kernel.
+v_kernel = list(type='gaussian')					# (optional) Distribution defining the shape of an individual's movement kernel.
+imm_rate = 0.01								# (optional) Immigration rate: probability that an empty space is colonized from outside the landscape.
+	
+
+## Define how the simulation should be saved
+nruns = 8									# Number of independent simulation runs to perform with this set of parameters
+save_steps = seq(0, nsteps, 1)					# (optional) Vector of timesteps to save. Including 0 saves the initial metacommunity.
+simID = 'converge'								# (optional) String identifying this run. Used for saving simulation results.
+
+
+
+
+
+
+
+
+ 
