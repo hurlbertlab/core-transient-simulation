@@ -16,9 +16,32 @@ setwd(sum_dir)
 # Load simulation functions
 source(file.path(sim_dir, 'simulation_functions.R'))
 
+
+##########################
+## Functions
+
+
+make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL){	
+	plot.new()
+	plot.window(xlim=xlim, ylim=ylim)
+	axis(1)
+	abline(h=par('usr')[3], lwd=3)
+	axis(2, las=1)
+	abline(v=par('usr')[1], lwd=3)
+	if(!is.null(xlab)) mtext(xlab, 1, 2.5)
+	if(!is.null(ylab)) mtext(ylab, 2, 3)
+
+}
+
+##########################
+
+
+
+
+
 #### 32x32 grid, dispersal: p=0.99 of traveling 32 units or p=0.80 of traveling 16 units ####
 
-sumID = 'converge32_d-unif'
+sumID = 'converge32_d-9'
 
 
 # Read in summaries across scales
@@ -251,7 +274,9 @@ mtext(paste('Cross-classification: spatial grain =', sp, 'x', sp), 3, 1, outer=T
 
 dev.off()
 
-## Examine variation across time and between runs
+
+
+#### Examine variation across time and between runs
 
 sumID = 'converge64_d-9'
 
@@ -309,19 +334,6 @@ names(dimnames(xclass_ind_T)) = c('scale', 'endT', 'run','cross_space','ab_ct','
 #bio_d4 = bio_ind_T; occ_d4 = occ_ind_T; xclass_d4 = xclass_ind_T
 
 
-
-make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL){	
-	plot.new()
-	plot.window(xlim=xlim, ylim=ylim)
-	axis(1)
-	abline(h=par('usr')[3], lwd=3)
-	axis(2, las=1)
-	abline(v=par('usr')[1], lwd=3)
-	if(!is.null(xlab)) mtext(xlab, 1, 2.5)
-	if(!is.null(ylab)) mtext(ylab, 2, 3)
-
-}
-
 # Scale on different pages
 # Community statistic on different pages
 # Detectability in different plots
@@ -329,26 +341,26 @@ make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL){
 nruns=8
 p_obs = seq(.1, 1, .1)
 
-pdf(file.path(sum_dir, paste0(sumID, '_ind_run_summary_through_time.pdf')), height=20, width=8)
+pdf(file.path(sum_dir, paste0(sumID, '_ind_run_summary_through_time.pdf')), height=10, width=8)
 
-par(mfrow=c(10, 2))
+par(mfrow=c(5, 2))
+#par(mfrow=c(10, 2)) 
 par(mar=c(2, 2, 1, 1))
 par(oma=c(2,2,3,0))
 par(lend=1)
 
-for(sp in 2^(0:4)){
-
+for(p in rev(p_obs)){
 
 	# Biological Core/Trans Richness
-	for(p in rev(p_obs)){
+	for(sp in 2^(0:4)){
 		maxS = max(bio_ind_T[as.character(sp), , , 'rich', '97.5%', , as.character(p)])	
 
 		for(type in c('core','trans')){
 			make_plot(c(0, 1000), c(0, maxS), xlab=ifelse(p==p_obs[1], 'Time', ''), ylab=ifelse(type=='core', 'Num. species', ''))
 	
-			if(p==1&type=='core') mtext('Core', 3, 0)
-			if(p==1&type=='trans') mtext('Transient', 3, 0)
-			if(type=='core') text(0, 0.95*maxS, paste('Detection prob =',p), pos=4)
+			if(sp==1&type=='core') mtext('Core', 3, 0)
+			if(sp==1&type=='trans') mtext('Transient', 3, 0)
+			if(type=='core') text(0, 0.95*maxS, paste('Grain =',sp,'x',sp), pos=4)
 
 			for(i in 1:nruns){
 				polygon(c(endTs, rev(endTs)), c(bio_ind_T[as.character(sp), , i,'rich', '2.5%',type,as.character(p)], rev(bio_ind_T[as.character(sp), , i, 'rich', '97.5%',type,as.character(p)])),
@@ -358,18 +370,19 @@ for(sp in 2^(0:4)){
 		}
 	}
 	
-	mtext(paste('Birth rate-based categories: spatial grain =', sp, 'x', sp), 3, 1, outer=T)
+	mtext(paste('Birth rate-based categories: detection prob. =', p), 3, 1, outer=T)
+
 
 	# Occupancy Core/Trans Richness
-	for(p in rev(p_obs)){
+	for(sp in 2^(0:4)){
 		maxS = max(occ_ind_T[as.character(sp), , , 'rich', '97.5%', , as.character(p)])	
 
 		for(type in c(dim(occ_ind_T)[6], 1)){
 			make_plot(c(0, 1000), c(0, maxS), xlab=ifelse(p==p_obs[1], 'Time', ''), ylab=ifelse(type==dim(occ_ind_T)[6], 'Num. species', ''))
 	
-			if(p==1&type==dim(occ_ind_T)[6]) mtext('Core', 3, 0)
-			if(p==1&type==1) mtext('Transient', 3, 0)
-			if(type==dim(occ_ind_T)[6]) text(0, 0.95*maxS, paste('Detection prob =',p), pos=4)
+			if(sp==1&type==dim(occ_ind_T)[6]) mtext('Core', 3, 0)
+			if(sp==1&type==1) mtext('Transient', 3, 0)
+			if(type==dim(occ_ind_T)[6]) text(0, 0.95*maxS, paste('Grain =',sp,'x',sp), pos=4)
 
 			for(i in 1:nruns){
 				polygon(c(endTs, rev(endTs)), c(occ_ind_T[as.character(sp), , i,'rich', '2.5%',type,as.character(p)], rev(occ_ind_T[as.character(sp), , i, 'rich', '97.5%',type,as.character(p)])),
@@ -379,19 +392,19 @@ for(sp in 2^(0:4)){
 		}
 	}
 	
-	mtext(paste('Temporal occupancy-based categories: spatial grain =', sp, 'x', sp), 3, 1, outer=T)
+	mtext(paste('Temporal occupancy-based categories: detection prob. =', p), 3, 1, outer=T)
 
 	
 	# Biological Core/Trans Abundance
-	for(p in rev(p_obs)){
+	for(sp in 2^(0:4)){
 		maxS = max(bio_ind_T[as.character(sp), , , 'abun', '97.5%', , as.character(p)])	
 
 		for(type in c('core','trans')){
 			make_plot(c(0, 1000), c(0, maxS), xlab=ifelse(p==p_obs[1], 'Time', ''), ylab=ifelse(type=='core', 'Num. individuals', ''))
 	
-			if(p==1&type=='core') mtext('Core', 3, 0)
-			if(p==1&type=='trans') mtext('Transient', 3, 0)
-			if(type=='core') text(0, 0.95*maxS, paste('Detection prob =',p), pos=4)
+			if(sp==1&type=='core') mtext('Core', 3, 0)
+			if(sp==1&type=='trans') mtext('Transient', 3, 0)
+			if(type=='core') text(0, 0.95*maxS, paste('Grain =',sp,'x',sp), pos=4)
 
 			for(i in 1:nruns){
 				polygon(c(endTs, rev(endTs)), c(bio_ind_T[as.character(sp), , i,'abun', '2.5%',type,as.character(p)], rev(bio_ind_T[as.character(sp), , i, 'abun', '97.5%',type,as.character(p)])),
@@ -401,18 +414,19 @@ for(sp in 2^(0:4)){
 		}
 	}
 	
-	mtext(paste('Birth rate-based categories: spatial grain =', sp, 'x', sp), 3, 1, outer=T)
+	mtext(paste('Birth rate-based categories: detection prob. =', p), 3, 1, outer=T)
+
 
 	# Occupancy Core/Trans Richness
-	for(p in rev(p_obs)){
+	for(sp in 2^(0:4)){
 		maxS = max(occ_ind_T[as.character(sp), , , 'abun', '97.5%', , as.character(p)])	
 
 		for(type in c(dim(occ_ind_T)[6], 1)){
 			make_plot(c(0, 1000), c(0, maxS), xlab=ifelse(p==p_obs[1], 'Time', ''), ylab=ifelse(type==dim(occ_ind_T)[6], 'Num. individuals', ''))
 	
-			if(p==1&type==dim(occ_ind_T)[6]) mtext('Core', 3, 0)
-			if(p==1&type==1) mtext('Transient', 3, 0)
-			if(type==dim(occ_ind_T)[6]) text(0, 0.95*maxS, paste('Detection prob =',p), pos=4)
+			if(sp==1&type==dim(occ_ind_T)[6]) mtext('Core', 3, 0)
+			if(sp==1&type==1) mtext('Transient', 3, 0)
+			if(type==dim(occ_ind_T)[6]) text(0, 0.95*maxS, paste('Grain =',sp,'x',sp), pos=4)
 
 			for(i in 1:nruns){
 				polygon(c(endTs, rev(endTs)), c(occ_ind_T[as.character(sp), , i,'abun', '2.5%',type,as.character(p)], rev(occ_ind_T[as.character(sp), , i, 'abun', '97.5%',type,as.character(p)])),
@@ -422,19 +436,19 @@ for(sp in 2^(0:4)){
 		}
 	}
 	
-	mtext(paste('Temporal occupancy-based categories: spatial grain =', sp, 'x', sp), 3, 1, outer=T)
+	mtext(paste('Temporal occupancy-based categories: detection prob. =', p), 3, 1, outer=T)
 	
 
 	# Cross Classification
-	for(p in rev(p_obs)){
+	for(sp in 2^(0:4)){
 		maxS = max(xclass_ind_T[as.character(sp), , , '97.5%', 1:2 , as.character(p)])	
 
 		for(type in c('core','trans')){
 			make_plot(c(0, 1000), c(0, maxS), xlab=ifelse(p==p_obs[1], 'Time', ''), ylab=ifelse(type=='core', 'Num. species', ''))
 	
-			if(p==1&type=='core') mtext('Classified Core (by occupancy)', 3, 0)
-			if(p==1&type=='trans') mtext('Classified Transient (by occupancy)', 3, 0)
-			if(type=='core') text(0, 0.95*maxS, paste('Detection prob =',p), pos=4)
+			if(sp==1&type=='core') mtext('Classified Core (by occupancy)', 3, 0)
+			if(sp==1&type=='trans') mtext('Classified Transient (by occupancy)', 3, 0)
+			if(type=='core') text(0, 0.95*maxS, paste('Grain =',sp,'x',sp), pos=4)
 
 			for(i in 1:nruns){
 				polygon(c(endTs, rev(endTs)), c(xclass_ind_T[as.character(sp), , i, '2.5%',paste0('core_',type),as.character(p)], rev(xclass_ind_T[as.character(sp), , i, '97.5%', paste0('core_',type),as.character(p)])),
@@ -444,17 +458,17 @@ for(sp in 2^(0:4)){
 		}
 	}
 	
-	mtext(paste('Birth rate-based Core Species: spatial grain =', sp, 'x', sp), 3, 1, outer=T)
+	mtext(paste('Birth rate-based Core Species: detection prob. =', p), 3, 1, outer=T)
 
-	for(p in rev(p_obs)){
+	for(sp in 2^(0:4)){
 		maxS = max(xclass_ind_T[as.character(sp), , , '97.5%', 3:4 , as.character(p)])	
 
 		for(type in c('core','trans')){
 			make_plot(c(0, 1000), c(0, maxS), xlab=ifelse(p==p_obs[1], 'Time', ''), ylab=ifelse(type=='core', 'Num. species', ''))
 	
-			if(p==1&type=='core') mtext('Classified Core (by occupancy)', 3, 0)
-			if(p==1&type=='trans') mtext('Classified Transient (by occupancy)', 3, 0)
-			if(type=='core') text(0, 0.95*maxS, paste('Detection prob =',p), pos=4)
+			if(sp==1&type=='core') mtext('Classified Core (by occupancy)', 3, 0)
+			if(sp==1&type=='trans') mtext('Classified Transient (by occupancy)', 3, 0)
+			if(type=='core') text(0, 0.95*maxS, paste('Grain =',sp,'x',sp), pos=4)
 
 			for(i in 1:nruns){
 				polygon(c(endTs, rev(endTs)), c(xclass_ind_T[as.character(sp), , i, '2.5%',paste0('trans_',type),as.character(p)], rev(xclass_ind_T[as.character(sp), , i, '97.5%', paste0('trans_',type),as.character(p)])),
@@ -464,12 +478,11 @@ for(sp in 2^(0:4)){
 		}
 	}
 	
-	mtext(paste('Birth rate-based Transient Species: spatial grain =', sp, 'x', sp), 3, 1, outer=T)
+	mtext(paste('Birth rate-based Transient Species: detection prob. =', p), 3, 1, outer=T)
 
 }
 
 dev.off()
-
 
 ### Comparing dispersal on 32 x 32 grid
 
@@ -615,6 +628,105 @@ for(sp in 2^(0:4)){
 }
 
 dev.off()
+
+
+
+##### Frequency distribution plots
+
+sumID = 'converge32_d-9'
+
+# Read in summaries across scales
+load(file.path(sumID, 'occdist_L1_summary.RData'))
+occ = sim_sum$occ
+occ_ind = sim_sum_ind$occ
+
+for(sp in 2:5){
+
+	this_file = file.path(sumID, paste0('occdist_L',sp,'_summary.RData'))
+	load(this_file)
+
+	occ = abind(occ, sim_sum$occ, along=ifelse(sp==2, 0, 1))
+	occ_ind = abind(occ_ind, sim_sum_ind$occ, along=ifelse(sp==2, 0, 1))
+}
+
+# Assign dimension names
+dimnames(occ)[[1]] = 2^(0:4); names(dimnames(occ)) = c('scale', names(dimnames(sim_sum$occ)))
+dimnames(occ_ind)[[1]] = 2^(0:4); names(dimnames(occ_ind)) = c('scale', 'run', 'comm_stat','cross_space','category','p_obs')
+dimnames(occ_ind)[[2]] = 1:8
+
+
+nruns=8
+p_obs = seq(.1, 1, .1)
+grains = 2^(0:4)
+binwidth=0.05
+bins = seq(0, 1, binwidth)
+
+pdf(file.path(sum_dir, paste(sumID, 'occupancy_distributions.pdf')), height=11, width=8)
+
+# Page layout
+par(mfrow=c(5, 1))
+par(mar=c(2,5,1,1))
+par(oma=c(2,0,2,0))
+par(lend=1)
+
+# Dectability on separate pages
+for(p in as.character(rev(p_obs))){
+
+	# Spatial grain in separate plots
+	for(sp in as.character(grains)){
+		# Calculate maximum number of species in a category
+		maxS = max(occ_ind[sp,,'rich','97.5%',,p])
+	
+		# Set up plot
+		make_plot(c(0,1), c(0,maxS), xlab=ifelse(sp=='16', 'Temporal Occupancy',''), ylab='Num. species')
+
+		# Add each run
+		for(i in 1:nruns){
+		
+			# Add 95% intervals
+			rect(bins[-1]-binwidth, occ_ind[sp,i,'rich','2.5%',,p], bins[-1], occ_ind[sp,i,'rich','97.5%',,p], col='#00000020', border=NA)
+
+			# Add means
+			segments(bins[-1]-binwidth, occ_ind[sp,i,'rich','mean',,p], bins[-1], occ_ind[sp,i,'rich','mean',,p], lwd=2)
+		}
+
+		# Add labels
+		mtext(paste('Spatial grain =', sp, 'x', sp), 3, -2, adj=0.05)
+		if(sp=='1') mtext(paste('Detection prob. =',p), 3, 0, outer=T)
+	}
+
+
+}
+
+dev.off()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
