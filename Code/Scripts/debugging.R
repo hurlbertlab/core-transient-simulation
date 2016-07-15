@@ -380,4 +380,36 @@ cells_distribute
 d_kernel
 imm_rate
 
+#############################################
+
+## Generating documentation
+
+
+doc_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Documentation'
+sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code'
+
+## Simulation functions
+source(file.path(sim_dir, 'simulation_functions.R'))
+
+# Find functions
+obs = objects()
+funcs = obs[sapply(obs, function(x) is.function(get(x)))]
+
+
+for(i in 1:length(funcs)){
+	prompt(filename=file.path(doc_dir,paste0(funcs[i],'.Rd')), name=funcs[i])
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
