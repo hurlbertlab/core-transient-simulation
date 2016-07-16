@@ -22,15 +22,15 @@ Only the dimensions of the landscape are required. By default, the function will
 ### Initializing a species pool
 `make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)`
 
-A species pool is a 3-dimensional array of species vital rates. The first dimension specifies the species. The second dimension specifies the type of rate:
+A species pool is a 3-dimensional array of species vital rates. The first dimension specifies the species. The second dimension defines in which habitat the rate applies ('A' or 'B') and the third dimension specifies the type of rate:
+
 1. **b**: birth rate- number of offpsring produced by established individual per timestep.
 2. **m**: mortality rate- probability that established individual dies during a time step.
 3. **r**: recruitment rate- probability than a propagule arriving at an open space will become an established individual
 4. **d**: dispersal rate- expected distance that a propagule will disperse from its origination point
 5. **v**: movement rate- expected distance that an established individual will move from its cell
-The third dimension allows different rates to be specified for a species in each habitat type.
 
-
+Birth rates are positive in a species' preferred habitat and 0 elsewhere. Generalists prefer both habitat types equally. Dispersal rates control how newly produced propagules move away from their cell of origin. Movement rates control how established individuals move from their current cell. Movement, mortality, and recruitment rates can be set to differe systematically between preferred and non-preferred habitats.
 
 
 ## Simulation Operation
