@@ -278,7 +278,7 @@ dev.off()
 
 #### Examine variation across time and between runs
 
-sumID = 'converge64_d-9'
+sumID = 'converge32_d-adj'
 
 # Define times and scales
 endTs = seq(25, 1000, 25)
@@ -332,7 +332,6 @@ names(dimnames(xclass_ind_T)) = c('scale', 'endT', 'run','cross_space','ab_ct','
 #bio_dunif = bio_ind_T; occ_dunif = occ_ind_T; xclass_dunif = xclass_ind_T
 #bio_d9 = bio_ind_T; occ_d9 = occ_ind_T; xclass_d9 = xclass_ind_T
 #bio_d4 = bio_ind_T; occ_d4 = occ_ind_T; xclass_d4 = xclass_ind_T
-
 
 # Scale on different pages
 # Community statistic on different pages
@@ -633,7 +632,7 @@ dev.off()
 
 ##### Frequency distribution plots
 
-sumID = 'converge32_d-9'
+sumID = 'converge32_d-adj'
 
 # Read in summaries across scales
 load(file.path(sumID, 'occdist_L1_summary.RData'))
