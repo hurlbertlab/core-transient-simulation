@@ -7,9 +7,9 @@
 make_sad(N_S, distribution)
 }
 \arguments{
-\item{N_S}{number of species}
+\item{N_S}{(required) number of species}
 
-\item{distribution}{named list of  parameters describing the functional 
+\item{distribution}{(required) named list of  parameters describing the functional 
 form of the distribution (SAD).}
 }
 \value{

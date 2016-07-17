@@ -6,7 +6,7 @@
 #' @note Habitat heterogeneity increases as the ratio between \code{d} and grid 
 #' 	dimensions decreases. WARNING: long compute time on grids > 50 x 50.
 #' 
-#' @param x number of cells in the x dimension, or a vector of the x and y
+#' @param x (required) number of cells in the x dimension, or a vector of the x and y
 #' 	dimensions
 #' @param y number of cells in the y dimension
 #' @param mod variogram model used to generate spatial autocorrelation 

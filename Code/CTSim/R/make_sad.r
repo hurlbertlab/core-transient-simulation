@@ -23,8 +23,8 @@
 #' 	To add a correlation, generate x as a multivariate random normal 
 #' 	variable with specified covariance matrix.
 #' 
-#' @param N_S number of species
-#' @param distribution named list of  parameters describing the functional 
+#' @param N_S (required) number of species
+#' @param distribution (required) named list of  parameters describing the functional 
 #' 	form of the distribution (SAD).
 #' @return a vector of integers of length \code{N_S}
 #'

@@ -8,7 +8,7 @@ make_landscape(x = NULL, y = NA, mod = NULL, d = NA, prop = NA,
   draw_plot = F)
 }
 \arguments{
-\item{x}{number of cells in the x dimension, or a vector of the x and y
+\item{x}{(required) number of cells in the x dimension, or a vector of the x and y
 dimensions}
 
 \item{y}{number of cells in the y dimension}
