@@ -7,15 +7,15 @@
 #' global species abundance distribution and initial metacommunity.
 #' Landscapes, species pools and gsads are saved as lists 
 #' (object names: \code{lands_N}, \code{species_N}, \code{gsad_N})
-#' in \code{[simID]_simobjects.RData}.
+#' in \code{<simID>_simobjects.RData}.
 #' Simulations can be run in parallel by specifying 
 #' \code{nparallel > 1}, which requires the \code{\link{doParallel}} and
-#' \code{link{foreach}} packages.
+#' \code{\link{foreach}} packages.
 #' By default, \code{nparallel = 1} and the simulations proceed serially.
 #' Each run of the simulation is temporarily saved to the working directory
 #' or permanently saved to the directory specified by \code{save_sim}. 
 #' If this directory does not exist then it is created. Runs are saved as
-#' \code{[simID]_run[i].RData}. This file contains five objects:
+#' \code{<simID>_run<i>.RData}. This file contains five objects:
 #' \describe{
 #'	\item{results}{an array of the metacommunity through time returned by 
 #'		\code{\link{run_sim}}.}
@@ -39,7 +39,7 @@
 #' but does not currently allow users to restart a simulation on an existing 
 #' run. If \code{restart} is \code{TRUE}, the function navigates to the 
 #' \code{save_sim} directory and searches for the first instance of 
-#' code{i <= nruns} where \code{[simID]_run[i].RData} does not exist.
+#' code{i <= nruns} where \code{<simID>_run<i>.RData} does not exist.
 #' It then starts simulations for all \code{i} that do not have saved files
 #' using the objects saved in \code{[simID]_simobjects.RData}.
 #'
@@ -94,7 +94,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 		registerDoParallel(cluster)
 
 		# Send required functions and objects to each node
-		clusterExport(cluster, c('parms','simID','save_sim','sim_dir','report','save_dir'), envir=environment())
+		clusterExport(cluster, c('parms','simID','save_sim','report','save_dir','lib_loc'), envir=environment())
 		clusterEvalQ(cluster, library(CTSim, lib.loc=lib_loc))
 		
 		# If this is not a restart of a previous run
@@ -107,7 +107,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 					y = dimY
 					if(!exists('vgm_mod')) vgm_mod = NULL
 					d = ifelse(exists('vgm_dcorr'), vgm_dcorr, NA)
-					prop = ifelse(exists('habA_prop'), habA_prop, 0.5)
+					prop = ifelse(exists('habA_prop'), 1-habA_prop, 0.5)
 					make_landscape(x, y, vgm_mod, d, prop, draw_plot=F)
 				})
 			})
@@ -121,9 +121,21 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 					S_AB = ifelse(exists('S_AB'), S_AB, NA) 
 					if(!exists('dist_b')) dist_b = NULL
 					m = m_rates
-					r = r_rates 
-					if(!exists('dist_d')) dist_d = NULL
-					if(!exists('dist_v')) dist_v = NULL
+					r = r_rates
+					if(!exists('dist_d')){
+						if(exists('d_kernel')){
+							dist_d = list(type=d_kernel$type)
+						} else { dist_d = NULL }
+					} else {
+						if(exists('d_kernel')) dist_d = c(dist_d, type=d_kernel$type)
+					}
+					if(!exists('dist_v')){
+						if(exists('v_kernel')){
+							dist_v = list(type=v_kernel$type)
+						} else { dist_v = NULL }
+					} else {
+						if(exists('v_kernel')) dist_v = c(dist_v, type=v_kernel$type)
+					}
 					make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)
 				})
 			})
@@ -255,7 +267,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 					y = dimY
 					if(!exists('vgm_mod')) vgm_mod = NULL
 					d = ifelse(exists('vgm_dcorr'), vgm_dcorr, NA)
-					prop = ifelse(exists('habA_prop'), habA_prop, 0.5)
+					prop = ifelse(exists('habA_prop'), 1-habA_prop, 0.5)
 					make_landscape(x, y, vgm_mod, d, prop, draw_plot=F)
 				})
 			})

@@ -36,23 +36,32 @@
 #' @param r (required) vector of length 2 or 3 specifying recruitment rates 
 #' 	[preferred habitat, non-referred habitat, generalist rate]
 #' @param dist_d named list of parameters describing distribution from which 
-#' 	propagule dispersal kernals should be drawn. Defaults to 1 for all species.
+#' 	expected propagule dispersal distances should be drawn. 
+#'	Defaults to 1 for all species.
 #' 	Contains:
 #'	\describe{
 #' 		\item{\code{u}}{mean dispersal distance}
-#' 		\item{\code{var}}{variance of distribution from which kernals drawn. 
-#' 			Defaults to 0 for the same dispersal kernal for all species.}
+#' 		\item{\code{var}}{variance of the distribution from which  
+#' 			distances are drawn. Defaults to 0 for the same 
+#'			dispersal kernal for all species.}
+#'		\item{\code{type}}{character string defining form of the dispersal 
+#'			kernel. See \code{\link{get_dispersal_vec}} for options. 
+#'			Defaults to gaussian.}
 #'	}
 #' @param dist_v named list of parameters describing distribution from which 
-#' 	movement kernals should be drawn. Defaults to 0 for all species in all 
-#' 	habitats. Contains:
+#' 	expected movement distances should be drawn. Defaults to 0 for all species  
+#' 	in all habitats. Contains:
 #' 	\describe{
 #'		\item{\code{mu}}{vector of length 2 or 3 specifying mean movement 
 #' 			distance [preferred habitat, non-preferred habitat, generalist rate]}
-#'		\item{\code{var}}{vector of length 2 or 3 specifying variance in mean 
-#' 			movement distance [preferred habitat, non-preferred habitat, 
-#' 			generalist rate]. Defaults to 0 for the same movement kernal for 
+#'		\item{\code{var}}{vector of length 2 or 3 specifying variance of the 
+#'			gamma distributions from which movement distances are drawn 
+#' 			[preferred habitat, non-preferred habitat, generalist rate]. 
+#'			Defaults to 0 for the same movement kernal for 
 #' 			all species.}
+#'		\item{\code{type}}{character string defining form of the movement 
+#'			kernel. See \code{\link{get_dispersal_vec}} for options. 
+#'			Defaults to gaussian.} 
 #'	}
 #' @return an array with dimensions \code{[S_A+S_B+S_AB, 2, 5]}
 #'
@@ -67,8 +76,10 @@ make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NUL
 
 	# Set distributions to defaults if undefined
 	if(is.null(dist_b)) dist_b = list(maxN=10, type='uniform')
-	if(is.null(dist_d)) dist_d = list(mu=1, var=0)
-	if(is.null(dist_v)) dist_v = list(mu=rep(0,3), var=rep(0,3))
+	if(is.null(dist_d)) dist_d = list(mu=1, var=0, type='gaussian')
+	if(is.null(dist_v)) dist_v = list(mu=rep(0,3), var=rep(0,3), type='gaussian')
+	if(!exists('type', dist_d)) dist_d = c(dist_d, type='gaussian')
+	if(!exists('type', dist_v)) dist_v = c(dist_v, type='gaussian')
 
 	# Create array to hold species vital rates (b = birth, m = death, r = recruitment, d = dispersal, v = movement)
 	# Rates are per timestep
@@ -95,37 +106,115 @@ make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NUL
 	species_rates[(S_A+1):(S_A+S_B), 'B', 'r'] = r[1]
 	species_rates[(S_A+1):(S_A+S_B), 'A', 'r'] = r[2]
 
-	# Mean dispersal distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
+	# Species expected dispersal rates
 	if(dist_d$var==0){
 		species_rates[,,'d'] = dist_d$mu
 	} else {
-		theta = dist_d$var / dist_d$mu
-		k = dist_d$mu / theta
-		species_rates[,,'d'] = rgamma(N_S, shape=k, scale=theta)
+		# Check that variance is positive
+		if(dist_d$var < 0) stop('Variance in dispersal rates must be positive.')
+
+		# For Gaussian or Uniform dispersal kernels, mean dispersal distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
+		if(dist_d$type %in% c('gaussian', 'uniform')){
+			# Check that mu is > 0
+			if(dist_d$mu<0) stop('Expected dispersal distance must be positive.')
+			
+			# Find parameters of gamma distribution
+			theta = dist_d$var / dist_d$mu
+			k = dist_d$mu / theta
+			
+			# Sample expected dispersal distances from gamma
+			species_rates[,,'d'] = rgamma(N_S, shape=k, scale=theta)
+		}
+		# For adjacent cell dispersal, probability of leaving origin cell is drawn from a beta distribution with mean 'mu' and variance 'var'
+		if(dist_d$type == 'adjacent'){
+			# Check that mu is on [0,1]
+			if((dist_d$mu < 0) | (dist_d$mu > 1)) stop('Expected probability of dispersal must be on [0,1] if using adjacent cell dispersal') 
+			
+			# Find parameters for beta distribution
+			mu_prod = dist_d$mu*(1-dist_d$mu)
+			if(dist_d$var>mu_prod) stop(paste('Variance of dispersal probabilities must be less than', mu_prod))
+			v = (mu_prod/dist_d$var)-1
+			a = dist_d$mu*v
+			b = (1-dist_d$mu)*v
+			
+			# Sample expected probabilities from beta
+			species_rates[,,'d'] = rbeta(N_S, a, b)
+		}
 	}
 
 	# Mean movement distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'.
+	# Check that variance is positive
+	if((dist_v$var[1] < 0)|(dist_v$var[2]<0)) stop('Variance in movement rates must be positive.')
+	
+	#Check that mu is > 0
+	if((dist_v$mu[1]<0)|(dist_v$mu[2]<0)) stop('Expected movement distance must be positive.')
+
 	# Preferred habitat
 	if(dist_v$var[1]==0){
 		species_rates[1:S_A, 'A', 'v'] = dist_v$mu[1]
 		species_rates[(S_A+1):(S_A+S_B), 'B', 'v'] = dist_v$mu[1]
 	} else {
-		theta = dist_v$var[1] / dist_v$mu[1]
-		k = dist_v$mu[1] / theta
-		species_rates[1:S_A, 'A', 'v'] = rgamma(S_A, shape=k, scale=theta)
-		species_rates[(S_A+1):(S_A+S_B), 'B', 'v'] = rgamma(S_B, shape=k, scale=theta)
+		# For Gaussian or Uniform kernels, mean movement distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
+		if(dist_v$type %in% c('gaussian', 'uniform')){
+
+			# Find parameters of gamma distribution
+			theta = dist_v$var[1] / dist_v$mu[1]
+			k = dist_v$mu[1] / theta
+			
+			# Sample expected dispersal distances from gamma
+			species_rates[1:S_A, 'A', 'v'] = rgamma(S_A, shape=k, scale=theta)
+			species_rates[(S_A+1):(S_A+S_B), 'B', 'v'] = rgamma(S_B, shape=k, scale=theta)
+		}
+		# For adjacent cell dispersal, probability of leaving origin cell is drawn from a beta distribution with mean 'mu' and variance 'var'
+		if(dist_v$type == 'adjacent'){
+			# Check that mu is on [0,1]
+			if((dist_v$mu[1] < 0) | (dist_v$mu[1] > 1)) stop('Expected probability of movement must be on [0,1] if using adjacent cell dispersal') 
+			
+			# Find parameters for beta distribution
+			mu_prod = dist_v$mu[1]*(1-dist_v$mu[1])
+			if(dist_v$var[1]>mu_prod) stop(paste('Variance of dispersal probabilities must be less than', mu_prod))
+			v = (mu_prod/dist_v$var[1])-1
+			a = dist_v$mu[1]*v
+			b = (1-dist_v$mu[1])*v
+			
+			# Sample expected probabilities from beta
+			species_rates[1:S_A, 'A', 'v'] = rbeta(S_A, a, b)
+			species_rates[(S_A+1):(S_A+S_B), 'B', 'v'] = rbeta(S_B, a, b)
+		}
 	}
 	# Unpreferred habitat
 	if(dist_v$var[2]==0){
 		species_rates[1:S_A, 'B', 'v'] = dist_v$mu[2]
 		species_rates[(S_A+1):(S_A+S_B), 'A', 'v'] = dist_v$mu[2]
 	} else {
-		theta = dist_v$var[2] / dist_v$mu[2]
-		k = dist_v$mu[2] / theta
-		species_rates[1:S_A, 'B', 'v'] = rgamma(S_A, shape=k, scale=theta)
-		species_rates[(S_A+1):(S_A+S_B), 'A', 'v'] = rgamma(S_B, shape=k, scale=theta)
+		# For Gaussian or Uniform kernels, mean movement distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
+		if(dist_v$type %in% c('gaussian', 'uniform')){
+
+			# Find parameters of gamma distribution
+			theta = dist_v$var[2] / dist_v$mu[2]
+			k = dist_v$mu[2] / theta
+			
+			# Sample expected dispersal distances from gamma
+			species_rates[1:S_A, 'B', 'v'] = rgamma(S_A, shape=k, scale=theta)
+			species_rates[(S_A+1):(S_A+S_B), 'A', 'v'] = rgamma(S_B, shape=k, scale=theta)
+		}
+		# For adjacent cell dispersal, probability of leaving origin cell is drawn from a beta distribution with mean 'mu' and variance 'var'
+		if(dist_v$type == 'adjacent'){
+			# Check that mu is on [0,1]
+			if((dist_v$mu[2] < 0) | (dist_v$mu[2] > 1)) stop('Expected probability of movement must be on [0,1] if using adjacent cell dispersal') 
+			
+			# Find parameters for beta distribution
+			mu_prod = dist_v$mu[2]*(1-dist_v$mu[2])
+			if(dist_v$var[2]>mu_prod) stop(paste('Variance of dispersal probabilities must be less than', mu_prod))
+			v = (mu_prod/dist_v$var[2])-1
+			a = dist_v$mu[2]*v
+			b = (1-dist_v$mu[2])*v
+			
+			# Sample expected probabilities from beta
+			species_rates[1:S_A, 'B', 'v'] = rbeta(S_A, a, b)
+			species_rates[(S_A+1):(S_A+S_B), 'A', 'v'] = rbeta(S_B, a, b)
+		}
 	}
-	
 
 	# Assign rates for generalists, if they exist
 	if(S_AB > 0){
@@ -146,9 +235,31 @@ make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NUL
 		if(dist_v$var[3]==0){
 			species_rates[(N_S-S_AB+1):N_S, , 'v'] = dist_v$mu[3]
 		} else {
-			theta = dist_v$var[3] / dist_v$mu[3]
-			k = dist_v$mu[3] / theta
-			species_rates[(N_S-S_AB+1):N_S, ,'v'] = rgamma(S_AB, shape=k, scale=theta)
+			# For Gaussian or Uniform kernels, mean movement distances for each species are drawn from a gamma distribution with mean 'mu' and variance 'var'
+			if(dist_v$type %in% c('gaussian', 'uniform')){
+
+				# Find parameters of gamma distribution
+				theta = dist_v$var[3] / dist_v$mu[3]
+				k = dist_v$mu[3] / theta
+			
+				# Sample expected dispersal distances from gamma
+				species_rates[(N_S-S_AB+1):N_S, , 'v'] = rgamma(S_AB, shape=k, scale=theta)
+			}
+			# For adjacent cell dispersal, probability of leaving origin cell is drawn from a beta distribution with mean 'mu' and variance 'var'
+			if(dist_v$type == 'adjacent'){
+				# Check that mu is on [0,1]
+				if((dist_v$mu[3] < 0) | (dist_v$mu[3] > 1)) stop('Expected probability of movement must be on [0,1] if using adjacent cell dispersal') 
+			
+				# Find parameters for beta distribution
+				mu_prod = dist_v$mu[3]*(1-dist_v$mu[3])
+				if(dist_v$var[3]>mu_prod) stop(paste('Variance of dispersal probabilities must be less than', mu_prod))
+				v = (mu_prod/dist_v$var[3])-1
+				a = dist_v$mu[3]*v
+				b = (1-dist_v$mu[3])*v
+				
+				# Sample expected probabilities from beta
+				species_rates[(N_S-S_AB+1):N_S, , 'v'] = rbeta(S_AB, a, b)
+			}
 		}
 	}
 

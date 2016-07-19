@@ -25,24 +25,33 @@ parameter in \code{\link{make_sad}}). Defaults to uniform on [1,10].}
 [preferred habitat, non-referred habitat, generalist rate]}
 
 \item{dist_d}{named list of parameters describing distribution from which 
-    propagule dispersal kernals should be drawn. Defaults to 1 for all species.
+    expected propagule dispersal distances should be drawn. 
+Defaults to 1 for all species.
     Contains:
 \describe{
         \item{\code{u}}{mean dispersal distance}
-        \item{\code{var}}{variance of distribution from which kernals drawn. 
-            Defaults to 0 for the same dispersal kernal for all species.}
+        \item{\code{var}}{variance of the distribution from which  
+            distances are drawn. Defaults to 0 for the same 
+        dispersal kernal for all species.}
+    \item{\code{type}}{character string defining form of the dispersal 
+        kernel. See \code{\link{get_dispersal_vec}} for options. 
+        Defaults to gaussian.}
 }}
 
 \item{dist_v}{named list of parameters describing distribution from which 
-    movement kernals should be drawn. Defaults to 0 for all species in all 
-    habitats. Contains:
+    expected movement distances should be drawn. Defaults to 0 for all species  
+    in all habitats. Contains:
     \describe{
     \item{\code{mu}}{vector of length 2 or 3 specifying mean movement 
             distance [preferred habitat, non-preferred habitat, generalist rate]}
-    \item{\code{var}}{vector of length 2 or 3 specifying variance in mean 
-            movement distance [preferred habitat, non-preferred habitat, 
-            generalist rate]. Defaults to 0 for the same movement kernal for 
+    \item{\code{var}}{vector of length 2 or 3 specifying variance of the 
+        gamma distributions from which movement distances are drawn 
+            [preferred habitat, non-preferred habitat, generalist rate]. 
+        Defaults to 0 for the same movement kernal for 
             all species.}
+    \item{\code{type}}{character string defining form of the movement 
+        kernel. See \code{\link{get_dispersal_vec}} for options. 
+        Defaults to gaussian.} 
 }}
 }
 \value{
