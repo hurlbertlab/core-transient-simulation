@@ -35,6 +35,7 @@
 #' (dimensions \code{[temporal unit, spatial unit]}) 
 #'
 #' @import abind
+#' @export
 
 calc_rich = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, agg_times=NULL, which_species=NULL){
 	

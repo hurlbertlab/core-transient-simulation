@@ -65,6 +65,7 @@
 #'	}
 #' @return an array with dimensions \code{[S_A+S_B+S_AB, 2, 5]}
 #'
+#' @export
 
 make_species = function(S_A=NA, S_B=NA, S_AB=NA, dist_b = NULL, m, r, dist_d=NULL, dist_v=NULL){
 

@@ -9,6 +9,8 @@
 #' @param where vector of natural numbers specifying where the new dimension(s) 
 #' 	should occur (see details). Defaults to last dimension.
 #' @return an array 
+#'
+#' @export
 
 add_dim = function(x, where=NULL){
 

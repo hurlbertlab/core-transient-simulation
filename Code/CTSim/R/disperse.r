@@ -28,6 +28,7 @@
 #'
 #' @seealso \code{\link{get_dispersal_vec}} for calculation of dispersal vectors 
 #' 	and for how to specify dispersal kernels.
+#' @export
 
 disperse = function(x, y=NA, propagules, dim_land, d_rates, form=list(type='gaussian')){
 

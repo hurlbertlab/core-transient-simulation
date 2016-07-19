@@ -1,5 +1,5 @@
 #' Summarize a simulation
-#'
+#' 
 #' Summarizes the output of a single simulation run.
 #'
 #' The function calculates summary statistics of four main quantities and 
@@ -21,7 +21,7 @@
 #' \enumerate{
 #'	\item Actual species' abundances are calculated for each spatial unit 
 #'		in \code{locs} and temporal unit in \code{t_window}. See documentation
-#'		of \code{\link{calc_abun_profiles}} for more information on 
+#'		of \code{\link{calc_abun_profile}} for more information on 
 #'		these parameters.
 #'	\item Observed species' abundance profiles are calculated by sampling
 #'		actual abundance profiles using the detection probabilities 
@@ -34,7 +34,7 @@
 #'		categories defined by \code{breaks} are calculated in each spatial 
 #'		unit for each timepoint. Timepoints may
 #'		be aggregated prior to calculations using the \code{agg_times}
-#'		argument in \code{sum_parms}. See (see \code{\link{calc_CT}}) for 
+#'		argument in \code{sum_parms}. See (see \code{\link{calc_rich_CT}}) for 
 #'		details.
 #'	\item For each spatial unit, habitat values are averaged across the
 #'		cells that comprise it (see \code{\link{average_habitat}} and this 
@@ -66,7 +66,7 @@
 #'
 #' @param sim (required) either a filename for a simulation run (as saved by
 #' 	\code{\link{run_sim_N}} or an array of simulation results (as returned by 
-#' 	\code{\link{sun_sim}}. If an array, must specify \code{species}, 
+#' 	\code{\link{run_sim}}. If an array, must specify \code{species}, 
 #' 	\code{land} and \code{gsad}.
 #' @param breaks (required) a vector of numbers on \code{[0,1]} (in order) 
 #' 	specifying boundaries of occupancy categories
@@ -94,7 +94,7 @@
 #' 	summarized across spatial and temporal units. May contain:
 #' 	\describe{
 #' 		\item{agg_times}{specifies how time points should be aggregated 
-#'			before calculating richness. See \code{\link{calc_CT}} for details.}
+#'			before calculations. See \code{\link{calc_rich_CT}} for details.}
 #'		\item{time_sum}{character vector indicating which timepoint
 #'			should be used in summary statistics (see details)}
 #'		\item{quants}{vector of quantiles for summarizing across spatial units
@@ -119,16 +119,23 @@
 #'
 #' @import reshape2
 #' @import abind
+#' @export
 
-# TO DO: CALCULATE SPECIES RELATIVE ABUNDANCES ACROSS METACOMMUNITY
 summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, gsad=NULL, agg_times=NULL, P_obs=list(1), sum_parms=NULL){
 	
 	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
 	if(is.character(sim)){
 		load(sim)
-		species = this_species
-		land = this_land
-		gsad = this_gsad
+		
+		# Check that required objects exist
+		if(!exists('this_species')|!exists('this_land')|!exists('this_gsad')){
+			stop(paste(sim, 'may not contain this_species, this_land, or this_gsad. Summary NOT run.'))		
+		} else {
+			# Assign objects
+			species = this_species
+			land = this_land
+			gsad = this_gsad
+		}
 	}
 	
 	# If sim is an array of simulation results, then must specify species, land, gsad
@@ -179,7 +186,7 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 	
 	# Calculate species' relative abundances across the metacommunity
 	abuns_global = sapply(1:length(P_obs), function(i){
-		apply(abuns_obs[,,,i], 1, function(x) calc_abun(x, N_S, only_species=T))
+		apply(abuns_obs[,,,i], 1, function(x) calc_abun(x, N_S, only_species=T, ranked=T))
 	}, simplify='array')
 
 	# Determine which time window to use for summary

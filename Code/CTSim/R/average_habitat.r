@@ -7,6 +7,8 @@
 #' @param land (required) a raster defining the landscape 
 #' 	(see \code{\link{make_landscape}})
 #' @return \code{'A'} or \code{'B'}
+#'
+#' @export
 
 average_habitat = function(locs, land){
 

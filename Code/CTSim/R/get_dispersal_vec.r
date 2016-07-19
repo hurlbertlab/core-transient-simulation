@@ -32,6 +32,7 @@
 #' expected dispersal distances.
 #'
 #' @import fdrtool
+#' @export
 
 get_dispersal_vec = function(d, form=list(type='gaussian'), N=1){
 	

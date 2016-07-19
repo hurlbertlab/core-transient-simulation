@@ -25,6 +25,8 @@
 #' 	Must be in the same order as \code{species}. Defaults to same abundance 
 #'	for all species. See details.
 #' @return a vector of the same length as \code{comm} defining the new community
+#' 
+#' @export
 
 establish = function(comm, propagules, r_rates, m=0, gsad=NULL){
 	

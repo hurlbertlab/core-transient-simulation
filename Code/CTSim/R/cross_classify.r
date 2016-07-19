@@ -47,6 +47,8 @@
 #' 	or lists of species IDs (\code{'ids'}) should be returned. 
 #' 	Default is \code{'counts'}.
 #' @return table or array, depending on \code{do_each}
+#'
+#' @export
 
 cross_classify = function(occupancy, breaks, b_rates=NULL, habitats=NULL, classification=NULL, do_each=F, return='counts'){
 

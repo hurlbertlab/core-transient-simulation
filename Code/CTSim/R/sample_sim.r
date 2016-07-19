@@ -19,6 +19,8 @@
 #' 	(\code{'abundance'}) or presence (\code{'presence'}) should be returned. 
 #' 	Default is abundance.
 #' @return an array with the same dimensions as \code{abuns}
+#'
+#' @export
 
 sample_sim = function(abuns, probs = NULL, return='abundance'){
 	

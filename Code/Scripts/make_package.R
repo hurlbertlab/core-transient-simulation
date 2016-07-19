@@ -13,7 +13,29 @@ load_all(current_code)
 # Update documentation
 document(current_code)
 
+# Add Imports and Suggests to DESCRIPTION
+setwd('./CTSim')
+use_package('abind')
+use_package('fdrtool')
+use_package('gstat')
+use_package('poweRlaw')
+use_package('raster')
+use_package('reshape2')
+use_package('sads')
+use_package('sp')
+use_package('doParallel','Suggests')
+use_package('foreach','Suggests')
 
+# Check the package
+check('CTSim')
+
+# Build the package
+#build('CTSim')
+#build_win('CTSim')
+
+# Check install
+install.packages('CTSim_0.1.0.zip', repos=NULL)
+library(CTSim)
 
 
 

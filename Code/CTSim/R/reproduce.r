@@ -10,6 +10,7 @@
 #' 	(may contain zeros for empty spaces)
 #' @param b_rates (required) vector of birth rates for each species
 #' @return a vector of integers, one for each propagule
+#' @export
 
 reproduce = function(comm, b_rates){
 

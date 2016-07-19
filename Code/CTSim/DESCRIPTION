@@ -1,13 +1,23 @@
 Package: CTSim
 Title: Spatially Explicit Simulation of Core-Transient Metacommunity Dynamics
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: person("Jessica", "Coyle", , "jes.r.coyle@gmail.com", role = c("aut", "cre"))
-Description: This package contains functions for executing a simulation of a
+Description: CTSim contains functions for executing a simulation of a
     metacommunity on a grid of habitat types. The simulation models a species
-    pool of habitat specialists and generalists as they stochasitially colonize
+    pool of habitat specialists and generalists as they stochastically colonize
     and disperse across the landscape.
-Depends:
+Depends: 
     R (>= 3.1.2)
-License: 
+License: GPL (>=2)
 LazyData: true
 RoxygenNote: 5.0.1
+Imports: abind,
+    fdrtool,
+    gstat,
+    poweRlaw,
+    raster,
+    reshape2,
+    sads,
+    sp
+Suggests: doParallel,
+    foreach

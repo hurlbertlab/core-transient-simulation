@@ -12,6 +12,7 @@
 #' 	prefers: 'A', 'B', or 'AB' (for a generalist).
 #'
 #' @seealso \code{\link{make_species}}
+#' @export
 
 get_sptype = function(species){
 	

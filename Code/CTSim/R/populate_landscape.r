@@ -51,6 +51,8 @@
 #' 	cells to receive individuals. May optionally contain a 3rd column 
 #' 	specifying the number of individuals in each cell.
 #' @return a matrix of lists defining the metacommunity (see details).
+#' 
+#' @export
 
 populate_landscape = function(land, species, gsad=NULL, K, distribution=NA, p=NA, which_cells=NULL){
 	

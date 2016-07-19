@@ -40,7 +40,8 @@
 #' @return an array with dimensions \code{[temporal units, occupancy 
 #' 	categories, spatial units]} 
 
-#' @describeIn calc_CT Calculate core-transient species richness 
+#' @describeIn calc_CT Calculate core-transient species richness
+#' @export
 calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 
 	# Catch error when abuns and occupancy do not match
@@ -90,6 +91,7 @@ calc_rich_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 }
 
 #' @describeIn calc_CT Calculate core-transient abundance
+#' @export
 calc_abun_CT = function(abuns, occupancy, breaks, agg_times=NULL){
 
 	# Catch error when abuns and occupancy do not match

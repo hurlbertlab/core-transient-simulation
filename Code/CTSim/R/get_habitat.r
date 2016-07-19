@@ -8,6 +8,8 @@
 #' @param x (required) a number
 #' 
 #' @return 'A' or 'B'
+#'
+#' @export
 
 get_habitat = function(x){
 	h = NA

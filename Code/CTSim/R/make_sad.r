@@ -30,6 +30,7 @@
 #'
 #' @import poweRlaw
 #' @import sads
+#' @export
 
 make_sad = function(N_S, distribution){
 	

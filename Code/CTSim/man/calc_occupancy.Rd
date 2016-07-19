@@ -8,6 +8,19 @@ calc_occupancy(locs = NULL, t_window = NULL, sim = NULL, N_S = NULL,
   abuns = NULL, agg_times = NULL, which_species = NULL, do_freq = F)
 }
 \arguments{
+\item{locs}{(required) either a two-column matrix of cell locations where 
+species' abundances should be summed or a list of matrices designating
+multiple spatial units where abundance should be summed (see details)}
+
+\item{t_window}{(required) either a list containing \code{start}
+and \code{stop} specifying that all collected timepoints in that interval
+should be considered or an explicit vector of timepoints}
+
+\item{sim}{(required) array of simulation results from a single 
+simulation run (as returned by \code{\link{run_sim}})}
+
+\item{N_S}{(required) number of species in the simulation}
+
 \item{abuns}{array of abundance profiles (as returned by 
 \code{\link{calc_abun_profile}})}
 

@@ -48,8 +48,8 @@ Landscapes, species pools and gsads are saved as lists
 (object names: \code{lands_N}, \code{species_N}, \code{gsad_N})
 in \code{<simID>_simobjects.RData}.
 Simulations can be run in parallel by specifying 
-\code{nparallel > 1}, which requires the \code{\link{doParallel}} and
-\code{\link{foreach}} packages.
+\code{nparallel > 1}, which requires the \code{\link[doParallel]{doParallel}} and
+\code{\link[foreach]{foreach}} packages.
 By default, \code{nparallel = 1} and the simulations proceed serially.
 Each run of the simulation is temporarily saved to the working directory
 or permanently saved to the directory specified by \code{save_sim}. 

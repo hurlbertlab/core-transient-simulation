@@ -14,6 +14,8 @@
 #' 	in this cell (may be habitat specific)
 #' @return a vector of integers of the same lenth as \code{code}
 #' 	where 0s replace individuals that have died
+#'
+#' @export
 
 die = function(comm, m_rates){
 	

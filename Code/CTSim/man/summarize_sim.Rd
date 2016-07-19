@@ -10,7 +10,7 @@ summarize_sim(sim, breaks, locs, t_window, species = NULL, land = NULL,
 \arguments{
 \item{sim}{(required) either a filename for a simulation run (as saved by
 \code{\link{run_sim_N}} or an array of simulation results (as returned by 
-\code{\link{sun_sim}}. If an array, must specify \code{species}, 
+\code{\link{run_sim}}. If an array, must specify \code{species}, 
 \code{land} and \code{gsad}.}
 
 \item{breaks}{(required) a vector of numbers on \code{[0,1]} (in order) 
@@ -47,7 +47,7 @@ vectors defining exactly which timepoints should be aggregated (see details).
     summarized across spatial and temporal units. May contain:
     \describe{
         \item{agg_times}{specifies how time points should be aggregated 
-        before calculating richness. See \code{\link{calc_CT}} for details.}
+        before calculations. See \code{\link{calc_rich_CT}} for details.}
     \item{time_sum}{character vector indicating which timepoint
         should be used in summary statistics (see details)}
     \item{quants}{vector of quantiles for summarizing across spatial units
@@ -70,7 +70,7 @@ a list of arrays defined as follows:
 			\code{[species, detection probability]}}
 	}
 	If \code{sum_parms$time_sum = 'none'} then each of these arrays will
-	have an additional dimension corresponding timepoints.
+	have an additional dimension corresponding to timepoints.
 }
 \description{
 Summarizes the output of a single simulation run.
@@ -95,7 +95,7 @@ The function proceeds as follows:
 \enumerate{
 \item Actual species' abundances are calculated for each spatial unit 
 	in \code{locs} and temporal unit in \code{t_window}. See documentation
-	of \code{\link{calc_abun_profiles}} for more information on 
+	of \code{\link{calc_abun_profile}} for more information on 
 	these parameters.
 \item Observed species' abundance profiles are calculated by sampling
 	actual abundance profiles using the detection probabilities 
@@ -108,7 +108,7 @@ The function proceeds as follows:
 	categories defined by \code{breaks} are calculated in each spatial 
 	unit for each timepoint. Timepoints may
 	be aggregated prior to calculations using the \code{agg_times}
-	argument in \code{sum_parms}. See (see \code{\link{calc_CT}}) for 
+	argument in \code{sum_parms}. See (see \code{\link{calc_rich_CT}}) for 
 	details.
 \item For each spatial unit, habitat values are averaged across the
 	cells that comprise it (see \code{\link{average_habitat}} and this 

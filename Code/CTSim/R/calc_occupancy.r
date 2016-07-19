@@ -26,11 +26,14 @@
 #' every other timestep will aggregate abundances from \code{T=1:20,
 #' T=21:40,...}.
 #' 
+#' @inheritParams calc_abun_profile
 #' @inheritParams calc_rich 
 #' @param do_freq a logical indicating whether to return actual frequencies 
 #' 	rather than occupancy (which is scaled by number of timepoints). 
 #' 	Defaults to FALSE.
 #' @return a matrix with dimensions \code{[spatial units, species]}
+#'
+#' @export
 
 calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, agg_times=NULL, which_species=NULL, do_freq=F){
 	

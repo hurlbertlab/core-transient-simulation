@@ -72,7 +72,7 @@ of operations is as follows:
 		pool of new propagules and moving individuals that 
 		arrived in the cell. External migrants are chosen probabilistically
 		from the relative abundances given in \code{gsad}. 
-		See \code{\link{estalish}}.
+		See \code{\link{establish}}.
 }
 }
 \seealso{

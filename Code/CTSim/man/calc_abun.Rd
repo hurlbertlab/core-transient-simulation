@@ -4,7 +4,7 @@
 \alias{calc_abun}
 \title{Calculate global relative abundance}
 \usage{
-calc_abun(metacomm, N_S, only_species = F)
+calc_abun(metacomm, N_S, only_species = F, ranked = F)
 }
 \arguments{
 \item{metacomm}{(required) matrix of lists defining metacommunity
@@ -15,6 +15,10 @@ this function).}
 
 \item{only_species}{logical indicating whether the function should ignore
 empty spaces. Defaults to \code{FALSE}}
+
+\item{ranked}{logical indicating whether abundances should be returned in 
+order of rank (\code{TRUE}) or in their original order (\code{FALSE}).
+Default is \code{FALSE}.}
 }
 \value{
 a vector of length \code{N_S} or, if \code{only_species=FALSE}, 
@@ -29,6 +33,7 @@ The function counts the number of individuals of each species occuring
 in a metacommunity and then divides by the total number of individuals.
 If \code{only_species} is code{FALSE}, then empty spaces are included 
 in the tally and the function returns the proportion of potential spaces
-that each species occupies.
+that each species occupies. Ranked abundances can be returned using the 
+parameter \code{ranked}.
 }
 

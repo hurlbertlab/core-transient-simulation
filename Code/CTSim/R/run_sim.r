@@ -26,6 +26,7 @@
 #' 	through a single timestep. \cr
 #' \code{\link{run_sim_N}} for running multiple independent simulations on 
 #' 	the same set of parameters.
+#' @export
 
 run_sim = function(steps, metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA, save_steps = NULL, report=0, ID=NA){
 	

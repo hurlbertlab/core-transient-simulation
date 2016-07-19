@@ -11,6 +11,8 @@
 #' @param gsad (required) global relative abundance of each species. Determines
 #' probability that migrant will belong to a given species. 
 #' @return integer representing the species that migrates. 0 = no migrant.
+#'
+#' @export
 
 migrate = function(m, gsad){
 	

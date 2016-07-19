@@ -39,6 +39,8 @@
 #' @param locs if \code{form = 'origin'}, a matrix of cell locations on 
 #' 	which aggregations should be centered. Default is the center cell.
 #' @return a list of matrices
+#'
+#' @export
 
 aggregate_cells = function(X, Y=NA, dX, dY=NA, form=NA, slide=NULL, locs=NULL){
 	

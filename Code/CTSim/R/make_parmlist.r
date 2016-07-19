@@ -90,6 +90,8 @@
 #'
 #' @note Developers should note that this function must be manually  
 #' updated whenever new parameters are added to simulation functions.
+#'
+#' @export
 
 make_parmlist = function(e=parent.frame()){
 

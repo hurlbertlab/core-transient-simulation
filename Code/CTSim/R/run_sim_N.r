@@ -9,8 +9,8 @@
 #' (object names: \code{lands_N}, \code{species_N}, \code{gsad_N})
 #' in \code{<simID>_simobjects.RData}.
 #' Simulations can be run in parallel by specifying 
-#' \code{nparallel > 1}, which requires the \code{\link{doParallel}} and
-#' \code{\link{foreach}} packages.
+#' \code{nparallel > 1}, which requires the \code{\link[doParallel]{doParallel}} and
+#' \code{\link[foreach]{foreach}} packages.
 #' By default, \code{nparallel = 1} and the simulations proceed serially.
 #' Each run of the simulation is temporarily saved to the working directory
 #' or permanently saved to the directory specified by \code{save_sim}. 
@@ -69,8 +69,7 @@
 #' @seealso \code{\link{run_sim}} for details on how each simulation runs \cr
 #' \code{\link{make_parmlist}} for parameters that can be passed to the 
 #' simulation
-#'
-#' @import doParallel
+#' @export
 
 run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, report=0, return_results=T, restart=F, lib_loc=NULL){
 	sim_complete=F
@@ -87,176 +86,182 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 	
 	# Simulate multiple runs in parallel
 	if(nparallel > 1){
-	if(!require(doParallel)){
-		warning('doParallel not found. Cannot run simulation in parallel without doParallel package.')
-	} else {
-		cluster = makeCluster(nparallel, outfile=paste0(simID, '.Rout'))
-		registerDoParallel(cluster)
-
-		# Send required functions and objects to each node
-		clusterExport(cluster, c('parms','simID','save_sim','report','save_dir','lib_loc'), envir=environment())
-		clusterEvalQ(cluster, library(CTSim, lib.loc=lib_loc))
+		# Attempt to load doParallel
+		if(requireNamespace('doParallel', quietly=TRUE)&requireNamespace('foreach', quietly=TRUE)){
+			# Attach functions in doParallel and foreach
+			library(doParallel)
 		
-		# If this is not a restart of a previous run
-		if(!restart){
+			# Make and register cluster
+			cluster = makeCluster(nparallel, outfile=paste0(simID, '.Rout'))
+			registerDoParallel(cluster)
 
-			# Initialize simulation landscapes
-			lands_N = parLapply(cluster, 1:nruns, function(j){
-				with(parms, {
-					x = dimX
-					y = dimY
-					if(!exists('vgm_mod')) vgm_mod = NULL
-					d = ifelse(exists('vgm_dcorr'), vgm_dcorr, NA)
-					prop = ifelse(exists('habA_prop'), 1-habA_prop, 0.5)
-					make_landscape(x, y, vgm_mod, d, prop, draw_plot=F)
+			# Send required functions and objects to each node
+			clusterExport(cluster, c('parms','simID','save_sim','report','save_dir','lib_loc'), envir=environment())
+			clusterEvalQ(cluster, library(CTSim, lib.loc=lib_loc))
+			
+			# If this is not a restart of a previous run
+			if(!restart){
+
+				# Initialize simulation landscapes
+				lands_N = parLapply(cluster, 1:nruns, function(j){
+					with(parms, {
+						x = dimX
+						y = dimY
+						if(!exists('vgm_mod')) vgm_mod = NULL
+						d = ifelse(exists('vgm_dcorr'), vgm_dcorr, NA)
+						prop = ifelse(exists('habA_prop'), 1-habA_prop, 0.5)
+						make_landscape(x, y, vgm_mod, d, prop, draw_plot=F)
+					})
 				})
-			})
-	
-			# Report progress
-			if(report>0) print(paste0(Sys.time(), ': Finished making landscapes.'))	
-
-			# Initialize species vital rates
-			species_N = parLapply(cluster, 1:nruns, function(j){
-				with(parms, {
-					S_AB = ifelse(exists('S_AB'), S_AB, NA) 
-					if(!exists('dist_b')) dist_b = NULL
-					m = m_rates
-					r = r_rates
-					if(!exists('dist_d')){
-						if(exists('d_kernel')){
-							dist_d = list(type=d_kernel$type)
-						} else { dist_d = NULL }
-					} else {
-						if(exists('d_kernel')) dist_d = c(dist_d, type=d_kernel$type)
-					}
-					if(!exists('dist_v')){
-						if(exists('v_kernel')){
-							dist_v = list(type=v_kernel$type)
-						} else { dist_v = NULL }
-					} else {
-						if(exists('v_kernel')) dist_v = c(dist_v, type=v_kernel$type)
-					}
-					make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)
-				})
-			})
-
-			# Report progress
-			if(report>0) print(paste0(Sys.time(), ': Finished making species pools.'))
-
-			# Send initial landscapes and species to all cluster cores
-			clusterExport(cluster, c('lands_N','species_N'), envir=environment())
 		
-			# Initialize global species abundance distribution
-			# dist_gsad can be a generic distribution or 'b_rates' indicating that it should be the same as species birth rates
-			gsad_N = parLapply(cluster, 1:nruns, function(j){
-				with(parms, {
-					N_S = dim(species_N[[j]])[1]
-					if(exists('dist_gsad')){
-						if(is.list(dist_gsad)){
-						
-							# Use specified distribution to generate abundances
-	 						distribution = dist_gsad
-							gsad_vec = make_sad(N_S, distribution)
+				# Report progress
+				if(report>0) print(paste0(Sys.time(), ': Finished making landscapes.'))	
 
+				# Initialize species vital rates
+				species_N = parLapply(cluster, 1:nruns, function(j){
+					with(parms, {
+						S_AB = ifelse(exists('S_AB'), S_AB, NA) 
+						if(!exists('dist_b')) dist_b = NULL
+						m = m_rates
+						r = r_rates
+						if(!exists('dist_d')){
+							if(exists('d_kernel')){
+								dist_d = list(type=d_kernel$type)
+							} else { dist_d = NULL }
 						} else {
-
-							# Make global abundaces equal to species birth rates	
-							if(dist_gsad=='b_rates'){
-			
-								A_rates = species_N[[j]][1:S_A,'A','b']
-								B_rates = species_N[[j]][(S_A+1):(S_A+S_B),'B','b']
-								gsad_vec = c(A_rates, B_rates)
-								if(exists('S_AB')) if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
-					
-							} else {
-								stop('Unrecognized value for parameter dist_gsad.')
-							}
+							if(exists('d_kernel')) dist_d = c(dist_d, type=d_kernel$type)
 						}
-
-					# Defaults to same abundance for each species
-					} else {	
-						distribution = list(type='same')
-						gsad_vec = make_sad(N_S, distribution)
-					}
-				
-					# Return vector of global abundances
-					gsad_vec
+						if(!exists('dist_v')){
+							if(exists('v_kernel')){
+								dist_v = list(type=v_kernel$type)
+							} else { dist_v = NULL }
+						} else {
+							if(exists('v_kernel')) dist_v = c(dist_v, type=v_kernel$type)
+						}
+						make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)
+					})
 				})
-			})
 
-			# Report progress
-			if(report>0) print(paste0(Sys.time(), ': Finished making gsads.'))
+				# Report progress
+				if(report>0) print(paste0(Sys.time(), ': Finished making species pools.'))
 
-			# Save for later restart
-			save(lands_N, species_N, gsad_N, file=file.path(save_dir, 'sim_objects.RData'))
-
-			# Send global species abundance distributions to cluster
-			clusterExport(cluster, 'gsad_N', envir=environment())
-
-		# If this is a restart of a previous run
-		} else {
+				# Send initial landscapes and species to all cluster cores
+				clusterExport(cluster, c('lands_N','species_N'), envir=environment())
 			
-			# Read in lands, species, gsads from directory where simulation results saved
-			load(file.path(save_dir, 'sim_objects.RData'))
-			
-			# Export objects to cluster
-			clusterExport(cluster, c('lands_N','species_N','gsad_N'), envir=environment())
-		}
+				# Initialize global species abundance distribution
+				# dist_gsad can be a generic distribution or 'b_rates' indicating that it should be the same as species birth rates
+				gsad_N = parLapply(cluster, 1:nruns, function(j){
+					with(parms, {
+						N_S = dim(species_N[[j]])[1]
+						if(exists('dist_gsad')){
+							if(is.list(dist_gsad)){
+							
+								# Use specified distribution to generate abundances
+								distribution = dist_gsad
+								gsad_vec = make_sad(N_S, distribution)
 
-		# Run simulations using foreach to reduce memory requirements
-		foreach(j=1:nruns) %dopar% {
+							} else {
 
-			# Define file to save results
-			this_runfile = file.path(save_dir, paste0(simID, '_run', j, '.RData'))
-
-			# Check whether this is a restart and whether this run has already be done
-			if(restart & file.exists(this_runfile)){
+								# Make global abundaces equal to species birth rates	
+								if(dist_gsad=='b_rates'){
 				
-				if(report>0) print(paste0(Sys.time(), ': Skipping run ', j))
-			
+									A_rates = species_N[[j]][1:S_A,'A','b']
+									B_rates = species_N[[j]][(S_A+1):(S_A+S_B),'B','b']
+									gsad_vec = c(A_rates, B_rates)
+									if(exists('S_AB')) if(S_AB > 0) gsad_vec = c(gsad_vec, rowMeans(species_N[[j]][(S_A+S_B+1):(S_A+S_B+S_AB),,'b']))
+						
+								} else {
+									stop('Unrecognized value for parameter dist_gsad.')
+								}
+							}
+
+						# Defaults to same abundance for each species
+						} else {	
+							distribution = list(type='same')
+							gsad_vec = make_sad(N_S, distribution)
+						}
+					
+						# Return vector of global abundances
+						gsad_vec
+					})
+				})
+
+				# Report progress
+				if(report>0) print(paste0(Sys.time(), ': Finished making gsads.'))
+
+				# Save for later restart
+				save(lands_N, species_N, gsad_N, file=file.path(save_dir, 'sim_objects.RData'))
+
+				# Send global species abundance distributions to cluster
+				clusterExport(cluster, 'gsad_N', envir=environment())
+
+			# If this is a restart of a previous run
 			} else {
-
-				if(report>0) print(paste0(Sys.time(), ': Start run ', j))
 				
-				# Define this landscape and species pool
-				this_land = lands_N[[j]]
-				this_species = species_N[[j]]
-				this_gsad = gsad_N[[j]]
-			
-				# Distribute species across landscape
-				this_metacomm = with(parms, {
-					p = ifelse(exists('prop_full'), prop_full, NA)
-					distribution = ifelse(exists('init_distribute'), init_distribute, NA)
-					if(exists('cells_distribute')){
-						which_cells = cells_distribute
-					} else {
-						which_cells = NULL
-					}
-					populate_landscape(this_land, this_species, this_gsad, K, distribution, p, which_cells)
-				})
-			
-				# Run simulation
-				results = with(parms, {
-					if(!exists('d_kernel')) d_kernel = NULL
-					if(!exists('v_kernel')) v_kernel = NULL
-					imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
-					if(!exists('save_steps')) save_steps = NULL
-					run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, v_kernel, imm_rate, save_steps, report, ID=j)
-				})
-
-				# Save results
-				save(results, this_species, this_land, this_metacomm, this_gsad, file=this_runfile)
-
-				gc()
+				# Read in lands, species, gsads from directory where simulation results saved
+				load(file.path(save_dir, 'sim_objects.RData'))
+				
+				# Export objects to cluster
+				clusterExport(cluster, c('lands_N','species_N','gsad_N'), envir=environment())
 			}
-		}
-		
-		sim_complete=T
-		stopCluster(cluster)
 
-	# Simulate runs sequentially
-	}} else {
-	
+			# Run simulations using foreach to reduce memory requirements
+			foreach(j=1:nruns) %dopar% {
+
+				# Define file to save results
+				this_runfile = file.path(save_dir, paste0(simID, '_run', j, '.RData'))
+
+				# Check whether this is a restart and whether this run has already be done
+				if(restart & file.exists(this_runfile)){
+					
+					if(report>0) print(paste0(Sys.time(), ': Skipping run ', j))
+				
+				} else {
+
+					if(report>0) print(paste0(Sys.time(), ': Start run ', j))
+					
+					# Define this landscape and species pool
+					this_land = lands_N[[j]]
+					this_species = species_N[[j]]
+					this_gsad = gsad_N[[j]]
+				
+					# Distribute species across landscape
+					this_metacomm = with(parms, {
+						p = ifelse(exists('prop_full'), prop_full, NA)
+						distribution = ifelse(exists('init_distribute'), init_distribute, NA)
+						if(exists('cells_distribute')){
+							which_cells = cells_distribute
+						} else {
+							which_cells = NULL
+						}
+						populate_landscape(this_land, this_species, this_gsad, K, distribution, p, which_cells)
+					})
+				
+					# Run simulation
+					results = with(parms, {
+						if(!exists('d_kernel')) d_kernel = NULL
+						if(!exists('v_kernel')) v_kernel = NULL
+						imm_rate = ifelse(exists('imm_rate'), imm_rate, NA)
+						if(!exists('save_steps')) save_steps = NULL
+						run_sim(nsteps, this_metacomm, this_land, this_species, this_gsad, d_kernel, v_kernel, imm_rate, save_steps, report, ID=j)
+					})
+
+					# Save results
+					save(results, this_species, this_land, this_metacomm, this_gsad, file=this_runfile)
+
+					gc()
+				}
+			}
+			
+			sim_complete=T
+			stopCluster(cluster)
+
+		} else {
+			stop('doParallel or foreach not found. Cannot run simulation in parallel without these package.')
+		# Simulate runs sequentially
+		}
+	} else {
+
 		# If this is not a restart of a previous simulation
 		if(!restart){
 

@@ -33,6 +33,8 @@
 #' @param N_S (required) number of species in the simulation
 #' @return an array of species' abundances with dimensions:
 #' 	\code{[timepoint, species, spatial unit]}
+#'
+#' @export
 
 calc_abun_profile = function(locs, t_window, sim, N_S){
 	

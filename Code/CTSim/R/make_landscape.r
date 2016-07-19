@@ -23,6 +23,7 @@
 #' @import gstat
 #' @import sp
 #' @import raster
+#' @export
 
 make_landscape = function(x=NULL, y=NA, mod=NULL, d=NA, prop=NA, draw_plot=F){
 	

@@ -33,7 +33,7 @@
 #'			pool of new propagules and moving individuals that 
 #'			arrived in the cell. External migrants are chosen probabilistically
 #'			from the relative abundances given in \code{gsad}. 
-#'			See \code{\link{estalish}}.
+#'			See \code{\link{establish}}.
 #'	}
 #' 
 #' @param metacomm (required) matrix of lists defining metacommunity  
@@ -59,6 +59,7 @@
 #'
 #' @seealso \code{\link{run_sim}} for running multiple timesteps of 
 #' 	the simulation.
+#' @export
 
 run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA){
 

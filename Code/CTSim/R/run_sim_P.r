@@ -24,6 +24,7 @@
 #'
 #' @seealso \code{\link{run_simulation}} and \code{\link{restart_simulation}}
 #' for command line execution
+#' @export
 
 run_sim_P = function(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=NULL, report=0, restart=F){
 	# Read in parameter files
@@ -37,9 +38,18 @@ run_sim_P = function(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=
 		parm_file = paste0(parm_dir, f)
 		source(parm_file)
 		parm_list = make_parmlist()
+		
+		# Check that required parameters are present
+		if(!exists('nruns')|!exists('simID')){
+			warning(paste(f,'may not contain simID or nruns. Simulation NOT run.'))
+		} else {
 
-		# Run simulations
-		run_sim_N(nruns, parm_list, ncores, simID, save_sim=results_dir, 
-			report=report, return_results=F, restart=restart, lib_loc=sim_dir)
+			# Run simulations
+			run_sim_N(nruns, parm_list, ncores, simID, save_sim=results_dir, 
+				report=report, return_results=F, restart=restart, lib_loc=sim_dir)
+			
+			# Remove parameters
+			rm(nruns, parm_list, simID)
+		}
 	}
 }
