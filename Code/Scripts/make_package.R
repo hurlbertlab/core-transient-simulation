@@ -41,10 +41,10 @@ library(CTSim)
 
 # Testing Functions
 myland = make_landscape(c(5,5))
-mysp = make_species(10, 10, dist_b=list(type='lognormal', maxN=5, P_maxN=0.01), 
+mysp = make_species(3, 4, dist_b=list(type='lognormal', maxN=5, P_maxN=0.01), 
 	m=c(.5, .5), r=c(1, .5), dist_d=list(mu=1, var=0), dist_v=list(mu=c(0,.8), var=c(0,.02), type='adjacent')
 )
-mygsad = sapply(1:20, function(i) mysp[i, get_sptype(mysp)[i],'b'])
+mygsad = sapply(1:7, function(i) mysp[i, get_sptype(mysp)[i],'b'])
 mymeta = populate_landscape(myland, mysp, mygsad, K=10, distribution='uniform', p=.8)
 
 mymeta_t1 = run_timestep(mymeta, myland, mysp, mygsad, d_kernel=list(type='gaussian'),
@@ -58,7 +58,7 @@ mymeta_t10 = run_sim(10, mymeta, myland, mysp, mygsad, d_kernel=list(type='gauss
 
 run_sim_P(2, report=2)
 
-mylocs = aggregate_cells(X=c(5,5), dX=c(2,2), form='window')
+mylocs = aggregate_cells(X=c(5,5), dX=c(2,2), form='partition')
 
 calc_abun(mymeta_t1, N_S=20, only_species=T)
 
