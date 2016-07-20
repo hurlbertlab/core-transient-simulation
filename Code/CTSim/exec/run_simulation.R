@@ -25,7 +25,7 @@ results_dir = ifelse(is.na(args[3]), './Results/', args[3])
 sim_dir = ifelse(is.na(args[4]), './', args[4])
 
 # Set reporting interval
-report = ifelse(is.na(args[5]), 0, args[5])
+report = as.numeric(ifelse(is.na(args[5]), 0, args[5]))
 
 # Load CTSim package
 tryCatch(library(CTSim), error=function(e) library(CTSim, lib.loc=sim_dir))
