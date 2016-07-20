@@ -192,7 +192,13 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 #' 	quantities across simulation runs
 #' @export
 default_sum_func = function(x){
-
-	c(mean=mean(x), var=var(x), quantile(x, c(0.025, 0.5, 0.975)))
-
+	# Check whether all values are NA (as in the case of calculating variance from one spatial unit)
+	NAs = sum(is.na(x))
+	
+	if(length(x)==NAs){
+		c(mean=NA, var=NA, '2.5%'=NA, '50%'=NA, '97.5%'=NA, NAs=NAs)
+	} else {
+		c(mean=mean(x, na.rm=T), var=var(x, na.rm=T), quantile(x, c(0.025, 0.5, 0.975), 
+			na.rm=T), NAs = sum(is.na(x)))
+	}
 }

@@ -51,6 +51,9 @@ calc_abun_profile = function(locs, t_window, sim, N_S){
 
 		use_times = t_window
 	}
+	
+	# Stop if no times
+	if(length(use_times)==0) stop('Cannot calculate abundance on 0 timepoints. Check that t_window is in sim.')
 
 	# Determine whether cells should be aggregated
 	if(!is.list(locs)) locs = list(locs)
@@ -66,15 +69,17 @@ calc_abun_profile = function(locs, t_window, sim, N_S){
 			comm_mat = simplify2array(sim[x[1],x[2],as.character(use_times)])
 
 			# Calculate abundance of each species across timesteps
-			abuns = sapply(0:N_S, function(sp) colSums(comm_mat==sp))		
+			abuns = sapply(0:N_S, function(sp) colSums(comm_mat==sp))
+			if(is.vector(abuns)) abuns = add_dim(abuns,1); rownames(abuns) = as.character(use_times)
 			colnames(abuns) = 0:N_S
 
 			# Return abundances
 			abuns
 		}, simplify='array')
 
-		# Sum across cells and timepoints
+		# Sum cells across species and timepoints
 		apply(each_cell, 1:2, sum)
+		# dims are now [timepoints, species]
 		
 	}, simplify='array')
 

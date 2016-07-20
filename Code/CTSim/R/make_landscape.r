@@ -27,6 +27,9 @@
 
 make_landscape = function(x=NULL, y=NA, mod=NULL, d=NA, prop=NA, draw_plot=F){
 	
+	# Load gstat
+	library(gstat)
+	
 	# Catch error if no dimensions specified
 	if(is.null(x)&is.na(y)){ stop('Must supply grid dimensions.') }
 	if(is.na(y)&length(x)==2){
@@ -51,7 +54,7 @@ make_landscape = function(x=NULL, y=NA, mod=NULL, d=NA, prop=NA, draw_plot=F){
 	if(is.na(prop)) prop = 0.5
 
 	# Simulate values at locations
-	values = gstat::predict.gstat(spatial_model, locs, nsim=1)
+	values = predict(spatial_model, locs, nsim=1)
 
 	# Convert to spatial data and raster grid
 	sp::gridded(values) = ~x+y

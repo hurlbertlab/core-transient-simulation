@@ -38,6 +38,9 @@
 #' @export
 
 summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries/', cross_time=F){
+	# Create summary directory if it does not exist
+	if(!file.exists(results_dir)) dir.create(results_dir)
+	
 	# Read in parameter files
 	# Parameter files are designated by starting with 'p_'
 	file_list = list.files(parm_dir, '^s_')
@@ -47,8 +50,8 @@ summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries
 		print(paste('Started',f))
 	
 		# Read in parameters
-		parm_file = paste0(parm_dir, f)
-		source(parm_file)
+		parm_file = file.path(parm_dir, f)
+		source(parm_file, local=TRUE)
 
 		# Check that required parameters are present
 		if(!exists('sumID')|!exists('t_window')|!exists('breaks')|!exists('locs')){
@@ -59,6 +62,7 @@ summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries
 			if(!exists('P_obs')) P_obs=NULL
 			if(!exists('sum_parms')) sum_parms=NULL
 			if(!exists('sum_func')) sum_func=NULL
+			if(!exists('agg_times')) agg_times=NULL
 
 			if(cross_time){
 				# Define time windows
@@ -70,8 +74,8 @@ summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries
 					use_twindow = list(start=endT-dT+1, stop=endT)
 
 					# Summaries for each individual run
-					sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=use_twindow, P_obs=P_obs, sum_parms=sum_parms)
-				
+					sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=use_twindow, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+
 					# Save
 					save(sim_sum_ind, file=file.path(results_dir, paste0(sumID,'-T', endT, '_summary.RData')))
 
@@ -79,17 +83,17 @@ summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries
 				}
 			} else {
 				# Summaries for each individual run
-				sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms)
+				sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
 				
 				# Summaries across runs
-				sim_sum = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, P_obs=P_obs, sum_parms=sum_parms, sum_func=sum_func)
+				sim_sum = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_func=sum_func)
 
 				# Save
 				save(sim_sum_ind, sim_sum, file=file.path(results_dir, paste0(sumID,'_summary.RData')))
 			}
-			
-			# Remove parameters
-			rm(sumID, t_window, breaks, locs, P_obs, sum_parms, sum_func)
 		}
+		
+		# Remove parameters when finished with this file
+		rm(sumID, t_window, breaks, locs, P_obs, sum_parms, sum_func)
 	}
 }

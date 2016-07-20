@@ -22,7 +22,7 @@ ncores = ifelse(is.na(args[1]), 1, as.numeric(args[1]))
 # Set directories
 parm_dir = ifelse(is.na(args[2]), './', args[2])
 results_dir = ifelse(is.na(args[3]), './Results/', args[3])
-sim_dir = ifelse(is.na(args[4]), NULL, args[4])
+sim_dir = ifelse(is.na(args[4]), './', args[4])
 
 # Set reporting interval
 report = ifelse(is.na(args[5]), 0, args[5])

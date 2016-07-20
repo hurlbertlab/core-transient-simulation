@@ -34,13 +34,13 @@ ncores = ifelse(is.na(args[1]), 1, as.numeric(args[1]))
 # Set directories
 parm_dir = ifelse(is.na(args[2]), './', args[2])
 results_dir = ifelse(is.na(args[3]), './Results/', args[3])
-sim_dir = ifelse(is.na(args[4]), NULL, args[4])
+sim_dir = ifelse(is.na(args[4]), './', args[4])
 
 # Set reporting interval
 report = ifelse(is.na(args[5]), 0, args[5])
 
 # Load CTSim package
-library(CTSim, lib.loc=sim_dir)
+tryCatch(library(CTSim), error=function(e) library(CTSim, lib.loc=sim_dir))
 
 # Run function
 run_sim_P(ncores, parm_dir, results_dir, sim_dir, report, restart=T)

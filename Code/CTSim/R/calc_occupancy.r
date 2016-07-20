@@ -35,6 +35,7 @@
 #'
 #' @export
 
+# NEED TO CLEAN UP THIS FUNCTION SO THAT DIMENSIONS AREN'T DROPPED
 calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NULL, agg_times=NULL, which_species=NULL, do_freq=F){
 	
 	# Catch error where not enough information is specified
@@ -46,6 +47,7 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 	} else {
 		abun_profiles = abuns
 	}
+	# dims of abun_profiles are: [timepoint, species, spatial unit]
 
 	# Number of timepoints measured
 	N_t = dim(abun_profiles)[1]	
@@ -67,21 +69,14 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 		# Note that new array will have dimensions  [species, locations, times]
 		agg_abuns = sapply(agg_times, function(rows){
 			rows = rows[rows %in% 1:N_t]
-			if(length(rows)>1) new_abun = apply(abun_profiles[rows,,], 2:3, sum)
-			if(length(rows)==1) new_abun = abun_profiles[rows,,]
+			new_abun = apply(abun_profiles[rows,,,drop=FALSE], 2:3, sum) 
 			new_abun
 		}, simplify='array')
+		# dims are now: [species, spatial unit, timepoint]
 
 		# Calculate number of timepoints that each specified species is present
-		if(length(agg_times)==1){
-			freqs = t(ifelse(agg_abuns[as.character(which_species),,]>0, 1, 0))
-		} else {
-			if(length(which_species)>1){
-				freqs = apply(agg_abuns[as.character(which_species),,] > 0, 1:2, sum)
-			} else {
-				freqs = t(apply(agg_abuns[as.character(which_species),,] > 0, 1, sum))
-			}
-		}
+		freqs = apply(agg_abuns[as.character(which_species),,,drop=FALSE]>0, 1:2, sum)
+		# dims are now: [species, spatial unit]
 
 		# Calculate occupancy
 		if(!do_freq) freqs = freqs/length(agg_times)
@@ -89,12 +84,9 @@ calc_occupancy = function(locs=NULL, t_window=NULL, sim=NULL, N_S=NULL, abuns=NU
 	} else {
 
 		# Calculate number of timepoints that each specified species is present
-		if(length(which_species)>1){
-			freqs = apply(abun_profiles[,as.character(which_species),] > 0, 2:3, sum)
-		} else {
-			freqs = t(apply(abun_profiles[,as.character(which_species),] > 0, 2, sum))
-		}
-	
+		freqs = apply(abun_profiles[,as.character(which_species),,drop=FALSE]>0, 2:3, sum)
+		# dims are now: [species, spatial unit]
+		
 		# Calculate occupancy
 		if(!do_freq) freqs = freqs/N_t
 	}

@@ -30,7 +30,7 @@ use_package('foreach','Suggests')
 check('CTSim')
 
 # Build the package
-#build('CTSim')
+build('CTSim')
 #build_win('CTSim')
 
 # Check install

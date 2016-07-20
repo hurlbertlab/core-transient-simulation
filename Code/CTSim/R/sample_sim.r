@@ -20,12 +20,13 @@
 #' 	Default is abundance.
 #' @return an array with the same dimensions as \code{abuns}
 #'
+#' @import abind
 #' @export
 
 sample_sim = function(abuns, probs = NULL, return='abundance'){
 	
 	# Drop empty spaces from abuns, if present.
-	abuns = abuns[,dimnames(abuns)[[2]]!='0',]
+	abuns = abuns[,dimnames(abuns)[[2]]!='0',,drop=FALSE]
 
 	# Determine number of species
 	N_S = dim(abuns)[2]
@@ -35,6 +36,8 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 		obs = abuns
 		if(return=='presence') obs = abuns>0
 	} else {
+		# Get dimensions of abuns
+		ndim = length(dim(abuns))  
 		
 		# Make vector of detectabilities if only one specified.
 		if(length(probs)==1) probs = rep(probs, N_S)
@@ -45,34 +48,31 @@ sample_sim = function(abuns, probs = NULL, return='abundance'){
 			# Calculate probability of observing species (1 - P(not observing))
 			# Returns an array: [timepoints, sites, species]
 			P = sapply(1:N_S, function(sp){
-				apply(abuns[,sp,], 1:2, function(x) 1 - (1-probs[sp])^x )
+				apply(abuns[,sp,,drop=FALSE], 1:ndim, function(x) 1 - (1-probs[sp])^x )
 			}, simplify='array')
 
 			# Stochastically determine which species are observed
 			rands = array(runif(length(P)), dim=dim(P))
 			obs = rands <= P
-
-			# Rearrange dimensions to match abuns
-			obs = aperm(obs, c(1,3,2))	
 		}
 		
 		if(return=='abundance'){
 			
 			# Stochasitically determine which individuals are observed
 			obs = sapply(1:N_S, function(sp){
-				apply(abuns[,sp,], 1:2, function(x){
+				apply(abuns[,sp,,drop=FALSE], 1:ndim, function(x){
 					if(x>0){
 						sum(runif(x) <= probs[sp])
 					} else {
 						0
 					}
-
 				})
 			}, simplify='array')
-			
-			# Rearrange dimensions to match abuns
-			obs = aperm(obs, c(1,3,2))
 		}
+		
+		# Rearrange dimensions to match abuns
+		obs = abind::adrop(obs, 2)
+		if(ndim==3) obs = aperm(obs, c(1,3,2))
 	}
 
 	# Return observed sample

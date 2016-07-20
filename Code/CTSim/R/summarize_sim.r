@@ -155,13 +155,32 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		sample_sim(abuns_act, probs = p, return='abundance')
 	}, simplify='array')
 	dimnames(abuns_obs)[[2]] = 1:N_S # Name columns with species names
+	# dims are now [timepoint, species, spatial unit, P]
 
 	# Calculate species occupancy
-	occ = sapply(1:length(P_obs), function(i) calc_occupancy(abuns=abuns_obs[,,,i], agg_times, do_freq=F), simplify='array')
+	occ = sapply(1:length(P_obs), function(i){
+		use_abun = abuns_obs[,,,i, drop=FALSE]
+		use_abun = abind::adrop(use_abun, 4) 
+		calc_occupancy(abuns=use_abun, agg_times, do_freq=F)
+	}, simplify='array')
+	# dims are now: [spatial unit, species, P]
 
 	# Calculate richness and in each occupancy category
-	rich_ct = sapply(1:length(P_obs), function(i) calc_rich_CT(abuns_obs[,,,i], occ[,,i], breaks, agg_times=sum_parms$agg_times), simplify='array')
-	abun_ct = sapply(1:length(P_obs), function(i) calc_abun_CT(abuns_obs[,,,i], occ[,,i], breaks, agg_times=sum_parms$agg_times), simplify='array')
+	rich_ct = sapply(1:length(P_obs), function(i){
+		use_abun = abuns_obs[,,,i, drop=FALSE]
+		use_abun = abind::adrop(use_abun, 4) 
+		use_occ = occ[,,i, drop=FALSE]
+		use_occ = abind::adrop(use_occ, 3)
+		calc_rich_CT(use_abun, use_occ, breaks, agg_times=sum_parms$agg_times)
+	}, simplify='array')
+	abun_ct = sapply(1:length(P_obs), function(i){
+		use_abun = abuns_obs[,,,i, drop=FALSE]
+		use_abun = abind::adrop(use_abun, 4) 
+		use_occ = occ[,,i, drop=FALSE]
+		use_occ = abind::adrop(use_occ, 3)
+		calc_abun_CT(use_abun, use_occ, breaks, agg_times=sum_parms$agg_times)
+	}, simplify='array')
+	# dims are now [timepoint, category, spatial unit, P]
 
 	# Get species birth rates
 	b_rates = species[,,'b']
@@ -175,19 +194,38 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 
 	# Calculate richness and abundnace of biologically core vs transient species
 	occ_ab = apply(classification, 1:2, function(x) ifelse(x=='core', 1, .1))
-	rich_ab = sapply(1:length(P_obs), function(i) calc_rich_CT(abuns_obs[,,,i], occ_ab, 0.5, agg_times=sum_parms$agg_times), simplify='array')
-	abun_ab = sapply(1:length(P_obs), function(i) calc_abun_CT(abuns_obs[,,,i], occ_ab, 0.5, agg_times=sum_parms$agg_times), simplify='array')
+	rich_ab = sapply(1:length(P_obs), function(i){
+		use_abun = abuns_obs[,,,i, drop=FALSE]
+		use_abun = abind::adrop(use_abun, 4) 
+		calc_rich_CT(use_abun, occ_ab, 0.5, agg_times=sum_parms$agg_times)
+	}, simplify='array')
+	abun_ab = sapply(1:length(P_obs), function(i){
+		use_abun = abuns_obs[,,,i, drop=FALSE]
+		use_abun = abind::adrop(use_abun, 4) 
+		calc_abun_CT(use_abun, occ_ab, 0.5, agg_times=sum_parms$agg_times)
+	}, simplify='array')
+	# dims are now [timepoint, category, spatial unit, P]
 
 	# Calculate proportion mis-classified
 	xclass = sapply(1:length(P_obs), function(i){
-		tabs = cross_classify(occ[,,i], breaks, classification=classification, do_each=T, return='counts')
+		use_occ = occ[,,i, drop=FALSE]
+		use_occ = abind::adrop(use_occ, 3)
+		tabs = cross_classify(use_occ, breaks, classification=classification, do_each=T, return='counts')
 		reshape2::acast(reshape2::melt(tabs, varnames=c('bio','occ','sp_unit')), sp_unit ~ bio+occ)
 	}, simplify='array')
+	# dims are now [spatial unit, category, P]
 	
 	# Calculate species' relative abundances across the metacommunity
 	abuns_global = sapply(1:length(P_obs), function(i){
-		apply(abuns_obs[,,,i], 1, function(x) calc_abun(x, N_S, only_species=T, ranked=T))
+		use_abun = abuns_obs[,,,i, drop=FALSE]
+		use_abun = abind::adrop(use_abun, 4) 
+		apply(use_abun, 1, function(x){
+			# Sum across rows and order 
+			rank_abun = rowSums(x)/sum(x)
+			rank_abun = rank_abun[order(rank_abun, decreasing=T)]
+		})
 	}, simplify='array')
+	# dims are now [species rank, timepoint, P]
 
 	# Determine which time window to use for summary
 	# Defaults to mean
@@ -207,12 +245,12 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 	
 	# Only use the last time window
 	if(time_sum=='last'){
-		N_t = dim(rich_ab)[1]		
-		rich_ab = rich_ab[N_t,,,]
-		rich_ct = rich_ct[N_t,,,]
-		abun_ab = abun_ab[N_t,,,]
-		abun_ct = abun_ct[N_t,,,]
-		abuns_global = abuns_global[,N_t,]
+		N_t = dim(rich_ab)[1]
+		rich_ab = rich_ab[N_t,,,,drop=F]; rich_ab = abind::adrop(rich_ab, 1)
+		rich_ct = rich_ct[N_t,,,,drop=F]; rich_ct = abind::adrop(rich_ct, 1)
+		abun_ab = abun_ab[N_t,,,,drop=F]; abun_ab = abind::adrop(abun_ab, 1)
+		abun_ct = abun_ct[N_t,,,,drop=F]; abun_ct = abind::adrop(abun_ct, 1)
+		abuns_global = abuns_global[,N_t,,drop=F]; abuns_global = abind::adrop(abuns_global, 2)
 	
 		# Define dimension that stores spatial units
 		sp_dim = 2

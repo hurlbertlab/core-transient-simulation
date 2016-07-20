@@ -35,8 +35,8 @@ run_sim_P = function(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=
 	for(f in file_list){
 
 		# Read in parameters
-		parm_file = paste0(parm_dir, f)
-		source(parm_file)
+		parm_file = file.path(parm_dir, f)
+		source(parm_file, local=TRUE)
 		parm_list = make_parmlist()
 		
 		# Check that required parameters are present
@@ -48,8 +48,8 @@ run_sim_P = function(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=
 			run_sim_N(nruns, parm_list, ncores, simID, save_sim=results_dir, 
 				report=report, return_results=F, restart=restart, lib_loc=sim_dir)
 			
-			# Remove parameters
-			rm(nruns, parm_list, simID)
 		}
+		# Remove parameters
+		rm(nruns, parm_list, simID)
 	}
 }

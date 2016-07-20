@@ -22,7 +22,7 @@ args = commandArgs(trailingOnly=T)
 run_dir = ifelse(is.na(args[1]), './', args[1])
 parm_dir = ifelse(is.na(args[2]), './', args[2])
 results_dir = ifelse(is.na(args[3]), './Summaries/', args[3])
-sim_dir = ifelse(is.na(args[4]), NULL, args[4])
+sim_dir = ifelse(is.na(args[4]), './', args[4])
 
 # Load package
 tryCatch(library(CTSim), error=function(e) library(CTSim, lib.loc=sim_dir))
