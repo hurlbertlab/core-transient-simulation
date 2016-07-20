@@ -3,7 +3,7 @@
 
 # Set options and load libraries
 options(stringsAsFactors=F)
-library(abind)
+library(CTSim)
 
 
 
@@ -14,7 +14,7 @@ sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code'
 setwd(sum_dir)
 
 # Load simulation functions
-source(file.path(sim_dir, 'simulation_functions.R'))
+#source(file.path(sim_dir, 'simulation_functions.R'))
 
 
 ##########################
@@ -708,10 +708,17 @@ dev.off()
 
 
 
+##### Examine species abundance distributions
+setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/Runs/')
+
+this_run = 'converge32_d-9/converge32_run1.RData'
+
+load(this_run)
+
+mymeta = results[,,1]
 
 
-
-
+sp_rank = calc_abun(mymeta, 40, only_species=T, ranked=T)
 
 
 
