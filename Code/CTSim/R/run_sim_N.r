@@ -83,7 +83,10 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 	} else {
 		warning('Simulation run already exists and may be overwritten unless restart = TRUE')
 	}
-	
+
+	# Set restart to FALSE if no simulation objects
+	if(!file.exists(file.path(save_dir, 'sim_objects.RData'))) restart = F
+
 	# Simulate multiple runs in parallel
 	if(nparallel > 1){
 		# Attempt to load doParallel

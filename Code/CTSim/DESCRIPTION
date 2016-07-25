@@ -1,6 +1,6 @@
 Package: CTSim
 Title: Spatially Explicit Simulation of Core-Transient Metacommunity Dynamics
-Version: 0.1.1
+Version: 0.1.2
 Authors@R: person("Jessica", "Coyle", , "jes.r.coyle@gmail.com", role = c("aut", "cre"))
 Description: CTSim contains functions for executing a simulation of a
     metacommunity on a grid of habitat types. The simulation models a species

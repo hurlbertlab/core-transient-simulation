@@ -4,6 +4,7 @@
 # Set options and load libraries
 options(stringsAsFactors=F)
 library(CTSim)
+library(abind)
 
 
 
@@ -278,7 +279,8 @@ dev.off()
 
 #### Examine variation across time and between runs
 
-sumID = 'converge32_d-adj'
+
+sumID = 'converge32_b-2'
 
 # Define times and scales
 endTs = seq(25, 1000, 25)
@@ -291,6 +293,7 @@ for(i in 1:length(scales)){
 	this_bio = sim_sum_ind$bio
 	this_occ = sim_sum_ind$occ
 	this_xclass = sim_sum_ind$xclass
+	this_abun = sim_sum_ind$abun
 
 	for(j in 2:length(endTs)){
 	
@@ -301,18 +304,22 @@ for(i in 1:length(scales)){
 
 		this_bio = abind(this_bio, sim_sum_ind$bio, along=ifelse(j==2, 0, 1))
 		this_occ = abind(this_occ, sim_sum_ind$occ, along=ifelse(j==2, 0, 1))
-		this_xclass = abind(this_xclass, sim_sum_ind$xclass, along=ifelse(j==2, 0, 1))	
+		this_xclass = abind(this_xclass, sim_sum_ind$xclass, along=ifelse(j==2, 0, 1))
+		this_abun = abind(this_abun, sim_sum_ind$abun, along=ifelse(j==2, 0, 1))	
 	}
 	
 	if(i==1){
 		bio_ind_T = this_bio
 		occ_ind_T = this_occ
 		xclass_ind_T = this_xclass
+		abun_ind_T = this_abun
+
 	} else {
 
 		bio_ind_T = abind(bio_ind_T, this_bio, along=ifelse(i==2, 0, 1))
 		occ_ind_T = abind(occ_ind_T, this_occ, along=ifelse(i==2, 0, 1))
-		xclass_ind_T = abind(xclass_ind_T, this_xclass, along=ifelse(i==2, 0, 1))		
+		xclass_ind_T = abind(xclass_ind_T, this_xclass, along=ifelse(i==2, 0, 1))	
+		abun_ind_T = abind(abun_ind_T, this_abun, along=ifelse(i==2, 0, 1))	
 	}
 }
 	
@@ -323,9 +330,12 @@ dimnames(occ_ind_T)[[1]] = 2^(0:4)
 dimnames(occ_ind_T)[[2]] = endTs
 dimnames(xclass_ind_T)[[1]] = 2^(0:4)
 dimnames(xclass_ind_T)[[2]] = endTs
+dimnames(abun_ind_T)[[1]] = 2^(0:4)
+dimnames(abun_ind_T)[[2]] = endTs
 names(dimnames(bio_ind_T)) = c('scale', 'endT', 'run', 'comm_stat','cross_space','category','p_obs')
 names(dimnames(occ_ind_T)) = c('scale', 'endT', 'run', 'comm_stat','cross_space','category','p_obs')
 names(dimnames(xclass_ind_T)) = c('scale', 'endT', 'run','cross_space','ab_ct','p_obs')
+names(dimnames(abun_ind_T)) = c('scale', 'endT', 'run','sp_rank','p_obs')
 
 # Save objects for later comparison of dispersal method
 
@@ -337,7 +347,7 @@ names(dimnames(xclass_ind_T)) = c('scale', 'endT', 'run','cross_space','ab_ct','
 # Community statistic on different pages
 # Detectability in different plots
 
-nruns=8
+nruns=4
 p_obs = seq(.1, 1, .1)
 
 pdf(file.path(sum_dir, paste0(sumID, '_ind_run_summary_through_time.pdf')), height=10, width=8)
@@ -478,10 +488,44 @@ for(p in rev(p_obs)){
 	}
 	
 	mtext(paste('Birth rate-based Transient Species: detection prob. =', p), 3, 1, outer=T)
-
 }
 
 dev.off()
+
+
+## Species relative (ranked) abundance distributions
+nspecies = dim(abun_ind_T)[[4]]
+lcol = rainbow(nspecies)
+
+pdf(file.path(sum_dir, paste0(sumID, '_ind_run_SAD_through_time.pdf')), height=12, width=10)
+
+layout(matrix(1:20, nrow=5, byrow=T))
+par(mar=c(2, 2, 1, 1))
+par(oma=c(3,3,3,0))
+par(lend=1)
+
+for(p in rev(p_obs)){
+	for(sp in 2^(0:4)){
+		maxS = max(abun_ind_T[as.character(sp), , , , as.character(p)])
+
+		for(i in 1:nruns){
+			make_plot(c(0, 1000), c(0, maxS), xlab=ifelse(sp==16, 'Time', ''), ylab=ifelse(i==1, 'Relative abun.',''))
+			text(0, 0.99*maxS, paste('Grain =',sp,'x',sp), pos=4)
+			text(1000, 0.99*maxS, paste('Run', i), pos=2)
+	
+			for(j in 1:nspecies){
+				lines(endTs, abun_ind_T[as.character(sp), , i, j, as.character(p)], lwd=1, col=lcol[j])
+			}
+		}
+	}
+
+	mtext(paste('Detection prob. =', p), 3, 1, outer=T)
+}
+
+dev.off()
+
+
+
 
 ### Comparing dispersal on 32 x 32 grid
 

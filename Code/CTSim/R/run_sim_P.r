@@ -40,7 +40,7 @@ run_sim_P = function(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=
 		parm_list = make_parmlist()
 		
 		# Check that required parameters are present
-		if(!exists('nruns')|!exists('simID')){
+		if(!exists('nruns', environment())|!exists('simID', environment())){
 			warning(paste(f,'may not contain simID or nruns. Simulation NOT run.'))
 		} else {
 
