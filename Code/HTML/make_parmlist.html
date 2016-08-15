@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+<title>make_parmlist. CTSim 0.1.3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="">
+
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+<link href="css/highlight.css" rel="stylesheet">
+<link href="css/staticdocs.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+  </head>
+
+  <body>
+    <div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="#">CTSim 0.1.3</a>
+      <div class="nav">
+        <ul class="nav">
+          <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="container">
+      <header>
+        
+      </header>
+      
+      <h1>Make list of simulation parameters</h1>
+
+<div class="row">
+  <div class="span8">
+    <h2>Usage</h2>
+    <pre><div>make_parmlist(e&nbsp;=&nbsp;parent.frame())</div></pre>
+    
+    <h2>Arguments</h2>
+    <dl>
+      <dt>e</dt>
+      <dd>environment in which to look for parameters</dd>
+    </dl>
+    
+    <div class="Value">
+      <h2>Value</h2>
+
+      <p><dl>
+a named list
+</dl></p>
+  
+    </div>
+
+    <div class="Description">
+      <h2>Description</h2>
+
+      <p>Creates a list of parameters to used in a simulation from objects present
+in a given environment.</p>
+  
+    </div>
+
+    <div class="Details">
+      <h2>Details</h2>
+
+      <p>The function searches the current environment (or one given in 
+<code>e</code>) for a set of required and optional parameters used by
+<code><a href='run_sim.html'>run_sim</a></code> to run a simulation. Parameters are saved in 
+a named list which can be used in the <code>parms</code> argument of
+<code><a href='run_sim_N.html'>run_sim_N</a></code> or written to a file using <code><a href='write_parms.html'>write_parms</a></code>.
+The following parameters are <strong>required</strong> for simulation and <em>must be present
+in the environment or the function will fail</em>:
+<ul>
+<li> <strong><code>dimX</code></strong> : x-dimension of landscape
+</li>
+<li> <strong><code>dimY</code></strong> : y-dimension of landscape
+</li>
+<li> <strong><code>S_A</code></strong> : number of specialist species on habitat type A
+</li>
+<li> <strong><code>S_B</code></strong> : number of specialist species on habitat type B
+</li>
+<li> <strong><code>m_rates</code></strong> : vector of mortality rates on preferred and 
+	non-preferred habitats
+</li>
+<li> <strong><code>r_rates</code></strong> : vector of recruitment rates on preferred 
+	and non-preferred habitats
+</li>
+<li> <strong><code>K</code></strong> : carrying capacity of cells. 
+</li>
+<li> <strong><code>nsteps</code></strong> : number of timesteps to simulate
+</li>
+<li> <strong><code>nruns</code></strong> : number of independent simulations to run
+</li>
+</ul></p>
+  
+      <p>For further details on <code>S_A</code>, <code>S_B</code>, <code>m_rates</code> and 
+<code>r_rates</code> see <code><a href='make_species.html'>make_species</a></code>. For further details on 
+<code>K</code> see <code><a href='populate_landscape.html'>populate_landscape</a></code>.</p>
+  
+      <p>The following parameters are optional and more information can 
+be found in the documentation on the functions they are passed to:
+<ul>
+<li> Parameters passed to <code><a href='make_landscape.html'>make_landscape</a></code>
+	<ul>
+<li> <strong><code>vgm_dcorr</code></strong> : distance at which habitat values become
+			uncorrelated
+		</li>
+<li> <strong><code>vgm_mod</code></strong> : variogram model controling spatial 
+			autocorrelation of habitat values
+		</li>
+<li> <strong><code>habA_prop</code></strong> : proportion of landscape that comprised of
+			habitat type A
+	</li>
+</ul></p>
+  
+      <p></li>
+<li> Parameters passed to <code><a href='make_species.html'>make_species</a></code>
+	<ul>
+<li> <strong><code>S_AB</code></strong> : number of generalist species
+		</li>
+<li> <strong><code>dist_b</code></strong> : list defining the distribution from which 
+			species' birth rates are sampled
+		</li>
+<li> <strong><code>dist_d</code></strong> : list defining the distribution from which
+			species' dispersal rates are sampled. Must contain character string
+			named <code>type</code>.
+		</li>
+<li> <strong><code>dist_v</code></strong> : list defining the distribution from which
+			species' movement rates are sampled. Must contain character string
+			named <code>type</code>.
+		</li>
+<li> <strong><code>dist_gsad</code></strong> : list defining distribution from which
+			global species abundances are sampled or 'b_rates', indicating 
+			that the gsad should match species birth rates in their preferred 
+			habitat.
+	</li>
+</ul></p>
+  
+      <p></li>
+<li> Parameters passed to <code><a href='populate_landscape.html'>populate_landscape</a></code>
+	<ul>
+<li> <strong><code>prop_full</code></strong> : proportion of the landscape's carrying
+			capacity that should initially contain individuals
+		</li>
+<li> <strong><code>init_distribute</code></strong> : character string indicating how
+			individuals should be initially distributed across the landscape
+		</li>
+<li> <strong><code>cells_distribute</code></strong> : if <code>init_distribute</code> is 
+			is 'designated', a matrix giving the locations of cells in which
+			to place propagule
+	</li>
+</ul></p>
+  
+      <p></li>
+<li> Parameters passed to <code><a href='run_sim.html'>run_sim</a></code>
+	<ul>
+<li> <strong><code>d_kernel</code></strong> : list defining the shape of the dispersal
+			kernel of new propagules.
+		</li>
+<li> <strong><code>v_kernel</code></strong> : list defining the shape of the movement
+			kernel of established individuals
+		</li>
+<li> <strong><code>imm_rate</code></strong> : immigration rate- probability than an 
+			empty space will be colonized by a migrant from outside
+			the metacommunity
+	</li>
+</ul></p>
+  
+      <p></li>
+<li> Parameters passed to <code><a href='run_sim_N.html'>run_sim_N</a></code>
+	<ul>
+<li> <strong><code>save_steps</code></strong> : vector of timesteps to save in each 
+			simulation
+		</li>
+<li> <strong><code>simID</code></strong> : character string that identifies simulations
+			run on this set of parameters
+	</li>
+</ul></p>
+  
+      <p></li>
+</ul></p>
+  
+      <p></p>
+  
+    </div>
+
+    <div class="Note">
+      <h2>Note</h2>
+
+      <p>Developers should note that this function must be manually  
+updated whenever new parameters are added to simulation functions.</p>
+  
+    </div>
+      </div>
+  <div class="span4">
+    <!-- <ul>
+      <li>make_parmlist</li>
+    </ul>
+    <ul>
+      
+    </ul> -->
+      
+        
+  </div>
+</div>
+      
+      <footer>
+      <p class="pull-right"><a href="#">Back to top</a></p>
+<p>Built by <a href="https://github.com/hadley/staticdocs">staticdocs</a>. Styled with <a href="https://getbootstrap.com/2.0.4/">bootstrap</a>.</p>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+<title>run_sim_N. CTSim 0.1.3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="">
+
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+<link href="css/highlight.css" rel="stylesheet">
+<link href="css/staticdocs.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+  </head>
+
+  <body>
+    <div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="#">CTSim 0.1.3</a>
+      <div class="nav">
+        <ul class="nav">
+          <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="container">
+      <header>
+        
+      </header>
+      
+      <h1>Run multiple simulations</h1>
+
+<div class="row">
+  <div class="span8">
+    <h2>Usage</h2>
+    <pre><div>run_sim_N(nruns, parms, nparallel&nbsp;=&nbsp;1, simID&nbsp;=&nbsp;"test", save_sim&nbsp;=&nbsp;NULL, report&nbsp;=&nbsp;0, return_results&nbsp;=&nbsp;T, restart&nbsp;=&nbsp;F, lib_loc&nbsp;=&nbsp;NULL)</div></pre>
+    
+    <h2>Arguments</h2>
+    <dl>
+      <dt>nruns</dt>
+      <dd>(required) number of replicate simulations</dd>
+      <dt>parms</dt>
+      <dd>(required) list of parameters for running simulation as 
+created by <code><a href='make_parmlist.html'>make_parmlist</a></code></dd>
+      <dt>nparallel</dt>
+      <dd>number of cores to run the simulations on in parallel. 
+Defaults to 1.</dd>
+      <dt>simID</dt>
+      <dd>character string identifying this simulation run. 
+Defaults to 'test'.</dd>
+      <dt>save_sim</dt>
+      <dd>directory in which to save simulation results. 
+If none specified simulation results are not saved.</dd>
+      <dt>report</dt>
+      <dd>number of timesteps after which to report status. 
+Defaults to 0, no reporting.</dd>
+      <dt>return_results</dt>
+      <dd>logical indicating whether function should
+return simulation results and objects. See details. Defaults to TRUE.</dd>
+      <dt>restart</dt>
+      <dd>logical indicating whether the simulation should continue 
+from a set of saved runs. See details.</dd>
+      <dt>lib_loc</dt>
+      <dd>location where <code>CTSim</code> is installed, if not on default
+search path</dd>
+    </dl>
+    
+    <div class="Value">
+      <h2>Value</h2>
+
+      <p><dl>
+nothing or a list of simulation results and objects. See details.
+</dl></p>
+  
+    </div>
+
+    <div class="Description">
+      <h2>Description</h2>
+
+      <p>Runs multiple independent simulations on the same set of parameters.</p>
+  
+    </div>
+
+    <div class="Details">
+      <h2>Details</h2>
+
+      <p>This function runs multiple independent simulations on a set of parameters 
+given in <code>parms</code>. Each run generates a new landscape, species pool, 
+global species abundance distribution and initial metacommunity.
+Landscapes, species pools and gsads are saved as lists 
+(object names: <code>lands_N</code>, <code>species_N</code>, <code>gsad_N</code>)
+in <code><simID>_simobjects.RData</code>.
+Simulations can be run in parallel by specifying 
+<code>nparallel > 1</code>, which requires the <code><a href='http://www.inside-r.org/packages/cran/doParallel/docs/doParallel-package'>doParallel</a></code> and
+<code><a href='http://www.inside-r.org/packages/cran/foreach/docs/foreach'>foreach</a></code> packages.
+By default, <code>nparallel = 1</code> and the simulations proceed serially.
+Each run of the simulation is temporarily saved to the working directory
+or permanently saved to the directory specified by <code>save_sim</code>. 
+If this directory does not exist then it is created. Runs are saved as
+<code><simID>_run<i>.RData</code>. This file contains five objects:
+<dl>
+<dt>results</dt><dd>an array of the metacommunity through time returned by 
+	<code><a href='run_sim.html'>run_sim</a></code>.</dd></p>
+  
+      <p><dt>this_land</dt><dd>the landscape used for the simulation</dd></p>
+  
+      <p><dt>this_species</dt><dd>the species pool used in the simulation</dd></p>
+  
+      <p><dt>this_gsad</dt><dd>the global species abundance distribution used in
+	the simulation</dd></p>
+  
+      <p><dt>this_metacomm</dt><dd>the initial metacommunity</dd></p>
+  
+      <p></dl></p>
+  
+      <p>If <code>return_results</code> is <code>TRUE</code>, then 
+after all simulations are complete, all runs are read back into memory,  
+compiled arrays, and returned as a list by the function. 
+List components are <code>results</code>, <code>species</code>, <code>lands</code>,
+<code>gsads</code> and the first dimension of each array is the run to which it
+corresponds. For example, <code>results[1,,,]</code> is the metacommunity 
+from run 1. If <code>return_results</code> is <code>FALSE</code> then temporary
+files from the simulation runs are NOT removed, even if <code>save_sim</code> is
+not specified.</p>
+  
+      <p>This function can be used to restart a set of multiple simulation runs, 
+but does not currently allow users to restart a simulation on an existing 
+run. If <code>restart</code> is <code>TRUE</code>, the function navigates to the 
+<code>save_sim</code> directory and searches for the first instance of 
+codei <= nruns where <code><simID>_run<i>.RData</code> does not exist.
+It then starts simulations for all <code>i</code> that do not have saved files
+using the objects saved in <code>[simID]_simobjects.RData</code>.</p>
+  
+    </div>
+
+    <div class="Note">
+      <h2>Note</h2>
+
+      <p>Users should be cautious in specifying <code>return_results=TRUE</code>
+for large simulations where memory requirements may not support large 
+arrays.</p>
+  
+    </div>
+      </div>
+  <div class="span4">
+    <!-- <ul>
+      <li>run_sim_N</li>
+    </ul>
+    <ul>
+      
+    </ul> -->
+      
+    <h2>See also</h2>
+    
+<code><a href='run_sim.html'>run_sim</a></code> for details on how each simulation runs 
+<code><a href='make_parmlist.html'>make_parmlist</a></code> for parameters that can be passed to the 
+simulation
+
+        
+  </div>
+</div>
+      
+      <footer>
+      <p class="pull-right"><a href="#">Back to top</a></p>
+<p>Built by <a href="https://github.com/hadley/staticdocs">staticdocs</a>. Styled with <a href="https://getbootstrap.com/2.0.4/">bootstrap</a>.</p>
+      </footer>
+    </div>
+  </body>
+</html>

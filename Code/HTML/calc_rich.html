@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+<title>calc_rich. CTSim 0.1.3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="">
+
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+<link href="css/highlight.css" rel="stylesheet">
+<link href="css/staticdocs.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+  </head>
+
+  <body>
+    <div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="#">CTSim 0.1.3</a>
+      <div class="nav">
+        <ul class="nav">
+          <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="container">
+      <header>
+        
+      </header>
+      
+      <h1>Richness profiles</h1>
+
+<div class="row">
+  <div class="span8">
+    <h2>Usage</h2>
+    <pre><div>calc_rich(locs&nbsp;=&nbsp;NULL, t_window&nbsp;=&nbsp;NULL, sim&nbsp;=&nbsp;NULL, N_S&nbsp;=&nbsp;NULL, abuns&nbsp;=&nbsp;NULL, agg_times&nbsp;=&nbsp;NULL, which_species&nbsp;=&nbsp;NULL)</div></pre>
+    
+    <h2>Arguments</h2>
+    <dl>
+      <dt>locs</dt>
+      <dd>(required) either a two-column matrix of cell locations where 
+species' abundances should be summed or a list of matrices designating
+multiple spatial units where abundance should be summed (see details)</dd>
+      <dt>t_window</dt>
+      <dd>(required) either a list containing <code>start</code>
+and <code>stop</code> specifying that all collected timepoints in that interval
+should be considered or an explicit vector of timepoints</dd>
+      <dt>sim</dt>
+      <dd>(required) array of simulation results from a single 
+simulation run (as returned by <code><a href='run_sim.html'>run_sim</a></code>)</dd>
+      <dt>N_S</dt>
+      <dd>(required) number of species in the simulation</dd>
+      <dt>abuns</dt>
+      <dd>array of abundance profiles (as returned by 
+<code><a href='calc_abun_profile.html'>calc_abun_profile</a></code>)</dd>
+      <dt>agg_times</dt>
+      <dd>either a single number specifing the number of timepoints 
+that should be aggregated before calculating occupancy or a list of
+vectors defining exactly which timepoints should be aggregated (see details).
+ Defaults to no aggregation.</dd>
+      <dt>which_species</dt>
+      <dd>a vector of integers indicating which species should be
+considered. Defaults to all species.</dd>
+    </dl>
+    
+    <div class="Value">
+      <h2>Value</h2>
+
+      <p><dl>
+a matrix of species richness in each location at each timepoint 
+(dimensions <code>[temporal unit, spatial unit]</code>)
+</dl></p>
+  
+    </div>
+
+    <div class="Description">
+      <h2>Description</h2>
+
+      <p>Calculate species richness through time for a simulation</p>
+  
+    </div>
+
+    <div class="Details">
+      <h2>Details</h2>
+
+      <p>The function calculates species richness for a set of locations
+and timepoints over a given time interval. Users can either supply an 
+array of abundance profiles (as returned by 
+<code><a href='calc_abun_profile.html'>calc_abun_profile</a></code>) or a set of spatial units
+(<code>locs</code>), a time window (<code>t_window</code>), simulation
+results (<code>sim</code>) and the number of species (<code>N_S</code>), 
+from which abundance profiles can be calculated. These parameters
+are explained in more detail in the documentation of 
+<code><a href='calc_abun_profile.html'>calc_abun_profile</a></code>. For each spatial and temporal unit in
+the abundance profiles, the function calculates the number of species
+present. Timepoints may be aggregated prior to this calculation using 
+<code>agg_times</code>. This can be useful for evaluating the effects 
+of sampling at different temporal scales on observed richness.
+This aggregation is relative to the timepoints
+stored in the abundance profiles array and not to the actual 
+timesteps in the simulation. For example, specifying 
+<code>agg_times=10</code> on abundance profiles containing
+every other timestep will aggregate abundances from <code>T=1:20,
+T=21:40,...</code>.</p>
+  
+    </div>
+      </div>
+  <div class="span4">
+    <!-- <ul>
+      <li>calc_rich</li>
+    </ul>
+    <ul>
+      
+    </ul> -->
+      
+        
+  </div>
+</div>
+      
+      <footer>
+      <p class="pull-right"><a href="#">Back to top</a></p>
+<p>Built by <a href="https://github.com/hadley/staticdocs">staticdocs</a>. Styled with <a href="https://getbootstrap.com/2.0.4/">bootstrap</a>.</p>
+      </footer>
+    </div>
+  </body>
+</html>

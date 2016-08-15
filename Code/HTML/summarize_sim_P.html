@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+<title>summarize_sim_P. CTSim 0.1.3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="">
+
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+<link href="css/highlight.css" rel="stylesheet">
+<link href="css/staticdocs.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+  </head>
+
+  <body>
+    <div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="#">CTSim 0.1.3</a>
+      <div class="nav">
+        <ul class="nav">
+          <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="container">
+      <header>
+        
+      </header>
+      
+      <h1>Summarize with multiple parameter sets</h1>
+
+<div class="row">
+  <div class="span8">
+    <h2>Usage</h2>
+    <pre><div>summarize_sim_P(run_dir&nbsp;=&nbsp;"./", parm_dir&nbsp;=&nbsp;"./", results_dir&nbsp;=&nbsp;"./Summaries/", cross_time&nbsp;=&nbsp;F)</div></pre>
+    
+    <h2>Arguments</h2>
+    <dl>
+      <dt>run_dir</dt>
+      <dd>directory where simulation runs are located.
+Defaults to the current directory.</dd>
+      <dt>parm_dir</dt>
+      <dd>directory where parameter files are located.
+Defaults to the current directory.</dd>
+      <dt>results_dir</dt>
+      <dd>directory where results should be saved.
+Defaults to 'Summaries' in the current directory.</dd>
+      <dt>cross_time</dt>
+      <dd>logical indicating whether to use <code>t_window</code>
+to summarize the simulation in windows of time</dd>
+    </dl>
+    
+    <div class="Value">
+      <h2>Value</h2>
+
+      <p><dl>
+nothing
+</dl></p>
+  
+    </div>
+
+    <div class="Description">
+      <h2>Description</h2>
+
+      <p>Summarize simulation runs with multiple sets of parameters</p>
+  
+    </div>
+
+    <div class="Details">
+      <h2>Details</h2>
+
+      <p>This function summarizes multiple simulation runs with multiple
+sets of parameters, which are saved in the directory
+given in <code>parm_dir</code>. Parameter filenames must start with 's_'.
+Each parameter file should have a unique <code>sumID</code> defined within it
+as well define objects that can be passed as parameters to 
+<code><a href='summarize_sim_N.html'>summarize_sim_N</a></code>. Parameters
+requiring a value are <code>breaks</code>, <code>locs</code> and <code>t_window</code>.
+The function will either summarize simulation results for a set time period
+defined in <code>t_window</code> (default) or for multiple consecutive time windows
+ (use <code>cross_time=TRUE</code>), in which case <code>t_window</code> 
+defines the time interval and must be a list with named elements
+<code>start</code> and <code>stop</code>. If <code>cross_time=FALSE</code> then 
+two summary objects are saved to the .RData file: <code>sim_sum_ind</code>- 
+includes a summary for each run, and <code>sim_sum</code>- summarizes quantities 
+across runs using the function defined in <code>sum_func</code>. 
+If <code>cross_time=TRUE</code> then only <code>sim_sum_ind</code> is saved and 
+<code>T=<time></code> is appended to the filename to denote the timestep at 
+which the summary ends.
+Results are saved in the directory <code>results_dir</code> and are not returned
+by the function. Filenames follow the convention 
+<code><sumID>_summary.RData</code>.</p>
+  
+    </div>
+      </div>
+  <div class="span4">
+    <!-- <ul>
+      <li>summarize_sim_P</li>
+    </ul>
+    <ul>
+      
+    </ul> -->
+      
+    <h2>See also</h2>
+    
+<code><a href='summarize_simulation.html'>summarize_simulation</a></code> for command line execution
+
+        
+  </div>
+</div>
+      
+      <footer>
+      <p class="pull-right"><a href="#">Back to top</a></p>
+<p>Built by <a href="https://github.com/hadley/staticdocs">staticdocs</a>. Styled with <a href="https://getbootstrap.com/2.0.4/">bootstrap</a>.</p>
+      </footer>
+    </div>
+  </body>
+</html>

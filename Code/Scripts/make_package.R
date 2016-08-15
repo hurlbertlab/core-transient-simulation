@@ -1,7 +1,10 @@
 ## This script is used for building and maintaining the CTSim package
+#devtools::install_github("hadley/staticdocs")
 
+# Load packages needed to build CTSim
 library(devtools)
 library(roxygen2)
+library(staticdocs)
 
 setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/')
 
@@ -27,16 +30,23 @@ use_package('doParallel','Suggests')
 use_package('foreach','Suggests')
 
 # Check the package
+setwd('../')
 check('CTSim')
 
 # Build the package
 build('CTSim')
 #build_win('CTSim')
 
+
 # Check install
-install.packages('CTSim_0.1.0.zip', repos=NULL)
+install.packages('CTSim_0.1.3.zip', repos=NULL)
 library(CTSim)
 
+# Make static html documentation
+build_site('CTSim', 'HTML')
+
+###################################################
+### Misc code for testing functions
 
 
 # Testing Functions

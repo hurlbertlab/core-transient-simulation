@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+<title>get_dispersal_vec. CTSim 0.1.3</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="">
+
+<link href="css/bootstrap.css" rel="stylesheet">
+<link href="css/bootstrap-responsive.css" rel="stylesheet">
+<link href="css/highlight.css" rel="stylesheet">
+<link href="css/staticdocs.css" rel="stylesheet">
+
+<!--[if lt IE 9]>
+  <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+<![endif]-->
+
+<script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+</script>
+<script type="text/javascript"
+  src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML">
+</script>
+  </head>
+
+  <body>
+    <div class="navbar">
+  <div class="navbar-inner">
+    <div class="container">
+      <a class="brand" href="#">CTSim 0.1.3</a>
+      <div class="nav">
+        <ul class="nav">
+          <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <div class="container">
+      <header>
+        
+      </header>
+      
+      <h1>Calculate dispersal vector</h1>
+
+<div class="row">
+  <div class="span8">
+    <h2>Usage</h2>
+    <pre><div>get_dispersal_vec(d, form&nbsp;=&nbsp;list(type&nbsp;=&nbsp;"gaussian"), N&nbsp;=&nbsp;1)</div></pre>
+    
+    <h2>Arguments</h2>
+    <dl>
+      <dt>d</dt>
+      <dd>(required) numeric controlling dispersal distance (see details).</dd>
+      <dt>form</dt>
+      <dd>list defining the dispersal kernel (see details).
+Minimally contains an argument <code>type</code> defining the form of the 
+dispersal kernel. Defaults to Gaussian.</dd>
+      <dt>N</dt>
+      <dd>number of vectors to generate</dd>
+    </dl>
+    
+    <div class="Value">
+      <h2>Value</h2>
+
+      <p><dl>
+a matrix of dispersal vectors. First column gives the magnitude 
+and the second column gives the direction in radians, counter-clockwise
+from East.
+</dl></p>
+  
+    </div>
+
+    <div class="Description">
+      <h2>Description</h2>
+
+      <p>Stochastically generates dispersal vectors given a dispersal kernel 
+and expected dispersal distance.</p>
+  
+    </div>
+
+    <div class="Details">
+      <h2>Details</h2>
+
+      <p>Only implements isotropic dispersal (no directional bias). Three types 
+of dispersal kernels are currently implemented and should be specified 
+with the <code>type</code> argument in the list which is passed as the parameter 
+<code>form</code>. These are:
+<dl>
+	<dt><code>'gaussian'</code></dt><dd>Gaussian kernel- dispersal distance sampled from
+		a half-normal distribution with mean <code>d</code>.</dd></p>
+  
+      <p><dt><code>'adjacent'</code></dt><dd>Adjacent cell dispersal (rook's move)- <code>d</code> 
+		is the probability that an individual will move. An
+		additional argument <code>moves</code> must be passed in <code>form</code> 
+		giving the number of steps an individual should attempt to take.</dd></p>
+  
+      <p><dt><code>'uniform'</code></dt><dd>Uniform dispersal- individual has equal 
+		probability of occurring anywhere within a circle with radius 
+		<code>d</code>. Sufficiently large <code>d</code> allows for unlimited dispersal.</dd></p>
+  
+      <p></dl></p>
+  
+      <p></p>
+  
+    </div>
+      </div>
+  <div class="span4">
+    <!-- <ul>
+      <li>get_dispersal_vec</li>
+    </ul>
+    <ul>
+      
+    </ul> -->
+      
+    <h2>See also</h2>
+    
+<code><a href='disperse.html'>disperse</a></code> for dispersal of propagules with different 
+expected dispersal distances.
+
+        
+  </div>
+</div>
+      
+      <footer>
+      <p class="pull-right"><a href="#">Back to top</a></p>
+<p>Built by <a href="https://github.com/hadley/staticdocs">staticdocs</a>. Styled with <a href="https://getbootstrap.com/2.0.4/">bootstrap</a>.</p>
+      </footer>
+    </div>
+  </body>
+</html>
