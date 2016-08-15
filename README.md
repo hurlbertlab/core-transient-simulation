@@ -6,6 +6,19 @@ This project is a spatially explicit simulation of metacommunity dynamics that m
 The simulation occurs on a regular grid of cells (termed the 'landscape') and each cell has discrete habitat type, 'A' or 'B'. Each cell contains a 'community' of individuals, which is fixed at a pre-determined carrying capacity. Communities may contain fewer individuals than the carrying capacity, but not more. The species pool consists of three types of species- generalists, and habitat specialists on habitat type A or B. Generalists produce offspring in both habitat types while specialists only produce offspring in their preferred habitat. After initializing a simulation landscape and species pool, the simulation proceeds through repeated iteration of four processes: birth - dispersal - establishment - death. Once established, individuals vacate their place in the community only through dispersal or death- the simulation does not model competitive displacement. 
 
 ## Directory Structure
++ **/Code**
+  + **./CTSim**: package source code and manual files
+  + **./HTML**: html files for static documentation
+  + **./Parameters**: parameter files for running and summarizing simulations. Subdirectories contain parameter files for different experiments described [here](/wiki/Experiments).
+  + **./Scripts**: miscellaneous scripts for working with CTSim
+   + [debugging.R](/Code/Scripts/debugging.R): code for testing CTSim package
+   + [make_package.R](/Code/Scripts/make_package.R): code for building CTSim package
+   + [make_parmfiles.R](/Code/Scripts/make_parmfiles.R): code for generating parameter files used in experiments
+   + [submit_runs.txt](/Code/Scripts/submit_runs.txt): shell code for submitting multiple jobs to cluster
+   + [visualize_simulation.R](Code/Scripts/visualize_simulation.R): code for analyzing  CTSim runs and experiments
+  + Current package version for [Windows](/Code/CTSim_0.1.3.tar.gz) and [Unix](/Code/CTSim_0.1.3.zip)
++ **/Results**
+  
 
 ## HTML Help Files
 `/Code/HTML`
