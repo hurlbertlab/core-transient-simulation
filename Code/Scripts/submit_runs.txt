@@ -15,3 +15,57 @@ do
   done
 done
 
+
+
+for d in a0 a0.5 a1 g1 g2 g4 g8 g16 g32 
+do
+ bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/EXP1/d-$d/ ./Results/EXP1/ ../Rlibs/ 50" restart_simulation.R EXP1_d-$d.Rout
+done
+
+for d in g1 g4 g16 
+do
+ for v in a0 a0.5 a1 
+  do
+   bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/EXP1/d-$d/v-$v/ ./Results/EXP1/ ../Rlibs/ 50" restart_simulation.R EXP1_d-$d_v-$v.Rout
+  done
+done
+
+
+# 8-4-2016
+for d in a0 a0.5 a1 
+do
+ bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/EXP1/d-$d/ ./Results/EXP1/ ../Rlibs/ 50" restart_simulation.R EXP1_d-$d.Rout
+done
+
+# Summary
+
+
+for d in a0 a0.5 a1 g1 g2 g4 g8 g16 g32 u45 
+do
+ bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/EXP1/d-$d/ ./Results/EXP1/ ../Rlibs/ 50" restart_simulation.R EXP1_d-$d.Rout
+done
+
+
+for d in g1 g4 g16 u45 
+do
+ for v in a0 a0.5 a1 
+  do
+   bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/EXP1/d-$d/v-$v/ ./Results/EXP1/ ../Rlibs/ 50" restart_simulation.R EXP1_d-$d_v-$v.Rout
+  done
+done
+
+
+for f in Results/EXP1/*
+do
+ bsub -q week R CMD BATCH "--args $f Parms/EXP1/summary/ Summaries/$f/ ../Rlibs" summarize_simulation.R $f_sum.Rout
+done
+
+# Run from Results/EXP1/
+for f in Results/EXP1/*
+do
+ RUNID="$(echo $f | cut -f3 -d"/")"
+ bsub -q week R CMD BATCH "--args $f Parms/EXP1/summary/ Summaries/$RUNID/ ../Rlibs" summarize_simulation.R "$RUNID"_sum.Rout
+done
+
+
+
