@@ -87,86 +87,49 @@ This function is a wrapper for `run_sim_N` which sequentially calls the function
 
 `R CMD BATCH "--args ncores parm_dir results_dir sim_dir report" restart_simulation.R outfile.Rout`
 
-Two scripts are provided with the `CTSim` package in the `exec/` directory which can be used to run simulations in batch mode using `R CMD BATCH` (see above for usage). `run_simulation.R` calls `run_sim_P` on command line arguments and starts new simulations, whereas `restart_simulation.R` attempts to restart existing sets of simulation runs.
+Two scripts are provided with the `CTSim` package in the `exec/` directory which can be used to run simulations in batch mode using `R CMD BATCH` (see above for usage). `run_simulation.R` calls `run_sim_P` on command line arguments and starts new simulations, whereas `restart_simulation.R` attempts to restart existing sets of simulation runs. Command line arguments must be speficied in order.
 
 ## Parameter Files for Running Simulations
 
-#' The following parameters are \strong{required} for simulation and \emph{must be present
-#' in the environment or the function will fail}:
-#' \itemize{
-#'	\item \strong{\code{dimX}} : x-dimension of landscape
-#'	\item \strong{\code{dimY}} : y-dimension of landscape
-#'	\item \strong{\code{S_A}} : number of specialist species on habitat type A
-#'	\item \strong{\code{S_B}} : number of specialist species on habitat type B
-#'	\item \strong{\code{m_rates}} : vector of mortality rates on preferred and 
-#'		non-preferred habitats
-#'	\item \strong{\code{r_rates}} : vector of recruitment rates on preferred 
-#'		and non-preferred habitats
-#'	\item \strong{\code{K}} : carrying capacity of cells. 
-#'	\item \strong{\code{nsteps}} : number of timesteps to simulate
-#'	\item \strong{\code{nruns}} : number of independent simulations to run
-#' }
-#' For further details on \code{S_A}, \code{S_B}, \code{m_rates} and 
-#' \code{r_rates} see \code{\link{make_species}}. For further details on 
-#' \code{K} see \code{\link{populate_landscape}}.
-#'
-#' The following parameters are optional and more information can 
-#' be found in the documentation on the functions they are passed to:
-#' \itemize{
-#'	\item Parameters passed to \code{\link{make_landscape}}
-#'		\itemize{
-#'			\item \strong{\code{vgm_dcorr}} : distance at which habitat values become
-#'				uncorrelated
-#'			\item \strong{\code{vgm_mod}} : variogram model controling spatial 
-#'				autocorrelation of habitat values
-#'			\item \strong{\code{habA_prop}} : proportion of landscape that comprised of
-#'				habitat type A
-#'		}
-#'	\item Parameters passed to \code{\link{make_species}}
-#'		\itemize{
-#'			\item \strong{\code{S_AB}} : number of generalist species
-#'			\item \strong{\code{dist_b}} : list defining the distribution from which 
-#'				species' birth rates are sampled
-#'			\item \strong{\code{dist_d}} : list defining the distribution from which
-#'				species' dispersal rates are sampled. Must contain character string
-#'				named \code{type}.
-#'			\item \strong{\code{dist_v}} : list defining the distribution from which
-#'				species' movement rates are sampled. Must contain character string
-#'				named \code{type}.
-#'			\item \strong{\code{dist_gsad}} : list defining distribution from which
-#'				global species abundances are sampled or 'b_rates', indicating 
-#'				that the gsad should match species birth rates in their preferred 
-#'				habitat.
-#'		}
-#'	\item Parameters passed to \code{\link{populate_landscape}}
-#'		\itemize{
-#'			\item \strong{\code{prop_full}} : proportion of the landscape's carrying
-#'				capacity that should initially contain individuals
-#'			\item \strong{\code{init_distribute}} : character string indicating how
-#'				individuals should be initially distributed across the landscape
-#'			\item \strong{\code{cells_distribute}} : if \code{init_distribute} is 
-#'				is 'designated', a matrix giving the locations of cells in which
-#'				to place propagule
-#'		}
-#'	\item Parameters passed to \code{\link{run_sim}}
-#'		\itemize{
-#'			\item \strong{\code{d_kernel}} : list defining the shape of the dispersal
-#'				kernel of new propagules.
-#'			\item \strong{\code{v_kernel}} : list defining the shape of the movement
-#'				kernel of established individuals
-#'			\item \strong{\code{imm_rate}} : immigration rate- probability than an 
-#'				empty space will be colonized by a migrant from outside
-#'				the metacommunity
-#'		}
-#'	\item Parameters passed to \code{\link{run_sim_N}}
-#'		\itemize{
-#'			\item \strong{\code{save_steps}} : vector of timesteps to save in each 
-#'				simulation
-#'			\item \strong{\code{simID}} : character string that identifies simulations
-#'				run on this set of parameters
-#'		}
-#'}
+See [example_parameter_file.txt](./Code/Parameters/example_parameter_file.txt) for an example of all possible parameters that can be provided for running a simulation and see [baseline_parameter_file.txt](./Code/Parameters/baseline_parameter_file.txt) for the set of parameters used as a basis for [experiments](./wiki/Experiments). Required and optional parameters are described below:
 
+The following parameters are **required** for simulation and must be present or the simulation will fail:
+
+ + **`dimX`**: x-dimension of landscape
+ + **`dimY`**: y-dimension of landscape
+ + **`S_A`**: number of specialist species on habitat type A
+ + **`S_B`**: number of specialist species on habitat type B
+ + **`m_rates`**: vector of mortality rates on preferred and	non-preferred habitats
+ + **`r_rates`**: vector of recruitment rates on preferred	and non-preferred habitats
+ + **`K`**: carrying capacity of cells
+ + **`nsteps`**: number of timesteps to simulate
+ + **`nruns`**: number of independent simulations to run
+
+For further details on `S_A`, `S_B`, `m_rates` and `r_rates` see `make_species`. For further details on `K` see `populate_landscape`.
+
+The following parameters are optional and more information can be found in the documentation on the functions they are passed to:
+
+ + Parameters passed to `make_landscape`
+  + **`vgm_dcorr`**: distance at which habitat values become uncorrelated
+  + **`vgm_mod`**: variogram model controling spatial autocorrelation of habitat values
+  + **`habA_prop`**: proportion of landscape that comprised of habitat type A
+ + Parameters passed to `make_species`
+  + **`S_AB`**: number of generalist species
+  + **`dist_b`**: list defining the distribution from which	species' birth rates are sampled
+  + **`dist_d`**: list defining the distribution from which species' dispersal rates are sampled. Must contain character string named `type`.
+  + **`dist_v`**: list defining the distribution from which	species' movement rates are sampled. Must contain character string	named `type`.
+  + **`dist_gsad`**: list defining distribution from which global species abundances are sampled or `'b_rates'`, indicating that the gsad should match species birth rates in their preferred habitat
+ + Parameters passed to `populate_landscape`
+  + **`prop_full`**: proportion of the landscape's carrying capacity that should initially contain individuals
+  + **`init_distribute`**: character string indicating how	individuals should be initially distributed across the landscape
+  + **`cells_distribute`**: if `init_distribute` is `'designated'`, a matrix giving the locations of cells in which to place propagules
+ + Parameters passed to `run_sim`
+  + **`d_kernel`**: list defining the shape of the dispersal	kernel of new propagules
+  + **`v_kernel`**: list defining the shape of the movement	kernel of established individuals
+  + **`imm_rate`**: immigration rate- probability than an empty space will be colonized by a migrant from outside	the metacommunity
+ + Parameters passed to `run_sim_N`
+  + **`save_steps`**: vector of timesteps to save in each simulation
+  + **`simID`**: character string that identifies simulations	run on this set of parameters
 
 
 ## Summarizing Simulation Runs
