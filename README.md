@@ -5,17 +5,28 @@ This project is a spatially explicit simulation of metacommunity dynamics that m
 ## Simulation Description
 The simulation occurs on a regular grid of cells (termed the 'landscape') and each cell has discrete habitat type, 'A' or 'B'. Each cell contains a 'community' of individuals, which is fixed at a pre-determined carrying capacity. Communities may contain fewer individuals than the carrying capacity, but not more. The species pool consists of three types of species- generalists, and habitat specialists on habitat type A or B. Generalists produce offspring in both habitat types while specialists only produce offspring in their preferred habitat. After initializing a simulation landscape and species pool, the simulation proceeds through repeated iteration of four processes: birth - dispersal - establishment - death. Once established, individuals vacate their place in the community only through dispersal or death- the simulation does not model competitive displacement. 
 
+## Directory Structure
 
-## Simulation Intialization
+## HTML Help Files
+`/Code/HTML`
+
+Static html help files for every function in the CTSim package are available [here](/Code/HTML/index.html).
+
+## CTSim Package 
+`/Code/CTSim/`
+
+Files for installing the package are available in [/Code/]. The most recent package version is the one with the highest version number. 
+
+### Simulation Intialization
 A simulation requires three objects: a landscape, a species pool, and a global species abundance distribution (hereafter, gsad). The functions used to initialize these objects are described below.
 
-### Initializing a landscape:
+#### Initializing a landscape:
 `make_landscape(x, y, mod, d, prop, draw_plot)`
 
 A landscape is a raster layer whose values are -1 or 1, corresponding to habitat types 'A' and 'B', respectively. 
 When a landscape is initialized, the user can specify its size (`x,y`), the proportion of the cells which should belong to habitat type 'B' (`prop`), a variogram model used to define the spatial autocorrelation of habitat values (`mod`), and the distance at which habitat values become uncorrelated (e.g. the range of the variogram model: `d`). Variogram models are implemented by the `vgm()` function in gstat. Use `show.vgms()` to see available models. Only the dimensions of the landscape are required. By default, the function will return a grid with 50% of habitat type 'A' and a exponential variogram model with partial sill = 1 and range = 1/3 of the grids smallest dimension.
 
-### Initializing a species pool
+#### Initializing a species pool
 `make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)`
 
 A species pool is a 3-dimensional array of species vital rates. The first dimension specifies the species. The second dimension defines in which habitat the rate applies ('A' or 'B') and the third dimension specifies the type of rate:
@@ -28,12 +39,12 @@ A species pool is a 3-dimensional array of species vital rates. The first dimens
 
 Birth rates are positive in a species' preferred habitat and 0 elsewhere. Generalists prefer both habitat types equally. Dispersal rates control how newly produced propagules move away from their cell of origin. Movement rates control how established individuals move from their current cell. Movement, mortality, and recruitment rates can be set to differ systematically between preferred and non-preferred habitats.
 
-### Initializing a GSAD
+#### Initializing a GSAD
 `make_sad(N_S, distribution)`
 
 A GSAD is a vector of species relative abundances on the "mainland". These define the relative probabilities that an immigrant from outside the landscape will belong to each species. Implemented distributions are 'same', 'uniform', 'power', 'logseries', 'lognormal', and 'poisson'. See the help file on `make_sad` for further details.
 
-## Simulation Operation
+### Simulation Operation
 `populate_landscape(land, species, gsad=NULL, K, distribution=NA, p=NA, which_cells=NULL)`
 
 `run_sim(steps, metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA, save_steps=NULL, ...)`
@@ -54,11 +65,11 @@ A simulation runs by iteratively calling the function `run_timestep`, which defi
 
 Once the simulation has run for a fixed number of timesteps, results are returns as an array of lists with three dimensions, where the third dimension indicates the timestep and the other two form a metacommunity object. An optional paramter `save_steps` can be used to only record data from specific timesteps, but by default all time steps are returned, including the initial metacommunity. Dimension names record the actual timestep (`0` for the initial metacommunity, `1` for the state of the community after one step, etc...).
 
-## Multiple Simulation Runs
+### Multiple Simulation Runs
 
 Most users will primarily want to run simulations using the `run_sim_N` and `run_sim_P` functions. These functions run multiple simulations on a set of parameters or multiple sets of parameters, respectively. They are useful because the user does not need to initialize simulation objects (landscape, species pool, etc...), as this occurs internally. Results can be returned or saved to a directory.
 
-### Multiple simulation runs on one set of parameters
+#### Multiple simulation runs on one set of parameters
 `run_sim_N(nruns, parms, nparallel=1, simID='test', save_sim=NULL, report=0, return_results=T, restart=F, lib_loc=NULL)`
 
 This function runs multiple independent simulations on a set of parameters given as a list (`parms`). A parameter list can be generated by the function `make_parmlist` which compiles simulation parameters stored in the current (or specified) environment into a list. See the section on Parameter Files below for a list of parameter objects which are required versus optional.
@@ -77,19 +88,22 @@ If `return_results`is `TRUE`, then after all simulations are complete, all runs 
 
 By default, `run_sim_N` runs in silent mode, but by specifying a number for `report` users can request a timestamp to be written to STDOUT every time a fixed number of timesteps have passed. This can be useful for gauging how long simulations are taking. Finally, if `CTSim` is installed in a directory not on the default search path, users should indicate where the package is installed using `lib_loc`.
 
-### Multiple simulation runs on multiple sets of parameters
+#### Multiple simulation runs on multiple sets of parameters
 `run_sim_P(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=NULL, report=0, restart=F)`
 
 This function is a wrapper for `run_sim_N` which sequentially calls the function on each parameter file in the directory `parm_dir`, defaulting to the working directory. Simulation runs are saved to a subdirectory of `results_dir` named `simID`, which must be defined in each parameter file. Using the same `simID` in multiple parameter files will cause results to be saved over one another. Users can generate parameter files by creating a parameter list using `make_parmlist` and then saving this object to a file using `write_parms`. For an example see [make_parmfiles.R](./Code/Scripts/make_parmfiles.R). `sim_dir` refers to the directory where `CTSim` is installed, if not on the default search path. Specifying `ncores > 1` will run the simulations in parallel requesting the defined number of cores. 
 
-### Running simulations in batch mode
+#### Running simulations in batch mode
 `R CMD BATCH "--args ncores parm_dir results_dir sim_dir report" run_simulation.R outfile.Rout`
 
 `R CMD BATCH "--args ncores parm_dir results_dir sim_dir report" restart_simulation.R outfile.Rout`
 
 Two scripts are provided with the `CTSim` package in the `exec/` directory which can be used to run simulations in batch mode using `R CMD BATCH` (see above for usage). `run_simulation.R` calls `run_sim_P` on command line arguments and starts new simulations, whereas `restart_simulation.R` attempts to restart existing sets of simulation runs. Command line arguments must be speficied in order.
 
+### Summarizing Simulation Runs
+
 ## Parameter Files for Running Simulations
+`/Code/Parameters/`
 
 See [example_parameter_file.txt](./Code/Parameters/example_parameter_file.txt) for an example of all possible parameters that can be provided for running a simulation and see [baseline_parameter_file.txt](./Code/Parameters/baseline_parameter_file.txt) for the set of parameters used as a basis for [experiments](./wiki/Experiments). Required and optional parameters are described below:
 
@@ -131,8 +145,14 @@ The following parameters are optional and more information can be found in the d
   + **`save_steps`**: vector of timesteps to save in each simulation
   + **`simID`**: character string that identifies simulations	run on this set of parameters
 
+## Useful Scripts
+`/Code/Scripts/`
 
-## Summarizing Simulation Runs
+
+## Simulation Results
+`/Results
+
+
 
 
 
