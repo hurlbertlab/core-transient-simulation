@@ -15,7 +15,7 @@ Static html help files for every function in the CTSim package are available [he
 ## CTSim Package 
 `/Code/CTSim/`
 
-Files for installing the package are available in [/Code/]. The most recent package version is the one with the highest version number. 
+Files for installing the package are available in the [Code](/Code/) directory. The most recent package version is the one with the highest version number. 
 
 ### Simulation Intialization
 A simulation requires three objects: a landscape, a species pool, and a global species abundance distribution (hereafter, gsad). The functions used to initialize these objects are described below.
