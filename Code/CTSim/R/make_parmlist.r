@@ -7,8 +7,7 @@
 #' \code{e}) for a set of required and optional parameters used by
 #' \code{\link{run_sim}} to run a simulation. Parameters are saved in 
 #' a named list which can be used in the \code{parms} argument of
-#' \code{\link{run_sim_N}} or written to a file using \code{\link{write_parms}}
-#' (not yet implemented).
+#' \code{\link{run_sim_N}} or written to a file using \code{\link{write_parms}}.
 #' The following parameters are \strong{required} for simulation and \emph{must be present
 #' in the environment or the function will fail}:
 #' \itemize{

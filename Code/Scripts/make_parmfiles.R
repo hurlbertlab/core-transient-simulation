@@ -11,11 +11,8 @@ library(pracma) #erf, erfinv
 parm_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/Parameters/'
 setwd(parm_dir)
 
-
 # Read in baseline parameter file
 source('baseline_parameter_file.txt')
-
-
 
 
 ### Experiment 1 ###
@@ -45,7 +42,6 @@ rownames(d_parms) = d_parms$id
 
 ## Define spatial parameters
 dcorr=2^(0:4)
-
 
 # Make parameter files
 for(id in d_parms$id){
@@ -106,53 +102,6 @@ for(id in c('g1','g4','g16','u45')){
 for(v_id in adj$id){
 	dir.create(file.path(expID, paste('d',id, sep='-'), paste('v',v_id, sep='-')))
 }}
-
-
-
-
-
-##### FUNCTIONS #####
-
-
-
-# A function to write a list of parameters (parm_list) to a file (f)
-write_parms = function(parm_list, f){
-
-	make_newline = function(varname, value){
-		if(length(value)==1){
-			if(is.numeric(value)) new_line = paste(varname, value, sep='=')
-			if(is.character(value)) new_line = paste0(varname, "='", value, "'")
-		} else {
-			if(is.numeric(value)) new_line = paste0(varname, '=c(', paste(value, collapse=','), ')')
-			if(is.character(value)) new_line = paste0(varname, '=c(', paste0("'", value, "'", collapse=','), ')')
-		}
-		new_line
-	}
-
-	this_file = file(f, open='w')
-	for(i in 1:length(parm_list)){
-		varname = names(parm_list)[i]
-		value = parm_list[[i]]
-	
-		if(class(value)=='function'){
-			new_line = c(paste0(varname,'='), deparse(value))	
-		} else {	
-
-		if(class(value)=='list'){
-			line_list = paste(sapply(1:length(value), function(j){
-				subvalue = value[[j]]
-				make_newline(names(value)[j], subvalue)
-			}), collapse=',')
-			new_line = paste0(varname, '=list(', line_list, ')')
-		} else {
-			new_line = make_newline(varname, value)
-		}}
-				
-		writeLines(new_line, this_file)
-	}
-	close(this_file)	
-}
-
 
 
 
