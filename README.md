@@ -39,18 +39,18 @@ Files for installing the package are available in the [Code](/Code/) directory. 
 3. Move the run_simulation.R script from the 'exec/' directory of the CTSim package to your working directory.
 4. Run R in batch mode on N cores with the run_simulation.R script: 
 
-`R CMD BATCH "--args N Parms/ Results/" run_simulation.R myrun.Rout`
+  `R CMD BATCH "--args N Parms/ Results/" run_simulation.R myrun.Rout`
 
 5. If the simulation stops before all runs are complete, restart the simulation without writing over already finished results using the 'restart_simulation.R' script (also found in the 'exec/' directory):
 
-`R CMD BATCH "--args N Parms/ Results/" restart_simulation.R myrun_restart.Rout`
+  `R CMD BATCH "--args N Parms/ Results/" restart_simulation.R myrun_restart.Rout`
 
 6. Create a summary parameter file (or multiple files) and save in a directory (e.g. 'Parms'). See [example_summary_parameter_file.txt](/Code/Parameters/example_summary_parameter_file.txt) for an example file. All summary parameter file names must begin with 's_'.
 7. Decide on a directory where simulation result summarise should be saved (e.g. 'Summaries').
 8. Move the summarize_simulation.R script from the 'exec/' directory of the CTSim package to your working directory.
 9. Run R in batch mode with the summarize_simulation.R script:
 
-`R CMD BATCH "--args Results/ Parms/ Summaries/" summarize_simulation.R myrun_summary.Rout`
+  `R CMD BATCH "--args Results/ Parms/ Summaries/" summarize_simulation.R myrun_summary.Rout`
 
 10. Examine simulation summaries using your own code, or see [visualize_simulation.R](/Code/Scripts/visualize_simulation.R) for examples of how to load and examine summaries from simulations on different sets of parameters.
 
