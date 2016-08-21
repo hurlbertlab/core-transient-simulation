@@ -33,7 +33,7 @@ See [wiki page](/wiki/Experiments) for specific parameters used in summaries or 
 ## HTML Help Files
 `/Code/HTML`
 
-Static html help files for every function in the CTSim package are available [here](/Code/HTML/index.html).
+Static html help files for every function in the CTSim package are available [here](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/index.html).
 
 ## CTSim Package 
 `/Code/CTSim/`
@@ -50,7 +50,7 @@ A landscape is a raster layer whose values are -1 or 1, corresponding to habitat
 When a landscape is initialized, the user can specify its size (`x,y`), the proportion of the cells which should belong to habitat type 'B' (`prop`), a variogram model used to define the spatial autocorrelation of habitat values (`mod`), and the distance at which habitat values become uncorrelated (e.g. the range of the variogram model: `d`). Variogram models are implemented by the `vgm()` function in gstat. Use `show.vgms()` to see available models. Only the dimensions of the landscape are required. By default, the function will return a grid with 50% of habitat type 'A' and a exponential variogram model with partial sill = 1 and range = 1/3 of the grids smallest dimension.
 
 #### Initializing a species pool
-`make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)`
+[`make_species(S_A, S_B, S_AB, dist_b, m, r, dist_d, dist_v)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/make_species.html)
 
 A species pool is a 3-dimensional array of species vital rates. The first dimension specifies the species. The second dimension defines in which habitat the rate applies ('A' or 'B') and the third dimension specifies the type of rate:
 
@@ -63,22 +63,22 @@ A species pool is a 3-dimensional array of species vital rates. The first dimens
 Birth rates are positive in a species' preferred habitat and 0 elsewhere. Generalists prefer both habitat types equally. Dispersal rates control how newly produced propagules move away from their cell of origin. Movement rates control how established individuals move from their current cell. Movement, mortality, and recruitment rates can be set to differ systematically between preferred and non-preferred habitats.
 
 #### Initializing a GSAD
-`make_sad(N_S, distribution)`
+[`make_sad(N_S, distribution)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/make_sad.html)
 
-A GSAD is a vector of species relative abundances on the "mainland". These define the relative probabilities that an immigrant from outside the landscape will belong to each species. Implemented distributions are 'same', 'uniform', 'power', 'logseries', 'lognormal', and 'poisson'. See the help file on `make_sad` for further details.
+A GSAD is a vector of species relative abundances on the "mainland". These define the relative probabilities that an immigrant from outside the landscape will belong to each species. Implemented distributions are 'same', 'uniform', 'power', 'logseries', 'lognormal', and 'poisson'. See the help file on [`make_sad`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/make_sad.html) for further details.
 
 ### Simulation Operation
-`populate_landscape(land, species, gsad=NULL, K, distribution=NA, p=NA, which_cells=NULL)`
+[`populate_landscape(land, species, gsad=NULL, K, distribution=NA, p=NA, which_cells=NULL)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/populate_landscape)
 
-`run_sim(steps, metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA, save_steps=NULL, ...)`
+[`run_sim(steps, metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA, save_steps=NULL, ...)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_sim.html)
 
 Once a landscape, species pool and GSAD have been generated, a simulation can be run. First, the landscape must be populated by species using the function `populate_landscape`. This function has several options for defining the number of individuals in each cell (`K`), the proportion of this carrying capacity which should be initially filled (`p`), as well as how individuals should be  distributed across the landscape (`distribution`). The `which_cells` option allows the user to specify the exact cells where individuals should be placed and the number to place in each cell. Individuals are drawn probabilistically from the specified GSAD (`gsad`), which defaults to the same probability for all species.
 
 The populated landscape is a metacommunity object which takes the form of a matrix of lists. The `x` and `y` positions define the location of each community on the landscape, while the list defines which individuals are present. The length of these lists are fixed for the remainder of the simulaton to the carrying capacity defined in `K`. Integers refer to species identities and a `0` indicates that no individual is present. For example, if `metacomm[1,2]` is equal to `list(3,3,2,10,0,2,1)`, then the cell in the first row and second column can hold seven individuals and currently contains one individual of species 1, two individuals of species 2 and 3, one individual of species 10, and one empty space. 
 
-After a metacommunity has been generated, a simulation can be run for a fixed length of time (`steps`) using the `run_sim` function. In addition to the objects defining the metacommunity (`metacomm`), landscape (`land`), species pool (`species`), and GSAD (`gsad`), the function also requires the probability that an empty space will be colonized by an individual from the "mainland" (`imm_rate`) as well as information about how propagules disperse (`d_kernel`) and individuals move after they have established in a cell (`v_kernel`). Three dispersal modes are implemented: half-gaussian, adjacent cell, and uniform. In all cases, the direction of dispersal is random (isotropic) and the expected dispersal distances are determined by dispersal and movement rates for individual species defined in the species pool object. See the help file on `get_dispersal_vec` for additional information on specifying dispersal and movement parameters. 
+After a metacommunity has been generated, a simulation can be run for a fixed length of time (`steps`) using the `run_sim` function. In addition to the objects defining the metacommunity (`metacomm`), landscape (`land`), species pool (`species`), and GSAD (`gsad`), the function also requires the probability that an empty space will be colonized by an individual from the "mainland" (`imm_rate`) as well as information about how propagules disperse (`d_kernel`) and individuals move after they have established in a cell (`v_kernel`). Three dispersal modes are implemented: half-gaussian, adjacent cell, and uniform. In all cases, the direction of dispersal is random (isotropic) and the expected dispersal distances are determined by dispersal and movement rates for individual species defined in the species pool object. See the help file on [`get_dispersal_vec`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/get_dispersal_vec.html) for additional information on specifying dispersal and movement parameters. 
 
-A simulation runs by iteratively calling the function `run_timestep`, which defines the operations that occur in a single timestep. This function calls the main process functions `die`, `reproduce`, `disperse`, `establish` to progress a metacommunity through one simulation timestep. Each of these functions are described in detail in their help files. The order of operations is as follows:
+A simulation runs by iteratively calling the function [`run_timestep`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_timestep.html), which defines the operations that occur in a single timestep. This function calls the main process functions [`die`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/die.html), [`reproduce`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/reproduce.html), [`disperse`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/disperse.html), [`establish`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/establish.html) to progress a metacommunity through one simulation timestep. Each of these functions are described in detail in their help files. The order of operations is as follows:
 
 1. **Death**: Established individuals in each community experience	probabilistic mortality according to species- and habitat-specific mortality rates provided in `species`.
 2. **Birth**: Established individuals in each community produce propagules according to species- and habitat-specific birth rates provided in `species`.
@@ -90,12 +90,12 @@ Once the simulation has run for a fixed number of timesteps, results are returns
 
 ### Multiple Simulation Runs
 
-Most users will primarily want to run simulations using the `run_sim_N` and `run_sim_P` functions. These functions run multiple simulations on a set of parameters or multiple sets of parameters, respectively. They are useful because the user does not need to initialize simulation objects (landscape, species pool, etc...), as this occurs internally. Results can be returned or saved to a directory.
+Most users will primarily want to run simulations using the [`run_sim_N`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_sim_N.html) and [`run_sim_P`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_sim_P.html) functions. These functions run multiple simulations on a set of parameters or multiple sets of parameters, respectively. They are useful because the user does not need to initialize simulation objects (landscape, species pool, etc...), as this occurs internally. Results can be returned or saved to a directory.
 
 #### Multiple simulation runs on one set of parameters
-`run_sim_N(nruns, parms, nparallel=1, simID='test', save_sim=NULL, report=0, return_results=T, restart=F, lib_loc=NULL)`
+[`run_sim_N(nruns, parms, nparallel=1, simID='test', save_sim=NULL, report=0, return_results=T, restart=F, lib_loc=NULL)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_sim_N.html)
 
-This function runs multiple independent simulations on a set of parameters given as a list (`parms`). A parameter list can be generated by the function `make_parmlist` which compiles simulation parameters stored in the current (or specified) environment into a list. See the section on Parameter Files below for a list of parameter objects which are required versus optional.
+This function runs multiple independent simulations on a set of parameters given as a list (`parms`). A parameter list can be generated by the function [`make_parmlist`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/make_parmlist.hrml) which compiles simulation parameters stored in the current (or specified) environment into a list. See the section on Parameter Files below for a list of parameter objects which are required versus optional.
 
 Each run generates a new landscape, species pool, global species abundance distribution and initial metacommunity. Landscapes, species pools and gsads are saved as lists (object names: `lands_N`, `species_N`, `gsad_N`) in a file named `<simID>_simobjects.RData`. Simulations can be run in parallel by specifying `nparallel > 1`, which requires the `doParallel` and `foreach` packages. By default, `nparallel = 1` and the simulations proceed serially. Each run of the simulation is temporarily saved to the working directory or permanently saved to the directory specified by `save_sim`. If this directory does not exist then it is created. Runs are saved in a subdirectory named `simID` as `<simID>_run<i>.RData`. This RData file contains five objects:
 
@@ -112,7 +112,7 @@ If `return_results`is `TRUE`, then after all simulations are complete, all runs 
 By default, `run_sim_N` runs in silent mode, but by specifying a number for `report` users can request a timestamp to be written to STDOUT every time a fixed number of timesteps have passed. This can be useful for gauging how long simulations are taking. Finally, if `CTSim` is installed in a directory not on the default search path, users should indicate where the package is installed using `lib_loc`.
 
 #### Multiple simulation runs on multiple sets of parameters
-`run_sim_P(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=NULL, report=0, restart=F)`
+[`run_sim_P(ncores=1, parm_dir='./', results_dir='./Results/', sim_dir=NULL, report=0, restart=F)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_sim_P.html)
 
 This function is a wrapper for `run_sim_N` which sequentially calls the function on each parameter file in the directory `parm_dir`, defaulting to the working directory. Simulation runs are saved to a subdirectory of `results_dir` named `simID`, which must be defined in each parameter file. Using the same `simID` in multiple parameter files will cause results to be saved over one another. Users can generate parameter files by creating a parameter list using `make_parmlist` and then saving this object to a file using `write_parms`. For an example see [make_parmfiles.R](./Code/Scripts/make_parmfiles.R). `sim_dir` refers to the directory where `CTSim` is installed, if not on the default search path. Specifying `ncores > 1` will run the simulations in parallel requesting the defined number of cores. 
 
@@ -121,9 +121,13 @@ This function is a wrapper for `run_sim_N` which sequentially calls the function
 
 `R CMD BATCH "--args ncores parm_dir results_dir sim_dir report" restart_simulation.R outfile.Rout`
 
-Two scripts are provided with the `CTSim` package in the `exec/` directory which can be used to run simulations in batch mode using `R CMD BATCH` (see above for usage). `run_simulation.R` calls `run_sim_P` on command line arguments and starts new simulations, whereas `restart_simulation.R` attempts to restart existing sets of simulation runs. Command line arguments must be speficied in order.
+Two scripts are provided with the `CTSim` package in the `exec/` directory which can be used to run simulations in batch mode using `R CMD BATCH` (see above for usage). [`run_simulation.R`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_simulation.html) calls `run_sim_P` on command line arguments and starts new simulations, whereas [`restart_simulation.R`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/restart_simulation.html) attempts to restart existing sets of simulation runs. Command line arguments must be speficied in order.
 
 ### Summarizing Simulation Runs
+
+
+
+
 
 ## Parameter Files for Running Simulations
 `/Code/Parameters/`
@@ -146,21 +150,21 @@ For further details on `S_A`, `S_B`, `m_rates` and `r_rates` see `make_species`.
 
 The following parameters are optional and more information can be found in the documentation on the functions they are passed to:
 
- + Parameters passed to `make_landscape`
+ + Parameters passed to [`make_landscape`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/make_landscape.html)
   + **`vgm_dcorr`**: distance at which habitat values become uncorrelated
   + **`vgm_mod`**: variogram model controling spatial autocorrelation of habitat values
   + **`habA_prop`**: proportion of landscape that comprised of habitat type A
- + Parameters passed to `make_species`
+ + Parameters passed to [`make_species`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/make_species.html)
   + **`S_AB`**: number of generalist species
   + **`dist_b`**: list defining the distribution from which	species' birth rates are sampled
   + **`dist_d`**: list defining the distribution from which species' dispersal rates are sampled. Must contain character string named `type`.
   + **`dist_v`**: list defining the distribution from which	species' movement rates are sampled. Must contain character string	named `type`.
   + **`dist_gsad`**: list defining distribution from which global species abundances are sampled or `'b_rates'`, indicating that the gsad should match species birth rates in their preferred habitat
- + Parameters passed to `populate_landscape`
+ + Parameters passed to [`populate_landscape`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/populate_landscape.html)
   + **`prop_full`**: proportion of the landscape's carrying capacity that should initially contain individuals
   + **`init_distribute`**: character string indicating how	individuals should be initially distributed across the landscape
   + **`cells_distribute`**: if `init_distribute` is `'designated'`, a matrix giving the locations of cells in which to place propagules
- + Parameters passed to `run_sim`
+ + Parameters passed to [`run_sim`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_sim)
   + **`d_kernel`**: list defining the shape of the dispersal	kernel of new propagules
   + **`v_kernel`**: list defining the shape of the movement	kernel of established individuals
   + **`imm_rate`**: immigration rate- probability than an empty space will be colonized by a migrant from outside	the metacommunity
