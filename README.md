@@ -17,6 +17,7 @@ The simulation occurs on a regular grid of cells (termed the 'landscape') and ea
    + [submit_runs.txt](/Code/Scripts/submit_runs.txt): shell code for submitting multiple jobs to cluster
    + [visualize_simulation.R](Code/Scripts/visualize_simulation.R): code for analyzing  CTSim runs and experiments
   + Current package version for [Windows](/Code/CTSim_0.1.3.tar.gz) and [Unix](/Code/CTSim_0.1.3.zip)
+
 **/Results**
  + **./Plots**: visualizations of simulation results, organized by experiment/run
  + **./Summary**: summary RData files of simulation results, organized by experiment/run
@@ -43,7 +44,7 @@ Files for installing the package are available in the [Code](/Code/) directory. 
 A simulation requires three objects: a landscape, a species pool, and a global species abundance distribution (hereafter, gsad). The functions used to initialize these objects are described below.
 
 #### Initializing a landscape:
-`make_landscape(x, y, mod, d, prop, draw_plot)`
+[`make_landscape(x, y, mod, d, prop, draw_plot)`](http://htmlpreview.github.com/?/Code/HTML/make_landscape.html)
 
 A landscape is a raster layer whose values are -1 or 1, corresponding to habitat types 'A' and 'B', respectively. 
 When a landscape is initialized, the user can specify its size (`x,y`), the proportion of the cells which should belong to habitat type 'B' (`prop`), a variogram model used to define the spatial autocorrelation of habitat values (`mod`), and the distance at which habitat values become uncorrelated (e.g. the range of the variogram model: `d`). Variogram models are implemented by the `vgm()` function in gstat. Use `show.vgms()` to see available models. Only the dimensions of the landscape are required. By default, the function will return a grid with 50% of habitat type 'A' and a exponential variogram model with partial sill = 1 and range = 1/3 of the grids smallest dimension.
