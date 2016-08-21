@@ -124,9 +124,58 @@ This function is a wrapper for `run_sim_N` which sequentially calls the function
 Two scripts are provided with the `CTSim` package in the `exec/` directory which can be used to run simulations in batch mode using `R CMD BATCH` (see above for usage). [`run_simulation.R`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_simulation.html) calls `run_sim_P` on command line arguments and starts new simulations, whereas [`restart_simulation.R`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/restart_simulation.html) attempts to restart existing sets of simulation runs. Command line arguments must be speficied in order.
 
 ### Summarizing Simulation Runs
+[`summarize_sim(sim, breaks, locs, t_window, species = NULL, land = NULL, gsad = NULL, agg_times = NULL, P_obs = list(1), sum_parms = NULL)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/summarize_sim.html)
 
+[`summarize_sim_N(sim, breaks, locs, t_window, agg_times = NULL, P_obs = list(1), sum_parms = NULL, sum_func = NULL)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/summarize_sim_N.html)
 
+These two functions are used to summarize the results of a single simulation (`summarize_sim`) or multiple runs from one set of simulation parameters (`summarize_sim_N`). `summarize_sim` calculates four main types of community descriptors on a given simulation run for a set of spatial and temporal units and then summarizes these descriptors across spatial and temporal units. A spatial unit is a collection of grid cells and a temporal unit is a collection of timepoints. Thus, by specifying different sets of spatial and temporal units the user can analyize a simulation at different spatial and temporal scales. 
 
+The community descriptors that the function calculats are returned as arrays in a list:
+
++ **bio**: richness and abundance of biologically core and transient species (based on birth rates) 
++ **occ**: richness and abundance of species in classes based on their temporal occupancy
++ **xclass**: number of species in each of four categories: biologically core - occupancy core, biologically core - occupancy transient, biologically transient - occupancy core, and biologically transient - occupancy transient (see [cross_classify](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/cross_classify.html)
++ **abun**: relative rank abundance of each species in the metacommunity
+
+Details on how the summary function proceeds:
+
+1. Actual species' abundances are calculated for each spatial unit in `locs` and temporal unit in `t_window`. See documentation of [`calc_abun_profile`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/calc_abun_profile) for more information on these parameters.
+2. Observed species' abundance profiles are calculated by sampling actual abundance profiles using the detection probabilities provided in `P_obs`.
+3. Observed abundance profiles are used to calculate species temporal occupancy in each of the spatial units, after aggregating timepoints according to `agg_times` (see [`calc_occupancy`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/calc_occupancy.html)).
+4. Richness and abundance of species in each of the temporal occupancy categories defined by breaks are calculated in each spatial unit for each timepoint. Timepoints may be aggregated prior to calculations using the `agg_times` argument in `sum_parms`. See (see [`calc_rich_CT`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/calc_rich_CT.html)) for details.
+5. For each spatial unit, habitat values are averaged across the cells that comprise it (see [`average_habitat`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/average_habitat)) and this average habitat type is used to determine which species are biologically core and transient (based on whether they have positive birth rates in that habitat). Richness and abundance of biologically core and transient species is then calculated for each spatial unit at each timepoint. As in the previous step, timepoints may be aggregated prior to calculations using the `agg_times` argument in `sum_parms`.
+6. For each spatial unit, species are classified as core or transient based on whether they fall in the first or last occupancy interval defined by breaks. Then, the number of species classified as biologically core - occupancy core, biologically core - occupancy transient, biologically transient - occupancy core, and biologically transient - occupancy transient are counted for each spatial unit.
+7. Thus far the simulation has calculated richness and abundance for each timepoint. The element `time_sum` in `sum_parms` defines which timepoints are used for summarizing richness and abundance. If `time_sum = 'none'` then all timepoints are summarized individually. Other options are `'mean'` for averaging across all timepoints in `t_window` or `'last'` for only using the last timepoint in `t_window`.
+8. After timepoints have been summarized (in step 7), summary statistics are calculated across all spatial units. Minimally, this is the mean and variance, but may also include any quantiles specified in the `quants` argument of `sum_parms`.
+9. The relative abundance of each species is calculated across the entire metacommunity for each set of observed abundances (from step 2) and these abundances are returned in rank order.
+
+#### Summarizing multiple simulation runs
+
+`summarize_sim_N` calls `summarize_sim` for each independent simulation run. In addition, it also summarizes landscape properties across the spatial units specified in `locs` using [`summarize_land`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/summarize_land.html) for the landscapes used in each simulation run. If `sum_func` is provided, this function is used to summarize quantities across runs. The package includes a useful default summary function (`default_sum_func`) which can be passed to `sum_func`. It returns the mean, variance and qunatiles at 2.5%, 50% and 97.5%.
+
+Simulation runs to summarize can be specified in two ways to the parameter `sim`: by passing the list of simulation results returned by `run_sim_N` or by passing the name of the directory where multiple simulation result files are saved. Simulation run files are identified by ending in `'run<i>.RData'`, where `i` is a number. This is the naming format that is automatically generated by run_sim_N.
+
+#### Summarizing simulations with multiple sets of summary parameters
+[`summarize_sim_P(run_dir = "./", parm_dir = "./", results_dir = "./Summaries/", cross_time = F)`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/summarize_sim_P.html)
+
+Users can save summary parameters passed to `summarize_sim_N` in a parameter file and then use `summarize_sim_P` to summarize simulation results using one or more summary paramter files. The function uses each summary parameter files in `parm_dir` to summarize a set simulation runs saved in the directory `run_dir`. Parameter filenames must start with `'s_'` and simulation runs should all be from one set of simulation parameters (e.g. as saved by `run_sim_N`). Summary parameter files are read into R using `source()` and should therefore be R-readable. Each summary parameter file should also have a unique `sumID` defined within it as well define objects that can be passed as parameters to `summarize_sim_N`. Parameters requiring a value are `breaks`, `locs` and `t_window`. The function will either summarize simulation results for a set time period defined in `t_window` (default) or for multiple consecutive time windows across the entire simulation period (use `cross_time=TRUE`), in which case `t_window` defines the time interval and must be a list with named elements start and stop. If `cross_time=FALSE` then two summary objects are saved to the .RData file: 
+
++ `sim_sum_ind`: includes a summary for each run
++ `sim_sum`: summarizes quantities across runs using the function defined in `sum_func`. 
+ 
+If `cross_time=TRUE` then only `sim_sum_ind` is saved and `T=` is appended to the filename to denote the timestep at which the summary ends. For example, a simulation with 100 timepoints and `t_window = list(start=91, stop=100)` will conduct summaries for time windows T1 - T10, T11 - T20 ,T21 - T30 , ... T91 - T100, and save each of these summaries to a separate file. In contrast the if the same `t_window` is specified, but with `cross_time=FALSE`, only the last time window will be analyzed and only one summary file saved. 
+
+Results are saved in the directory `results_dir` and are not returned by the function. Filenames follow the convention `'_summary.RData'`.
+
+Two scripts are provided with the `CTSim` package in the `exec/` directory which can be used to summarize simulations in batch mode using `R CMD BATCH` (see below for usage). [`summarize_simulation.R`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/summarize_simulation.html) calls `summarize_sim_P` on command line arguments with `cross_time = FALSE`, whereas [`summarize_simulation_cross_time.R`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/summarize_simulation_cross_time.html) calls `summarize_sim_P` with `cross_time = TRUE`. Command line arguments must be speficied in order.
+
+Usage:
+
+Place the R script in the working directory, then use:
+
+`R CMD BATCH "--args ncores parm_dir results_dir sim_dir report" summarize_simulation.R outfile.Rout`
+
+`R CMD BATCH "--args ncores parm_dir results_dir sim_dir report" summarize_simulation_cross_time.R outfile.Rout`
 
 
 ## Parameter Files for Running Simulations
@@ -168,7 +217,7 @@ The following parameters are optional and more information can be found in the d
   + **`d_kernel`**: list defining the shape of the dispersal	kernel of new propagules
   + **`v_kernel`**: list defining the shape of the movement	kernel of established individuals
   + **`imm_rate`**: immigration rate- probability than an empty space will be colonized by a migrant from outside	the metacommunity
- + Parameters passed to `run_sim_N`
+ + Parameters passed to [`run_sim_N`](http://htmlpreview.github.com/?https://github.com/hurlbertlab/core-transient-simulation/blob/master/Code/HTML/run_sim_N)
   + **`save_steps`**: vector of timesteps to save in each simulation
   + **`simID`**: character string that identifies simulations	run on this set of parameters
 
