@@ -22,14 +22,6 @@ The simulation occurs on a regular grid of cells (termed the 'landscape') and ea
  + **./Plots**: visualizations of simulation results, organized by experiment/run
  + **./Summary**: summary RData files of simulation results, organized by experiment/run
 
-### Experiments and Summaries
-See [wiki page](/wiki/Experiments) for details on parameters used in each experiment and naming conventions. In general, files are named according to parameters that were varied. A '_' separates different parameters while a '-' associates a parameter with a value. For example a file including the string: 'd-g1_v-a0.5' indicates that the data refers to a simulation where the juvenile dispersal kernel was set to g1 (gaussian with distance 1) and the adult movement kernel was set to a0.5 (adjacent cell with probability 0.5). 
- + **CONV**: Initial runs testing for long-term convergence of simulation under different grid sizes (32x32 vs 64x64) and dispersal types (d) or birth rates (b). These were just used to determine that 200 timestes were adequate and shouldn't be used for further analysis.
- + **EXP1**: Experiment 1 evaluates effects of juvenile dispersal (d), adult movement (v), and habitat spatial autocorrelation (dcorr)
-
-See [wiki page](/wiki/Experiments) for specific parameters used in summaries or see the Parameters directory that corresponds to the experiment.
-  
-
 ## HTML Help Files
 `/Code/HTML`
 
@@ -224,9 +216,25 @@ The following parameters are optional and more information can be found in the d
 ## Useful Scripts
 `/Code/Scripts/`
 
++ [make_package.R](/Code/Scripts/make_package.R): R code for compiling the package. Should be run to create new package versions and update documentation.
++ [make_parmfiles.R](Code/Scripts/make_parmfiles.R): R code for generating simulation parameter files used in the experiments
++ [visualize_simulations.R](Code/Scripts/visualize_simulations.R): R code for analyzing experiment results and generating visualizations
++ [submit_runs.txt](Code/Scripts/submit_runs.txt): fragments of shell code used to submit simulation batches to computing cluster
++ [debugging.R](Code/Scripts/debugging.R): fragments of R code used in debugging CTSim functions
+
+
 
 ## Simulation Results
-`/Results
+`/Results`
+
+This directory holds the summary data files and visualizations from Experiments performed with CTSim. Actual data files are too large to store in this repository, but are saved in an untracked 'Data' directory here. 
+
+See [wiki page](/wiki/Experiments) for details on parameters used in each experiment and naming conventions. In general, files are named according to parameters that were varied. A '_' separates different parameters while a '-' associates a parameter with a value. For example a file including the string: 'd-g1_v-a0.5' indicates that the data refers to a simulation where the juvenile dispersal kernel was set to g1 (gaussian with distance 1) and the adult movement kernel was set to a0.5 (adjacent cell with probability 0.5). 
+ + **CONV**: Initial runs testing for long-term convergence of simulation under different grid sizes (32x32 vs 64x64) and dispersal types (d) or birth rates (b). These were just used to determine that 200 timestes were adequate and shouldn't be used for further analysis.
+ + **EXP1**: Experiment 1 evaluates effects of juvenile dispersal (d), adult movement (v), and habitat spatial autocorrelation (dcorr)
+
+See [wiki page](/wiki/Experiments) for specific parameters used in summaries or see the Parameters directory that corresponds to the experiment.
+  
 
 
 
