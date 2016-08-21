@@ -5,11 +5,13 @@
 options(stringsAsFactors=F)
 library(CTSim)
 library(abind)
+library(reshape2)
 
 
 
 # Define working directory
-sum_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results'
+sum_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/Summary'
+fig_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/Plots'
 sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code'
 
 setwd(sum_dir)
@@ -22,15 +24,30 @@ setwd(sum_dir)
 ## Functions
 
 
-make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL){	
+# A function that extracts parameter values from a runID
+#	runID = a string in the filename that gives the parameters
+#	assoc_str = character pairing a parameter name with its value
+#	sep_str = character separating different parameter-value pairs
+get_parms = function(runID, assoc_str='-', sep_str='_'){
+	parm_pairs = sapply(strsplit(runID, sep_str), function(x) strsplit(x, assoc_str))
+	
+	vals = sapply(parm_pairs, function(x) x[2])
+	vals = as.data.frame(t(vals))
+	names(vals) = sapply(parm_pairs, function(x) x[1])
+
+	vals
+}
+
+
+make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL, cex=1){	
 	plot.new()
 	plot.window(xlim=xlim, ylim=ylim)
 	axis(1)
 	abline(h=par('usr')[3], lwd=3)
 	axis(2, las=1)
 	abline(v=par('usr')[1], lwd=3)
-	if(!is.null(xlab)) mtext(xlab, 1, 2.5)
-	if(!is.null(ylab)) mtext(ylab, 2, 3)
+	if(!is.null(xlab)) mtext(xlab, 1, 2.5, cex=cex)
+	if(!is.null(ylab)) mtext(ylab, 2, 3, cex=cex)
 
 }
 
@@ -38,7 +55,322 @@ make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL){
 
 
 
+##### EXPERIMENT 1 #####
+## Effects of dispersal and landscape autocorrelation
 
+## Parameter definitions
+
+# Dispersal kernels: d is for propagule dispersal, v is for adult movement 
+# a0 = adjacent cell dispersal with probability = 0 of moving
+# a0.5 = adjacent cell dispersal with probability = 0.5 of moving
+# a1 = adjacent cell dispersal with probability = 1 of moving
+# g<D> = gaussian dispersal with probability = 0.99 that dispersal distance is <= D
+# u45 = uniform dispersal within a radius of 45 (unlimited dispersal on the 32 x 32 grid)
+
+# Landscape autocorrelation
+# dcorr: number gives the range of the variogram model, the distance at which habitat values are uncorrelated
+
+
+setwd(file.path(sum_dir, 'EXP1'))
+
+# Get list of runs
+runlist = list.dirs('.', full.names=F)
+
+# Define objects to hold data
+bio = data.frame() 
+occ = data.frame()
+
+# Define subset of data to focus on
+use_subset = expression((cross_run %in% c('50%','2.5%','97.5%'))&(cross_space %in% c('mean','var')))
+
+# Go through parameter sets
+for(d in runlist){
+	parm_vals = get_parms(d)
+	
+	# Go through summaries at different scales
+	for(f in list.files(d)){
+
+		# Define scale
+		find_scale = regexpr('L([1-5])_', f, perl=TRUE)
+		scale = 2^(as.numeric(substr(f, attr(find_scale, 'capture.start'), attr(find_scale, 'capture.start') + attr(find_scale, 'capture.length') - 1))-1)
+		
+		# Adds two data objects to environment: sim_sum and sim_sum_ind
+		# Both are lists and sim_sum summarizes across runs, whereas sim_sum_ind contains data from each of the 100 runs
+		load(file.path(d,f))
+
+		# Extract landscape heterogeneity
+		land_het = sim_sum$land['mean','het']
+
+		# Get stats for biologically-based categories
+		dat_bio = melt(sim_sum$bio)
+		dat_bio = do.call('subset', list(x=dat_bio, subset=use_subset))
+		dat_bio = dcast(dat_bio, cross_space + cross_run + p_obs ~ category + comm_stat)
+		dat_bio$scale = scale	
+		dat_bio$land_het = land_het
+		bio = rbind(bio, cbind(dat_bio, parm_vals))
+		
+		# Get data of occupancy distribution
+		dat_occ = melt(sim_sum$occ)
+		dat_occ = do.call('subset', list(x=dat_occ, subset=use_subset))
+		dat_occ = dcast(dat_occ, cross_space + cross_run + p_obs + comm_stat ~ category)
+		dat_occ$scale = scale
+		dat_occ$land_het = land_het
+		occ = rbind(occ, cbind(dat_occ, parm_vals))
+
+		# For this run it doesn't make sense to look at xclass since it only tallies
+		# the species in the first and last occupancy classes (<0.1 and >0.9) as
+		# transient or core
+	
+	}
+}
+
+
+# Save summary files as csv
+write.csv(bio, 'EXP1_bio.csv', row.names=F)
+write.csv(occ, 'EXP1_occ.csv', row.names=F)
+
+# Load saved files
+bio = read.csv(file.path(sum_dir,'EXP1','EXP1_bio.csv'), check.names=F)
+occ = read.csv(file.path(sum_dir,'EXP1','EXP1_occ.csv'), check.names=F)
+
+# Set working directory to figure directory
+setwd(file.path(fig_dir, 'EXP1'))
+
+
+
+# Define occupancy categories
+xvals = seq(0.05, 1, 0.05)
+
+# Define dispersal kernels
+dkerns = c('a0','a0.5','a1','g1','g2','g4','g8','g16','g32','u45')
+
+# Define landscape auto correlation
+dcorrs = 2^(0:4)
+
+# Define scales
+scales = 2^(0:4)
+
+# Define detection probabilities
+pobs = seq(0.1, 1, .1)
+
+# Define print symbols
+use_pch = c(16,1)
+
+## Plots focusing on complete detection
+use_P = 1
+
+
+## Species occupancy distributions
+dat = subset(occ, p_obs==use_P & cross_space=='mean' & comm_stat=='rich')
+
+pdf('EXP1_occupancy_distributions_P=1.pdf', height=10, width=10)
+par(mfrow=c(length(scales), length(dcorrs)))
+par(mar=c(3, 3, 1, 0))
+par(oma = c(3, 8, 3, 1))
+
+# Dispersal kernels on different pages
+for(k in dkerns){
+
+# Spatial grain and range on grid
+for(sp in scales){
+for(ac in dcorrs){
+
+
+	this_dat = subset(dat, d==k & v==k & scale==sp & dcorr==ac)
+
+	# CIs are across runs
+	low95 = subset(this_dat, cross_run=='2.5%')[,5:24]
+	up95 = subset(this_dat, cross_run=='97.5%')[,5:24]
+	med = subset(this_dat, cross_run=='50%')[,5:24]
+
+	make_plot(c(0,1), c(0,max(up95)))
+
+	polygon( c(xvals, rev(xvals)), c(low95, rev(up95)), border=NA, col='#00000050')
+	lines(xvals, med)
+
+	if(sp==scales[1]) mtext(paste('Range =', ac), 3, 0.5, cex=0.8)
+	if(ac==dcorrs[1]){
+		par(xpd = NA)
+		text(-.5, par('usr')[4]*.5, paste('Grain =', sp), cex=1.3, pos=2)
+		par(xpd = F)
+		mtext('Num. Species', 2, 2.5, cex=0.8)		
+	}
+
+}}
+
+mtext(paste('Dispersal =', k), 3, 1, outer=T)
+mtext('Temporal Occupancy', 1, 1, outer=T)
+
+}
+dev.off()
+
+
+## Occupancy distributions when juvenile dispersal and adult movement differ
+
+pdf('EXP1_occupancy_distributions_P=1_dcorr=4.pdf', height=10, width=8)
+par(mfrow=c(length(scales), 3))
+par(mar=c(3, 3, 1, 0))
+par(oma = c(3, 8, 3, 1))
+
+# Juvenile dispersal kernels on different pages
+for(k in c('g1','g4','g16','u45')){
+
+# Spatial grain and adult movement on grid
+for(sp in scales){
+for(mv in c('a0','a0.5','a1')){
+	
+	this_dat = subset(dat, d==k & v==mv & scale==sp & dcorr==4)
+
+	# CIs are across runs
+	low95 = subset(this_dat, cross_run=='2.5%')[,5:24]
+	up95 = subset(this_dat, cross_run=='97.5%')[,5:24]
+	med = subset(this_dat, cross_run=='50%')[,5:24]
+
+	make_plot(c(0,1), c(0,max(up95)))
+
+	polygon( c(xvals, rev(xvals)), c(low95, rev(up95)), border=NA, col='#00000050')
+	lines(xvals, med)
+
+	if(sp==scales[1]) mtext(paste('Movement =', mv), 3, 0.5, cex=0.8)
+	if(mv=='a0'){
+		par(xpd = NA)
+		text(-.5, par('usr')[4]*.5, paste('Grain =', sp), cex=1.3, pos=2)
+		par(xpd = F)
+		mtext('Num. Species', 2, 2.5, cex=0.8)		
+	}
+
+}}
+
+mtext(paste('Dispersal =', k), 3, 1, outer=T)
+mtext('Temporal Occupancy', 1, 1, outer=T)
+
+}
+dev.off()
+
+
+## Occupancy distributions under different detection probs
+
+use_dcorr = 4
+dat = subset(occ, cross_space=='mean' & comm_stat=='rich' & dcorr==use_dcorr)
+
+dat$scale = as.numeric(dat$scale)
+
+# Spatial grain and detection probability on grid
+pdf('EXP1_occupancy_distributions_detectionP_dcorr=4.pdf', height=12, width=10)
+par(mfrow=c(8, length(scales)))
+par(mar=c(3, 3, 1, 0))
+par(oma = c(3, 8, 3, 1))
+
+# Dispersal kernels on separate pages
+for(k in dkerns){
+
+# Spatial grain and adult movement on grid
+# FOR SOME REASON, CAN'T SUBSET OF p = 0.7 OR p = 0.3
+for(p in c(1, .9, .8, .6, .5, .4, .2, .1)){
+for(sp in scales){
+
+	this_dat = subset(dat, scale==sp & d==k & v==k & p_obs==p)
+
+	# CIs are across runs
+	low95 = subset(this_dat, cross_run=='2.5%')[,5:24]
+	up95 = subset(this_dat, cross_run=='97.5%')[,5:24]
+	med = subset(this_dat, cross_run=='50%')[,5:24]
+
+	make_plot(c(0,1), c(0,max(up95)))
+
+	polygon( c(xvals, rev(xvals)), c(low95, rev(up95)), border=NA, col='#00000050')
+	lines(xvals, med)
+
+	if(p==1) mtext(paste('Grain =', sp), 3, 0.5, cex=0.8)
+	if(sp==scales[1]){
+		par(xpd = NA)
+		text(-.5, par('usr')[4]*.5, paste('P =', p), cex=1.3, pos=2)
+		par(xpd = F)
+		mtext('Num. Species', 2, 2.5, cex=0.8)		
+	}
+
+}}
+
+mtext(paste('Dispersal =', k), 3, 1, outer=T)
+mtext('Temporal Occupancy', 1, 1, outer=T)
+
+}
+dev.off()
+
+
+
+
+## Biological designations
+dat = subset(bio, p_obs==use_P & cross_space=='mean')
+
+jit = 0.1
+xvals = dcorrs
+
+pdf('EXP1_bio_rich-abun_P=1.pdf', height=9, width=6)
+par(mfrow=c(length(scales),2))
+par(mar=c(3, 5, 1, 0))
+par(oma = c(3, 8, 3, 1))
+
+for(k in dkerns){
+for(sp in scales){
+
+	this_dat = subset(dat, d==k & v==k & scale==sp)
+	this_dat =  this_dat[order(this_dat$dcorr),]
+	
+	low95 = subset(this_dat, cross_run=='2.5%')
+	up95 = subset(this_dat, cross_run=='97.5%')
+	med = subset(this_dat, cross_run=='50%')
+
+	# Richness
+	make_plot(c(0,max(dcorrs)), c(0, max(up95[,grep('rich', names(up95))])), ylab='Num. Species', cex=0.8)
+	
+	segments(xvals+jit, low95$core_rich, xvals+jit, up95$core_rich)
+	segments(xvals-jit, low95$trans_rich, xvals-jit, up95$trans_rich)
+
+	points(xvals+jit, med$core_rich, pch=use_pch[1])
+	points(xvals-jit, med$trans_rich, pch=use_pch[2])
+	
+	# Add x label
+	if(sp==scales[length(scales)]) mtext('Range', 1, 2.5, cex=0.8)
+
+	# Add scale label
+	par(xpd = NA)
+	text(-7, par('usr')[4]*.5, paste('Grain =', sp), cex=1.3, pos=2)
+	par(xpd = F)
+
+	# Abundance
+	make_plot(c(0,max(dcorrs)), c(0, max(up95[,grep('abun', names(up95))])), ylab='Num. Individuals', cex=0.8)
+	
+	segments(xvals+jit, low95$core_abun, xvals+jit, up95$core_abun)
+	segments(xvals-jit, low95$trans_abun, xvals-jit, up95$trans_abun)
+
+	points(xvals+jit, med$core_abun, pch=use_pch[1])
+	points(xvals-jit, med$trans_abun, pch=use_pch[2])
+
+	# Add legend
+	if(sp==scales[1]){
+		par(xpd = NA)
+		legend(par('usr')[2], 1.2*par('usr')[4], c('Core','Transient'), pch=use_pch, xjust=1, yjust=0, horiz=T)
+		par(xpd = F)
+	}
+
+	# Add x label
+	if(sp==scales[length(scales)]) mtext('Range', 1, 2.5, cex=0.8)
+}
+
+# Add dispersal label
+mtext(paste('Dispersal =', k), 3, 1, outer=T)
+}
+dev.off()
+
+
+
+
+
+
+###########################################################################################
+
+##### Runs testing convergence ######
 
 #### 32x32 grid, dispersal: p=0.99 of traveling 32 units or p=0.80 of traveling 16 units ####
 
