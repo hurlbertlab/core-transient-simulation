@@ -68,4 +68,6 @@ do
 done
 
 
-
+# Run that didn't finish correctly
+bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/EXP1/redo/ ./Results/EXP1/ ../Rlibs/ 50" restart_simulation.R EXP1_d-g16_v-a0.Rout
+bsub -q week R CMD BATCH "--args Results/EXP1/d-g16_v-a0_dcorr-1/ Parms/EXP1/summary/ Summaries/d-g16_v-a0_dcorr-1/ ../Rlibs" summarize_simulation.R d-g16_v-a0_dcorr-1_sum.Rout
