@@ -6,10 +6,10 @@ This project is a spatially explicit simulation of metacommunity dynamics that m
 The simulation occurs on a regular grid of cells (termed the 'landscape') and each cell has discrete habitat type, 'A' or 'B'. Each cell contains a 'community' of individuals, which is fixed at a pre-determined carrying capacity. Communities may contain fewer individuals than the carrying capacity, but not more. The species pool consists of three types of species- generalists, and habitat specialists on habitat type A or B. Generalists produce offspring in both habitat types while specialists only produce offspring in their preferred habitat. After initializing a simulation landscape and species pool, the simulation proceeds through repeated iteration of four processes: birth - dispersal - establishment - death. Once established, individuals vacate their place in the community only through dispersal or death- the simulation does not model competitive displacement. 
 
 ## Directory Structure
-+ **/Code**
+**/Code**
   + **./CTSim**: package source code and manual files
   + **./HTML**: html files for static documentation
-  + **./Parameters**: parameter files for running and summarizing simulations. Subdirectories contain parameter files for different experiments described [here](/wiki/Experiments).
+  + **./Parameters**: parameter files for running and summarizing simulations. Subdirectories contain parameter files for different experiments described [here](/wiki/Experiments). Parameter files for running simulations begin with 'p_' whereas parameter files for summarizing simulations begin with 's_'.
   + **./Scripts**: miscellaneous scripts for working with CTSim
    + [debugging.R](/Code/Scripts/debugging.R): code for testing CTSim package
    + [make_package.R](/Code/Scripts/make_package.R): code for building CTSim package
@@ -17,7 +17,16 @@ The simulation occurs on a regular grid of cells (termed the 'landscape') and ea
    + [submit_runs.txt](/Code/Scripts/submit_runs.txt): shell code for submitting multiple jobs to cluster
    + [visualize_simulation.R](Code/Scripts/visualize_simulation.R): code for analyzing  CTSim runs and experiments
   + Current package version for [Windows](/Code/CTSim_0.1.3.tar.gz) and [Unix](/Code/CTSim_0.1.3.zip)
-+ **/Results**
+**/Results**
+ + **./Plots**: visualizations of simulation results, organized by experiment/run
+ + **./Summary**: summary RData files of simulation results, organized by experiment/run
+
+### Experiments and Summaries
+See [wiki page](/wiki/Experiments) for details on parameters used in each experiment and naming conventions.
+ + **CONV**: Initial runs testing for long-term convergence of simulation under different grid sizes (32x32 vs 64x64) and dispersal types (d) or birth rates (b). These were just used to determine that 200 timestes were adequate and shouldn't be used for further analysis.
+ + **EXP1**: Experiment 1 evaluates effects of juvenile dispersal (d), adult movement (v), and habitat spatial autocorrelation (dcorr)
+
+See [wiki page](/wiki/Experiments) for specific parameters used in summaries or see the Parameters directory that corresponds to the experiment.
   
 
 ## HTML Help Files
