@@ -1,0 +1,33 @@
+# This is an example of a summary parameter file that can be used with summarize_sim_P()
+
+# ID used for saving this summary
+sumID = 'mysum'
+
+# Define different scales of spatial aggregation (in a partition of the grid)
+# Must supply grid dimensions
+scale_locs = sapply(2^c(0:4), function(fact) aggregate_cells(X=c(32,32), dX=fact, dY=fact, form='partition'))
+
+# Locations to be aggregated and evaluated
+locs = list(c(1,1), c(2,2), c(3,3), c(4,4)) # four spatial units, each of which is a single cell on the diagonal of the landscape
+
+# Time window used to evaluate temporal occupancy
+t_window=list(start=91, stop=100)
+
+# Detectability
+P_obs = list(.1,.2,.3,.4,.5,.6,.7,.8,.9,1)
+
+# Breakpoints for temporal occupancy-based core-transient designations
+breaks=c(0.33, 0.66)
+
+# Parameters defining how to summarize spatial and temporal units within the same run
+sum_parms=list(
+	
+	# Uses the 'last' timepoint or the 'mean' of all time windows
+	time_sum='last',
+
+	# Summary quantiles across spatial units 
+	quants=c(0.025, 0.25, .5, 0.75, .975)
+)
+
+# Function used to summarize across runs
+sum_func = default_sum_func
