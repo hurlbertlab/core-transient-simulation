@@ -22,7 +22,7 @@ The simulation occurs on a regular grid of cells (termed the 'landscape') and ea
  + **./Summary**: summary RData files of simulation results, organized by experiment/run
 
 ### Experiments and Summaries
-See [wiki page](/wiki/Experiments) for details on parameters used in each experiment and naming conventions.
+See [wiki page](/wiki/Experiments) for details on parameters used in each experiment and naming conventions. In general, files are named according to parameters that were varied. A '_' separates different parameters while a '-' associates a parameter with a value. For example a file including the string: 'd-g1_v-a0.5' indicates that the data refers to a simulation where the juvenile dispersal kernel was set to g1 (gaussian with distance 1) and the adult movement kernel was set to a0.5 (adjacent cell with probability 0.5). 
  + **CONV**: Initial runs testing for long-term convergence of simulation under different grid sizes (32x32 vs 64x64) and dispersal types (d) or birth rates (b). These were just used to determine that 200 timestes were adequate and shouldn't be used for further analysis.
  + **EXP1**: Experiment 1 evaluates effects of juvenile dispersal (d), adult movement (v), and habitat spatial autocorrelation (dcorr)
 
