@@ -13,6 +13,7 @@ library(reshape2)
 sum_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/Summary'
 fig_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Results/Plots'
 sim_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code'
+data_dir = 'Z:/CTSim/Data'
 
 setwd(sum_dir)
 
@@ -75,7 +76,83 @@ setwd(file.path(sum_dir, 'EXP1'))
 
 # Get list of runs
 runlist = list.dirs('.', full.names=F)
+runlist = runlist[runlist!='']
 
+### Examine abundance distributions from the end of runs
+dvcombos = unique(apply(sapply(runlist, get_parms), 2, function(x) paste('d-', x[1], '_v-', x[2], sep='')))
+
+abuns = array(NA, dim=c(22, 5, 100, 40), 
+	dimnames=list(dv=dvcombos, dcorr=c(1,2,4,8,16), run=1:100, sp_rank=1:40)
+)
+
+abuns_exp = array(NA, dim=c(22, 5, 100, 40), 
+	dimnames=list(dv=dvcombos, dcorr=c(1,2,4,8,16), run=1:100, sp_rank=1:40)
+)
+
+
+# Load observed relative abundance distributions
+for(d in runlist[57:110]){
+	parm_vals = get_parms(d)
+	
+	# Get first summary, since abundance summary is the same across scales
+	f = list.files(d)[1]
+
+	# Adds two data objects to environment: sim_sum and sim_sum_ind
+	# Both are lists and sim_sum summarizes across runs, whereas sim_sum_ind contains data from each of the 100 runs
+	load(file.path(d,f))
+	
+	# Only examine P=1 detectability
+	dv = paste('d-', parm_vals$d, '_v-', parm_vals$v, sep='')
+	
+	abuns[dv, parm_vals$dcorr, 1:(dim(sim_sum_ind$abun)[1]),] = sim_sum_ind$abun[,,'1']
+
+	# Load actual gsads
+	load(file.path(data_dir, 'EXP1', d, 'sim_objects.RData'))
+	rel_abun = sapply(gsad_N, function(x) x[order(x, decreasing=T)]/sum(x))
+	abuns_exp[ dv, parm_vals$dcorr, ,] = t(rel_abun)
+}
+
+# See which runs didn't finish before summaries calculated: just one: d-g2_v-g2_dcorr-1
+# 8/31/2016 Transfering files to restart this run and then will redo summary
+apply(abuns, 1:2, function(x) sum(is.na(x))/40)
+
+# Plot abundance distributions
+
+pdf(file.path(fig_dir,'EXP1', 'EXP1_relative_abun_distributions.pdf'), height=20, width=12)
+par(mfrow=c(8, 5))
+par(mar=c(2, 2.5, 1, 1))
+for(dv in dvcombos){
+for(dcorr in dimnames(abuns)[[2]]){
+	make_plot(c(1,40), c(0,max(abuns, na.rm=T)))
+	for(i in 1:100) lines(abuns_exp[dv,dcorr,i,], col='#FF000030')	
+	for(i in 1:100) lines(abuns[dv,dcorr,i,], col='#00000030')
+	text(40, .27, paste(dv, '_dcorr-', dcorr, sep=''), pos=2)
+}}
+dev.off()
+
+
+
+
+dist_gsad=list(type='lognormal',maxN=8,P_maxN=0.001)
+make_sad(40, dist_gsad)
+use_mean = 0
+try_sig = 1
+this_N = qlnorm(1 - dist_gsad$P_maxN, use_mean, try_sig)
+i = 1
+while (abs(distribution$maxN - this_N) > 0.5) {
+                if (this_N > distribution$maxN) {
+                  try_sig = try_sig - try_sig/2
+                }
+                else {
+                  try_sig = try_sig + try_sig/2
+                }
+                this_N = qlnorm(1 - distribution$P_maxN, 0, try_sig)
+            }
+            use_sd = try_sig
+
+
+
+### Examine run summary files
 # Define objects to hold data
 bio = data.frame() 
 occ = data.frame()
