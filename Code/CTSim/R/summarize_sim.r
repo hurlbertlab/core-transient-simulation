@@ -13,7 +13,7 @@
 #'		core - occupancy core, biologically core - occupancy transient,
 #'		biologically transient - occupancy core, and biologically transient -
 #'		occupancy transient (see\code{\link{cross_classify}})}
-#'	\item{abun}{(not yet implemented) relative abundance of each species
+#'	\item{abun}{relative rank abundance of each species
 #'		in the metacommunity}
 #' }
 #'
@@ -99,6 +99,9 @@
 #'			should be used in summary statistics (see details)}
 #'		\item{quants}{vector of quantiles for summarizing across spatial units
 #'			(see details)}
+#'		\item{hab}{character string indicating whether summary should be performed
+#'			across all habitat types (default) or for just one (indicated by 
+#'			\code{'A'} or \code{'B'}.}
 #'	}
 #' @return a list of arrays defined as follows:
 #' 	\describe{
@@ -229,7 +232,7 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 
 	# Determine which time window to use for summary
 	# Defaults to mean
-	if(is.null(sum_parms$time_sum)){ time_sum = 'mean' } else { time_sum = sum_parms$time_sum }
+	if(is.null(sum_parms$time_sum)){time_sum = 'mean'} else { time_sum = sum_parms$time_sum }
 
 	# Average across time windows
 	if(time_sum=='mean'){
@@ -264,18 +267,38 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 
 	# Catch error if time_sum given does not match an available method.
 	if(!(time_sum %in% c('none','last','mean'))) stop('Incorrect temporal summary method given in sum_parms.')
-
+	
 	# Calculate means and variances across spatial units
 	# dim is the dimension where spatial units are stored
-	calc_stats = function(dat, dim, quants=sum_parms$quants){
+	# use_obs is a logical vector indicating which observations should be used 
+	calc_stats = function(dat, sp_dim, quants=sum_parms$quants, use_obs=NULL){
+		if(is.null(use_obs)) use_obs = rep(T, dim(dat)[sp_dim])
+	
 		keep_dims = 1:length(dim(dat))
-		keep_dims = keep_dims[keep_dims!=dim]
+		keep_dims = keep_dims[keep_dims!=sp_dim]
 		
 		apply(dat, keep_dims, function(x){
-			stats = c(mean=mean(x), var=var(x))
-			if(!is.null(quants)) stats = c(stats, quantile(x, quants))
+			stats = c(mean=mean(x[use_obs]), var=var(x[use_obs]))
+			if(!is.null(quants)) stats = c(stats, quantile(x[use_obs], quants))
 			stats
 		})
+	}
+
+	# Determine which spatial units to used (based on habitat type)
+	if(is.null(sum_parms$hab)){ hab='AB' } else {hab=sum_parms$hab}
+	
+	# If the summary is only for one habitat type
+	if(hab!='AB'){
+		# Check whether landscape is supplied
+		if(is.null(land)) stop('Must supply landscape in order to summarize for only one habitat type.')
+	
+		# Determine the habitat type of the landscape
+		land_types = aggregate_hab_type(land, locs)
+		
+		# Subset data to only the habitat type of interest
+		sp_subset = land_types==hab	
+	} else {
+		sp_subset = rep(T, length(locs))
 	}
 
 	if(time_sum=='none'){
@@ -286,9 +309,9 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		occ_names = list(c('rich','abun'), NULL, NULL, P_obs)
 	}
 	
-	bio_stats = abind::abind(calc_stats(rich_ab, sp_dim), calc_stats(abun_ab, sp_dim), along=0, new.names=bio_names)
-	occ_stats = abind::abind(calc_stats(rich_ct, sp_dim), calc_stats(abun_ct, sp_dim), along=0, new.names=occ_names)
-	xclass_stats = calc_stats(xclass, 1)
+	bio_stats = abind::abind(calc_stats(rich_ab, sp_dim, use_obs=sp_subset), calc_stats(abun_ab, sp_dim, use_obs=sp_subset), along=0, new.names=bio_names)
+	occ_stats = abind::abind(calc_stats(rich_ct, sp_dim, use_obs=sp_subset), calc_stats(abun_ct, sp_dim, use_obs=sp_subset), along=0, new.names=occ_names)
+	xclass_stats = calc_stats(xclass, 1, use_obs=sp_subset)
 	dimnames(xclass_stats)[[3]] = P_obs
 	dimnames(abuns_global)[[sp_dim]] = P_obs
 

@@ -2,6 +2,7 @@
 
 export(add_dim)
 export(aggregate_cells)
+export(aggregate_hab_type)
 export(average_habitat)
 export(calc_abun)
 export(calc_abun_CT)

@@ -50,7 +50,7 @@ build_site('CTSim', 'HTML')
 
 
 # Testing Functions
-myland = make_landscape(c(5,5))
+myland = make_landscape(c(5,5), prop=.01)
 mysp = make_species(3, 4, dist_b=list(type='lognormal', maxN=5, P_maxN=0.01), 
 	m=c(.5, .5), r=c(1, .5), dist_d=list(mu=1, var=0), dist_v=list(mu=c(0,.8), var=c(0,.02), type='adjacent')
 )
@@ -69,6 +69,7 @@ mymeta_t10 = run_sim(10, mymeta, myland, mysp, mygsad, d_kernel=list(type='gauss
 run_sim_P(2, report=2)
 
 mylocs = aggregate_cells(X=c(5,5), dX=c(2,2), form='partition')
+mylocs = aggregate_cells(X=c(5,5), dX=c(1,1), form='partition')
 
 calc_abun(mymeta_t1, N_S=20, only_species=T)
 
@@ -83,14 +84,12 @@ sapply(mylocs, function(x) average_habitat(x, myland))
 
 myobs = sapply(c(.5, .8), function(p) sample_sim(myabuns, p), simplify='array')
 
-mysum= summarize_sim(mymeta_t10, .5, mylocs, list(start=6, stop=10), mysp, myland, mygsad, 
-	P_obs=c(.5, .8), sum_parms=list(time_sum='none'))
+mysumA= summarize_sim(mymeta_t10, .5, mylocs, list(start=6, stop=10), mysp, myland, mygsad, 
+	P_obs=1, sum_parms=list(time_sum='none'), hab='A')
+mysumB= summarize_sim(mymeta_t10, .5, mylocs, list(start=6, stop=10), mysp, myland, mygsad, 
+	P_obs=1, sum_parms=list(time_sum='none'), hab='B')
 
 
-
-	abuns_global = sapply(1:2, function(i){
-		apply(myobs[,,,i], 1, function(x) calc_abun(x, 20, only_species=T))
-	}, simplify='array')
-
-
+hab = aggregate_hab_type(myland, mylocs)
+mylocs
 

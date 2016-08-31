@@ -52,6 +52,9 @@ vectors defining exactly which timepoints should be aggregated (see details).
         should be used in summary statistics (see details)}
     \item{quants}{vector of quantiles for summarizing across spatial units
         (see details)}
+    \item{hab}{character string indicating whether summary should be performed
+        across all habitat types (default) or for just one (indicated by 
+        \code{'A'} or \code{'B'}.}
 }}
 }
 \value{
@@ -87,7 +90,7 @@ returns them in a named list:
 	core - occupancy core, biologically core - occupancy transient,
 	biologically transient - occupancy core, and biologically transient -
 	occupancy transient (see\code{\link{cross_classify}})}
-\item{abun}{(not yet implemented) relative abundance of each species
+\item{abun}{relative rank abundance of each species
 	in the metacommunity}
 }
 
