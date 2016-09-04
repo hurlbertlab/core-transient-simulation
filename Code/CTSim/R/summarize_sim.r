@@ -236,12 +236,43 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 	
 	# Calculate species turnover rates, if present
 	if(exists('turnover')){
-		# Caculate for biologically core/transient
-		
+		# Calculate for biologically core/transient
+		# Currently does not aggregate time periods
+		turn_ab = sapply(1:length(locs), function(i){
+			calc_species_turnover(turnover, locs[i], t_window, which_species=classification[i,])
+		}, simplify='array')
+		# If sapply returns a list because core or transient species are missing from a spatial unit
+		if(is.list(turn_ab)){
+			turn_ab = sapply(turn_ab, function(x){
+				dim_missing = c('core','trans')[!c('core','trans') %in% dimnames(x)[[4]]]
+				if(length(dim_missing)==1){
+					new_x = abind::abind(x, array(NA, dim=dim(x)[1:3]), along=4)
+					dimnames(new_x)[[4]][2] = dim_missing
+					new_x = new_x[,,,c('core','trans')]
+				} else {
+					new_x = x[,,,c('core','trans')]
+				}
+				new_x
+			}, simplify='array')
+		}
+		if(length(dim(turn_ab))==5) turn_ab = abind::adrop(turn_ab, 2)
+		turn_ab = aperm(turn_ab, c(1,3,4,2))
+		# dimension are [time, category, spatial unit, rate type]
 		
 		# Calculate for each temporal occupancy class
-	
-	
+		# Convert occupancy to factor based on breakpoints
+		use_occ = calc_occupancy(abuns=abuns_act, agg_times, do_freq=F)
+		if(breaks[1]!=0) breaks = c(0,breaks)
+		if(breaks[length(breaks)]!=1) breaks = c(breaks, 1)
+		cats = matrix(cut(use_occ, breaks, include.lowest=F, labels=F), nrow=nrow(use_occ), ncol=ncol(use_occ))
+
+		turn_ct = sapply(1:length(locs), function(i){
+			calc_species_turnover(turnover, locs[i], t_window, agg_times, cats[i,])
+		}, simplify='array')
+		
+		## ACTUALLY DECIDED NOT TO INCLUDE THIS B/C INFO NOT NEEDED.
+		## ALSO, TURN_CT IS USUALLY A LIST BECAUSE SOME OCCUPANCY CLASSES ARE USUALLY MISSING FROM MOST LOCATIONS
+		## WOULD NEED TO CONVERT BACK FROM LIST TO USE BY FILLING IN MISSING ARRAY DIMENSIONS
 	}
 
 	# Determine which time window to use for summary
@@ -255,6 +286,7 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		abun_ab = apply(abun_ab, 2:4, mean)
 		abun_ct = apply(abun_ct, 2:4, mean)
 		abuns_global = apply(abuns_global,c(1,3), mean) 
+		if(exists('turn_ab')) turn_ab = apply(turn_ab, 2:4, mean)
 
 		# Define dimension that stores spatial units
 		sp_dim = 2
@@ -268,6 +300,7 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		abun_ab = abun_ab[N_t,,,,drop=F]; abun_ab = abind::adrop(abun_ab, 1)
 		abun_ct = abun_ct[N_t,,,,drop=F]; abun_ct = abind::adrop(abun_ct, 1)
 		abuns_global = abuns_global[,N_t,,drop=F]; abuns_global = abind::adrop(abuns_global, 2)
+		if(exists('turn_ab')) turn_ab = turn_ab[N_t,,,,drop=F]; turn_ab = abind::adrop(turn_ab, 1)
 	
 		# Define dimension that stores spatial units
 		sp_dim = 2
@@ -326,9 +359,12 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 	bio_stats = abind::abind(calc_stats(rich_ab, sp_dim, use_obs=sp_subset), calc_stats(abun_ab, sp_dim, use_obs=sp_subset), along=0, new.names=bio_names)
 	occ_stats = abind::abind(calc_stats(rich_ct, sp_dim, use_obs=sp_subset), calc_stats(abun_ct, sp_dim, use_obs=sp_subset), along=0, new.names=occ_names)
 	xclass_stats = calc_stats(xclass, 1, use_obs=sp_subset)
+	if(exists('turn_ab')) turn_stats = calc_stats(turn_ab, sp_dim, use_obs=sp_subset)
 	dimnames(xclass_stats)[[3]] = P_obs
 	dimnames(abuns_global)[[sp_dim]] = P_obs
 
 	# Return list of statistics
-	list(bio=bio_stats, occ=occ_stats, xclass=xclass_stats, abuns=abuns_global)
+	return_list = list(bio=bio_stats, occ=occ_stats, xclass=xclass_stats, abuns=abuns_global)
+	if(exists('turn_stats')) return_list = c(return_list, turnover=list(turn_stats))
+	return_list
 }

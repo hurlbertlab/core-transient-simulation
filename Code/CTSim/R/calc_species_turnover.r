@@ -146,7 +146,7 @@ calc_species_turnover = function(turnover, locs, t_window, agg_times=NULL, which
 	if(is.null(which_species)) which_species = dimnames(turnover)[[4]]
 	
 	return_results = sapply(levels(factor(which_species)), function(sp){
-		apply(return_results[,,,which_species==sp,drop=F], c(1:3), sum)	
+		apply(return_results[,,,which_species %in% sp,drop=F], c(1:3), sum)	
 	}, simplify='array')
 
 	# Return summed rates

@@ -70,6 +70,7 @@ mymeta_t8 = run_sim(8, mymeta, myland, mysp, mygsad, d_kernel=list(type='gaussia
 	report=2, ID='testrun'
 )
 
+setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/Sandbox')
 run_sim_P(2, report=2)
 
 
@@ -98,11 +99,17 @@ data.frame(hab, trates[1,,,1], trates[1,,,2])
 
 myobs = sapply(c(.5, .8), function(p) sample_sim(myabuns, p), simplify='array')
 
-mysumA= summarize_sim(mymeta_t10, .5, mylocs, list(start=6, stop=10), mysp, myland, mygsad, 
-	P_obs=1, sum_parms=list(time_sum='none'), hab='A')
-mysumB= summarize_sim(mymeta_t10, .5, mylocs, list(start=6, stop=10), mysp, myland, mygsad, 
-	P_obs=1, sum_parms=list(time_sum='none'), hab='B')
+mysumA= summarize_sim(mymeta_t20, .5, mylocs, list(start=10, stop=20), mysp, myland, mygsad, 
+	P_obs=1, sum_parms=list(time_sum='none', hab='A'))
 
+mysumA= summarize_sim(mymeta_t20, .5, mylocs, list(start=10, stop=20), mysp, myland, mygsad, 
+	P_obs=1, sum_parms=list(time_sum='none', hab='A'))
+
+mysumB= summarize_sim(mymeta_t20, .5, mylocs, list(start=10, stop=20), mysp, myland, mygsad, 
+	agg_times=3, P_obs=1, sum_parms=list(time_sum='mean', hab='B'))
+
+mysum =  summarize_sim(mymeta_t8, .5, mylocs, list(start=1, stop=8), mysp, myland, mygsad, 
+	P_obs=1, sum_parms=list(time_sum='none', hab='AB'))
 
 hab = aggregate_hab_type(myland, mylocs)
 mylocs

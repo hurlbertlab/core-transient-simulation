@@ -97,6 +97,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		xclass_arr = this_sum$xclass
 		abun_arr = this_sum$abun
 		land_arr = summarize_land(this_run, locs=locs)
+		if(!is.null(this_sum$turnover)) turn_arr = this_sum$turnover
 
 		if(length(runfiles)>1){
 			for(i in 2:length(runfiles)){
@@ -107,6 +108,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 				occ_arr = abind::abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
 				xclass_arr = abind::abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))
 				abun_arr = abind::abind(abun_arr, this_sum$abun, along=ifelse(i==2, 0, 1))
+				if(exists('turn_arr')) turn_arr = abind::abind(turn_arr, this_sum$turnover, along=ifelse(i==2, 0, 1))
 
 				land_arr = abind::abind(land_arr, summarize_land(this_run, locs=locs), along=ifelse(i==2, 0, 1))	
 			}
@@ -126,6 +128,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		xclass_arr = this_sum$xclass
 		abun_arr = this_sum$abun
 		land_arr = summarize_land(sim$lands[[1]], locs=locs)
+		if(!is.null(this_sum$turnover)) turn_arr = this_sum$turnover
 		
 		if(length(sim$results)>1){
 			for(i in 2:length(sim$results)){
@@ -135,7 +138,8 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 				occ_arr = abind::abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
 				xclass_arr = abind::abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))
 				abun_arr = abind::abind(abun_arr, this_sum$abun, along=ifelse(i==2, 0, 1))
-
+				if(exists('turn_arr')) turn_arr = abind::abind(turn_arr, this_sum$turnover, along=ifelse(i==2, 0, 1))
+				
 				land_arr = abind::abind(land_arr, summarize_land(sim$lands[[i]], locs=locs), along=ifelse(i==2, 0, 1))	
 			}
 		}
@@ -148,16 +152,20 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 			names(dimnames(bio_arr)) = c('run', 'comm_stat','cross_space','timestep','category','p_obs')
 			names(dimnames(occ_arr)) = c('run', 'comm_stat','cross_space','timestep','category','p_obs')
 			names(dimnames(abun_arr)) = c('run', 'sp_rank','timestep','p_obs')
+			if(exists('turn_arr')) names(dimnames(turn_arr)) = c('run', 'cross_space','timestep','category','rate')
 		} else{
 			names(dimnames(bio_arr)) = c('run', 'comm_stat','cross_space','category','p_obs')
 			names(dimnames(occ_arr)) = c('run', 'comm_stat','cross_space','category','p_obs')
 			names(dimnames(abun_arr)) = c('run', 'sp_rank', 'p_obs')
+			if(exists('turn_arr')) names(dimnames(turn_arr)) = c('run','cross_space','category','rate')
 		}
 		names(dimnames(xclass_arr)) = c('run','cross_space','ab_ct','p_obs')
 		names(dimnames(land_arr)) = c('run','stat')
 		
 		# Return arrays where first dimension is the run
-		return(list(bio=bio_arr, occ=occ_arr, xclass=xclass_arr, abun=abun_arr, land=land_arr))
+		return_list = list(bio=bio_arr, occ=occ_arr, xclass=xclass_arr, abun=abun_arr, land=land_arr)
+		if(exists('turn_arr')) return_list = c(return_list, turnover=list(turn_arr))
+		return(return_list)
 
 	} else {
 		if(!is.function(sum_func)) stop('Argument sum_func must be a function.')
@@ -168,22 +176,27 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		xclass_sum = apply(xclass_arr, 2:length(dim(xclass_arr)), sum_func)
 		abun_sum = apply(abun_arr, 2:length(dim(abun_arr)), sum_func)
 		land_sum = apply(land_arr, 2, sum_func)
+		if(exists('turn_arr')) turn_sum = apply(turn_arr, 2:length(dim(turn_arr)), sum_func)
 
 		# Name the dimensions
 		if(tryCatch(sum_parms$time_sum=='none', error=function(e) FALSE)){
 			names(dimnames(bio_sum)) = c('cross_run', 'comm_stat','cross_space','timestep','category','p_obs')
 			names(dimnames(occ_sum)) = c('cross_run', 'comm_stat','cross_space','timestep','category','p_obs')
 			names(dimnames(abun_sum)) = c('cross_run', 'sp_rank','timestep','p_obs')
+			if(exists('turn_sum')) names(dimnames(turn_sum)) = c('cross_run', 'cross_space','timestep','category','rate')
 		} else{
 			names(dimnames(bio_sum)) = c('cross_run', 'comm_stat','cross_space','category','p_obs')
 			names(dimnames(occ_sum)) = c('cross_run', 'comm_stat','cross_space','category','p_obs')
 			names(dimnames(abun_sum)) = c('cross_run', 'sp_rank', 'p_obs')
+			if(exists('turn_sum')) names(dimnames(turn_sum)) = c('cross_run','cross_space','category','rate')
 		}
 		names(dimnames(xclass_sum)) = c('cross_run','cross_space','ab_ct','p_obs')
 		names(dimnames(land_sum)) = c('cross_run','stat')
 		
-		# Return summaries across runs. If sum_func returns a vector, then the first dimension is the summaries across runs.	
-		return(list(bio=bio_sum, occ=occ_sum, xclass=xclass_sum, abun=abun_sum, land=land_sum))
+		# Return summaries across runs. If sum_func returns a vector, then the first dimension is the summaries across runs.
+		return_list = list(bio=bio_sum, occ=occ_sum, xclass=xclass_sum, abun=abun_sum, land=land_sum)
+		if(exists('turn_sum')) return_list = c(return_list, turnover=list(turn_sum))
+		return(return_list)
 	}
 }
 
