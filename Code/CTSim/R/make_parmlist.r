@@ -74,6 +74,8 @@
 #'			\item \strong{\code{imm_rate}} : immigration rate- probability than an 
 #'				empty space will be colonized by a migrant from outside
 #'				the metacommunity
+#'			\item \strong{\code{calc_rates}} : logical indicating whether rates of
+#'				species turnover should be calculated
 #'		}
 #'	\item Parameters passed to \code{\link{run_sim_N}}
 #'		\itemize{
@@ -128,6 +130,7 @@ make_parmlist = function(e=parent.frame()){
 	if(exists('d_kernel', e)) parms = c(parms, d_kernel = list(e$d_kernel))
 	if(exists('v_kernel', e)) parms = c(parms, v_kernel = list(e$v_kernel))
 	if(exists('imm_rate', e)) parms = c(parms, imm_rate = e$imm_rate)
+	if(exists('calc_rates', e)) parms = c(parms, calc_rates = e$calc_rates)
 	if(exists('save_steps', e)) parms = c(parms, save_steps = list(e$save_steps))
 	if(exists('simID', e)) parms = c(parms, simID = e$simID)
 }

@@ -54,14 +54,22 @@
 #' 	the \code{form} parameter in \code{\link{disperse}}. Defaults to Gaussian.
 #' @param imm_rate immigration rate. Passed to the parameter \code{m} in
 #' 	\code{\link{establish}}. Defaults to 0.
-#' @return a matrix of lists defining the metacommunity with the same 
-#' 	dimensions as \code{metacomm}.
+#' @param return_dead logical indicating whether a second metacommunity array
+#' 	should be returned that shows which individuals dies during this timestep.
+#' 	Used for calculating mortality and establishement rates. Defaults to 
+#' 	\code{FALSE}.
+#' @return if \code{return_dead} is \code{FALSE}, then the function returns
+#' a matrix of lists defining the metacommunity with the same 
+#' 	dimensions as \code{metacomm}, otherwise it returns a list containing 
+#' 	two metacommunity arrays- the first is the new metacommunity and the second
+#' 	is an array of logicals indicating whether each microsite was vacated
+#' 	(through death or movement) in this timestep.
 #'
 #' @seealso \code{\link{run_sim}} for running multiple timesteps of 
 #' 	the simulation.
 #' @export
 
-run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA){
+run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, v_kernel=NULL, imm_rate=NA, return_dead=F){
 
 	# Define dimensions of landscape
 	X = nrow(land)
@@ -77,6 +85,9 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, v_kernel=N
 
 	# Define array to hold new propagule pools
 	propagule_pools = matrix(list(), nrow=X, ncol=Y)
+	
+	# Save old metacommunity
+	old_metacomm = metacomm
 
 	# For each cell, new individuals are born and disperse and existing individuals move around
 	for(i in 1:X){
@@ -128,6 +139,15 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, v_kernel=N
 
 	}}
 	
+	# Find which individuals died
+	if(return_dead){
+		metacomm_loss = sapply(1:X, function(i){
+			sapply(1:Y, function(j){
+				list(metacomm[i,j][[1]] - old_metacomm[i,j][[1]] < 0)
+			})
+		},simplify='array')
+	}
+	
 	# Recruits establish from propagule pools (combination of new births and previously established individuals that moved)
 	for(i in 1:X){
 	for(j in 1:Y){
@@ -145,5 +165,9 @@ run_timestep = function(metacomm, land, species, gsad, d_kernel=NULL, v_kernel=N
 	}}
 
 	# Return new metacommunity
-	metacomm
+	if(return_dead){
+		list(newcomm=metacomm, comm_loss=metacomm_loss)
+	} else {
+		metacomm
+	}
 }

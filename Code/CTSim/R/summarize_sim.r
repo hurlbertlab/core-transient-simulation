@@ -139,12 +139,16 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 			land = this_land
 			gsad = this_gsad
 		}
+	} else {
+		# If sim is an array of simulation results, then must specify species, land, gsad
+		if(is.null(species)|is.null(land)|is.null(gsad)) stop('If sim is not a file, must supply species, land, and gsad.')
+		results = sim
 	}
 	
-	# If sim is an array of simulation results, then must specify species, land, gsad
-	if(is.array(sim)){
-		if(is.null(species)|is.null(land)|is.null(gsad)) stop('If sim is an array, must supply species, land, and gsad.')
-		results = sim
+	# If results is a list with two elements, then extract the elements corresponding to the metacommunity and species turnover
+	if(length(results)==2){
+		turnover = results$turnover
+		results = results$sim
 	}
 
 	# Number of species
@@ -229,6 +233,16 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		})
 	}, simplify='array')
 	# dims are now [species rank, timepoint, P]
+	
+	# Calculate species turnover rates, if present
+	if(exists('turnover')){
+		# Caculate for biologically core/transient
+		
+		
+		# Calculate for each temporal occupancy class
+	
+	
+	}
 
 	# Determine which time window to use for summary
 	# Defaults to mean
