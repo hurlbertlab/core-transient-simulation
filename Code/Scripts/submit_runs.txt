@@ -71,3 +71,21 @@ done
 # Run that didn't finish correctly
 bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/EXP1/redo/ ./Results/EXP1/ ../Rlibs/ 50" restart_simulation.R EXP1_d-g16_v-a0.Rout
 bsub -q week R CMD BATCH "--args Results/EXP1/d-g16_v-a0_dcorr-1/ Parms/EXP1/summary/ Summaries/d-g16_v-a0_dcorr-1/ ../Rlibs" summarize_simulation.R d-g16_v-a0_dcorr-1_sum.Rout
+
+
+# 9/5/2016 Starting 8 runs each of EXP1 that will save data on species turnover (implemented in CTSim v 0.1.4)
+
+
+for d in a0 a0.5 a1 g1 g2 g4 g8 g16 g32 u45 
+do
+ bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/d-$d/ ./Results/ /nas02/home/j/r/jrcoyle/Rlibs/ 50" run_simulation.R EXP1_d-"$d".Rout
+done
+
+# NOT SUBMITTED
+for d in g1 g4 g16 u45 
+do
+ for v in a0 a0.5 a1 
+  do
+   bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/d-$d/v-$v/ ./Results/ /nas02/home/j/r/jrcoyle/Rlibs/ 50" run_simulation.R EXP1_d-"$d"_v-"$v".Rout
+  done
+done

@@ -19,10 +19,14 @@ source('baseline_parameter_file.txt')
 
 # ID for this set of parameters
 expID = 'EXP1'
+expID = 'EXP1-turn' # Used for set of runs that records species turnover 9/5/2016
+
 
 # Make directory
 dir.create(file.path(parm_dir, expID))
 
+# Define number of runs, for EXP1-turn
+nruns=8
 
 ## Define dispersal parameters
 
@@ -78,7 +82,7 @@ for(id in d_parms$id){
 
 				# Write parameter file
 				parmlist = make_parmlist()
-				write_parms(parmlist, file.path(expID,this_dir, paste0('p_', simID, '.txt')))
+				CTSim:::write_parms(parmlist, file.path(expID,this_dir, paste0('p_', simID, '.txt')))
 			}
 		}	
 			
@@ -93,7 +97,7 @@ for(id in d_parms$id){
 
 		# Write parameter file
 		parmlist = make_parmlist()
-		write_parms(parmlist, file.path(expID, this_dir, paste0('p_', simID, '.txt')))			
+		CTSim:::write_parms(parmlist, file.path(expID, this_dir, paste0('p_', simID, '.txt')))			
 	}
 }
 
