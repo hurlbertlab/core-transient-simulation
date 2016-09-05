@@ -88,6 +88,8 @@ be found in the documentation on the functions they are passed to:
 		\item \strong{\code{imm_rate}} : immigration rate- probability than an 
 			empty space will be colonized by a migrant from outside
 			the metacommunity
+		\item \strong{\code{calc_rates}} : logical indicating whether rates of
+			species turnover should be calculated
 	}
 \item Parameters passed to \code{\link{run_sim_N}}
 	\itemize{

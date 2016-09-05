@@ -26,10 +26,7 @@
 #' @export
 
 make_landscape = function(x=NULL, y=NA, mod=NULL, d=NA, prop=NA, draw_plot=F){
-	
-	# Load gstat
-	library(gstat)
-	
+
 	# Catch error if no dimensions specified
 	if(is.null(x)&is.na(y)){ stop('Must supply grid dimensions.') }
 	if(is.na(y)&length(x)==2){

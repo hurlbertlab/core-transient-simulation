@@ -5,7 +5,7 @@
 \title{Run simulation timestep}
 \usage{
 run_timestep(metacomm, land, species, gsad, d_kernel = NULL,
-  v_kernel = NULL, imm_rate = NA)
+  v_kernel = NULL, imm_rate = NA, return_dead = F)
 }
 \arguments{
 \item{metacomm}{(required) matrix of lists defining metacommunity
@@ -32,10 +32,19 @@ the \code{form} parameter in \code{\link{disperse}}. Defaults to Gaussian.}
 
 \item{imm_rate}{immigration rate. Passed to the parameter \code{m} in
 \code{\link{establish}}. Defaults to 0.}
+
+\item{return_dead}{logical indicating whether a second metacommunity array
+should be returned that shows which individuals dies during this timestep.
+Used for calculating mortality and establishement rates. Defaults to 
+\code{FALSE}.}
 }
 \value{
+if \code{return_dead} is \code{FALSE}, then the function returns
 a matrix of lists defining the metacommunity with the same 
-	dimensions as \code{metacomm}.
+	dimensions as \code{metacomm}, otherwise it returns a list containing 
+	two metacommunity arrays- the first is the new metacommunity and the second
+	is an array of logicals indicating whether each microsite was vacated
+	(through death or movement) in this timestep.
 }
 \description{
 Runs the simulation on a metacommunity for one timestep.

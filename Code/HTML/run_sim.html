@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<title>run_sim. CTSim 0.1.3</title>
+<title>run_sim. CTSim 0.1.4</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="">
 
@@ -32,7 +32,7 @@
     <div class="navbar">
   <div class="navbar-inner">
     <div class="container">
-      <a class="brand" href="#">CTSim 0.1.3</a>
+      <a class="brand" href="#">CTSim 0.1.4</a>
       <div class="nav">
         <ul class="nav">
           <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
@@ -52,7 +52,7 @@
 <div class="row">
   <div class="span8">
     <h2>Usage</h2>
-    <pre><div>run_sim(steps, metacomm, land, species, gsad, d_kernel&nbsp;=&nbsp;NULL, v_kernel&nbsp;=&nbsp;NULL, imm_rate&nbsp;=&nbsp;NA, save_steps&nbsp;=&nbsp;NULL, report&nbsp;=&nbsp;0, ID&nbsp;=&nbsp;NA)</div></pre>
+    <pre><div>run_sim(steps, metacomm, land, species, gsad, d_kernel&nbsp;=&nbsp;NULL, v_kernel&nbsp;=&nbsp;NULL, imm_rate&nbsp;=&nbsp;NA, save_steps&nbsp;=&nbsp;NULL, report&nbsp;=&nbsp;0, ID&nbsp;=&nbsp;NA, calc_rates&nbsp;=&nbsp;F)</div></pre>
     
     <h2>Arguments</h2>
     <dl>
@@ -91,14 +91,25 @@ Defaults to all timesteps, including the initial metacommunity.</dd>
 report its progress to <code>stdout</code>. Defaults to 0 for no reporting.</dd>
       <dt>ID</dt>
       <dd>character string identifying this simulation run when reporting progress</dd>
+      <dt>calc_rates</dt>
+      <dd>logical indicating whether the function should calculate
+rates of turnover for each species based on how frequently a species vacates
+or establishes in a microsite. Defaults to <code>FALSE</code>.</dd>
     </dl>
     
     <div class="Value">
       <h2>Value</h2>
 
       <p><dl>
+if <code>calc_rates</code> is<code>FALSE</code> then the function returns 
 a 3-dimensional array of lists defining the metacommunity at each 
-	timepoint in <code>save_steps</code>. Time is in the 3rd dimension.
+	timepoint in <code>save_steps</code> where time is in the 3rd dimension.
+	Otherwise, the function returns a list where the first element (<code>'sim'</code>
+	is the array recording the metacommunity through time and the second
+	element <code>'turnover'</code> is an array counting the number of species losses
+	and gains in each cell across time intervals specified in <code>save_steps</code>.
+	Dimensions of <code>turnover</code> are <code>[time step, row, column, species, 
+	gain/loss rate]</code>.
 </dl></p>
   
     </div>
@@ -121,7 +132,10 @@ see <code><a href='make_landscape.html'>make_landscape</a></code>), species pool
 to progress a metacommunity through a fixed number of timesteps (given by 
 <code>steps</code>). The user may specify which timesteps should be returned using the
 <code>save_steps</code> parameter. Including <code>0</code> in <code>save_steps</code> will  
-save the initial metacommunity.</p>
+save the initial metacommunity. The function can also be told to calculate
+species turnover rates (by specifying <code>calc_rates=TRUE</code>), which will
+calculate the frequency at which each species establishes in or vacates a 
+microsite (through death or movement).</p>
   
     </div>
       </div>

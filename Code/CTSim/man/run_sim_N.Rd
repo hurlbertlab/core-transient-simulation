@@ -57,7 +57,10 @@ If this directory does not exist then it is created. Runs are saved as
 \code{<simID>_run<i>.RData}. This file contains five objects:
 \describe{
 \item{results}{an array of the metacommunity through time returned by 
-	\code{\link{run_sim}}.}
+	\code{\link{run_sim}}. Note that if the parameter \code{calc_rates}
+	is \code{TRUE}, then this will be a list whose first element is 
+	the simulation results and whose second element is an array describing
+	rates of species gains and losses through time for each cell.}
 \item{this_land}{the landscape used for the simulation}
 \item{this_species}{the species pool used in the simulation}
 \item{this_gsad}{the global species abundance distribution used in

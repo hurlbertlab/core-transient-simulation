@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<title>run_sim_N. CTSim 0.1.3</title>
+<title>run_sim_N. CTSim 0.1.4</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="">
 
@@ -32,7 +32,7 @@
     <div class="navbar">
   <div class="navbar-inner">
     <div class="container">
-      <a class="brand" href="#">CTSim 0.1.3</a>
+      <a class="brand" href="#">CTSim 0.1.4</a>
       <div class="nav">
         <ul class="nav">
           <li><a href="index.html"><i class="icon-home icon-white"></i> Index</a></li>
@@ -119,7 +119,10 @@ If this directory does not exist then it is created. Runs are saved as
 <code><simID>_run<i>.RData</code>. This file contains five objects:
 <dl>
 <dt>results</dt><dd>an array of the metacommunity through time returned by 
-	<code><a href='run_sim.html'>run_sim</a></code>.</dd></p>
+	<code><a href='run_sim.html'>run_sim</a></code>. Note that if the parameter <code>calc_rates</code>
+	is <code>TRUE</code>, then this will be a list whose first element is 
+	the simulation results and whose second element is an array describing
+	rates of species gains and losses through time for each cell.</dd></p>
   
       <p><dt>this_land</dt><dd>the landscape used for the simulation</dd></p>
   

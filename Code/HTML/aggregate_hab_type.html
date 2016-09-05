@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<title>get_habitat. CTSim 0.1.4</title>
+<title>aggregate_hab_type. CTSim 0.1.4</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="">
 
@@ -47,24 +47,29 @@
         
       </header>
       
-      <h1>Determine habitat type</h1>
+      <h1>Aggregate habitat types</h1>
 
 <div class="row">
   <div class="span8">
     <h2>Usage</h2>
-    <pre><div>get_habitat(x)</div></pre>
+    <pre><div>aggregate_hab_type(land, locs)</div></pre>
     
     <h2>Arguments</h2>
     <dl>
-      <dt>x</dt>
-      <dd>(required) a number</dd>
+      <dt>land</dt>
+      <dd>(required) a raster landscape (as returned by 
+<code><a href='make_landscape.html'>make_landscape</a></code>.</dd>
+      <dt>locs</dt>
+      <dd>(required) either a two-column matrix of cell locations defining
+a single spatial unit or a list of matrices designating
+multiple spatial units</dd>
     </dl>
     
     <div class="Value">
       <h2>Value</h2>
 
       <p><dl>
-'A' or 'B'
+a vector of habitat types corresponding to the spatial units
 </dl></p>
   
     </div>
@@ -72,21 +77,21 @@
     <div class="Description">
       <h2>Description</h2>
 
-      <p>Determines the habitat type that corresponds to a numeric value
-(as stored in a landscape).</p>
+      <p>Determine the dominant habitat type in a set of spatial units</p>
   
     </div>
 
-    <div class="Note">
-      <h2>Note</h2>
+    <div class="Details">
+      <h2>Details</h2>
 
-      <p>Does not work directly on vectors. Use <code>sapply(x, get_habitat)</code>.</p>
+      <p>The function determined which habitat type is present in the majority of
+cells in each spatial unit specified in the list <code>locs</code>.</p>
   
     </div>
       </div>
   <div class="span4">
     <!-- <ul>
-      <li>get_habitat</li>
+      <li>aggregate_hab_type</li>
     </ul>
     <ul>
       

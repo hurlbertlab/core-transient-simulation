@@ -6,7 +6,7 @@
 \usage{
 run_sim(steps, metacomm, land, species, gsad, d_kernel = NULL,
   v_kernel = NULL, imm_rate = NA, save_steps = NULL, report = 0,
-  ID = NA)
+  ID = NA, calc_rates = F)
 }
 \arguments{
 \item{steps}{(required) number of timesteps to run the simulation}
@@ -43,10 +43,21 @@ Defaults to all timesteps, including the initial metacommunity.}
 report its progress to \code{stdout}. Defaults to 0 for no reporting.}
 
 \item{ID}{character string identifying this simulation run when reporting progress}
+
+\item{calc_rates}{logical indicating whether the function should calculate
+rates of turnover for each species based on how frequently a species vacates
+or establishes in a microsite. Defaults to \code{FALSE}.}
 }
 \value{
+if \code{calc_rates} is\code{FALSE} then the function returns 
 a 3-dimensional array of lists defining the metacommunity at each 
-	timepoint in \code{save_steps}. Time is in the 3rd dimension.
+	timepoint in \code{save_steps} where time is in the 3rd dimension.
+	Otherwise, the function returns a list where the first element (\code{'sim'}
+	is the array recording the metacommunity through time and the second
+	element \code{'turnover'} is an array counting the number of species losses
+	and gains in each cell across time intervals specified in \code{save_steps}.
+	Dimensions of \code{turnover} are \code{[time step, row, column, species, 
+	gain/loss rate]}.
 }
 \description{
 Runs the simulation on a metacommunity for a fixed number of timesteps.
@@ -60,7 +71,10 @@ see \code{\link{make_landscape}}), species pool (\code{species}, see
 to progress a metacommunity through a fixed number of timesteps (given by 
 \code{steps}). The user may specify which timesteps should be returned using the
 \code{save_steps} parameter. Including \code{0} in \code{save_steps} will  
-save the initial metacommunity.
+save the initial metacommunity. The function can also be told to calculate
+species turnover rates (by specifying \code{calc_rates=TRUE}), which will
+calculate the frequency at which each species establishes in or vacates a 
+microsite (through death or movement).
 }
 \seealso{
 \code{\link{run_timestep}} for how the simulation progresses 

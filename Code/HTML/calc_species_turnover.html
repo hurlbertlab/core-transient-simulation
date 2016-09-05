@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-<title>calc_rich. CTSim 0.1.4</title>
+<title>calc_species_turnover. CTSim 0.1.4</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="author" content="">
 
@@ -47,47 +47,44 @@
         
       </header>
       
-      <h1>Richness profiles</h1>
+      <h1>Species turnover</h1>
 
 <div class="row">
   <div class="span8">
     <h2>Usage</h2>
-    <pre><div>calc_rich(locs&nbsp;=&nbsp;NULL, t_window&nbsp;=&nbsp;NULL, sim&nbsp;=&nbsp;NULL, N_S&nbsp;=&nbsp;NULL, abuns&nbsp;=&nbsp;NULL, agg_times&nbsp;=&nbsp;NULL, which_species&nbsp;=&nbsp;NULL)</div></pre>
+    <pre><div>calc_species_turnover(turnover, locs, t_window, agg_times&nbsp;=&nbsp;NULL, which_species&nbsp;=&nbsp;NULL)</div></pre>
     
     <h2>Arguments</h2>
     <dl>
+      <dt>turnover</dt>
+      <dd>(required) an array of species rates of turnover, as
+    returned by <code>run_sim</code> when <code>calc_rates=TRUE</code>. Should have
+dimensions <code>[time, row, column, species, gain/loss rate]</code>.</dd>
       <dt>locs</dt>
       <dd>(required) either a two-column matrix of cell locations where 
-species' abundances should be summed or a list of matrices designating
-multiple spatial units where abundance should be summed (see details)</dd>
+species' rates should be summed or a list of matrices designating
+multiple spatial units where rates should be summed (see details)</dd>
       <dt>t_window</dt>
       <dd>(required) either a list containing <code>start</code>
 and <code>stop</code> specifying that all collected timepoints in that interval
 should be considered or an explicit vector of timepoints</dd>
-      <dt>sim</dt>
-      <dd>(required) array of simulation results from a single 
-simulation run (as returned by <code><a href='run_sim.html'>run_sim</a></code>)</dd>
-      <dt>N_S</dt>
-      <dd>(required) number of species in the simulation</dd>
-      <dt>abuns</dt>
-      <dd>array of abundance profiles (as returned by 
-<code><a href='calc_abun_profile.html'>calc_abun_profile</a></code>)</dd>
       <dt>agg_times</dt>
       <dd>either a single number specifing the number of timepoints 
-that should be aggregated before calculating occupancy or a list of
+that should be aggregated before calculating rates or a list of
 vectors defining exactly which timepoints should be aggregated (see details).
- Defaults to no aggregation.</dd>
+Defaults to no aggregation.</dd>
       <dt>which_species</dt>
       <dd>a vector of integers indicating which species should be
-considered. Defaults to all species.</dd>
+grouped and averaged. Defaults to each species analyzed separately.</dd>
     </dl>
     
     <div class="Value">
       <h2>Value</h2>
 
       <p><dl>
-a matrix of species richness in each location at each timepoint 
-(dimensions <code>[temporal unit, spatial unit]</code>)
+a array of rates of species gains and losses in each location at 
+	each timepoint (dimensions <code>[temporal unit, spatial unit, 
+	gain or loss, species group]</code>).
 </dl></p>
   
     </div>
@@ -95,38 +92,39 @@ a matrix of species richness in each location at each timepoint
     <div class="Description">
       <h2>Description</h2>
 
-      <p>Calculate species richness through time for a simulation</p>
+      <p>Calculate rates of species' gains and losses</p>
   
     </div>
 
     <div class="Details">
       <h2>Details</h2>
 
-      <p>The function calculates species richness for a set of locations
-and timepoints over a given time interval. Users can either supply an 
-array of abundance profiles (as returned by 
-<code><a href='calc_abun_profile.html'>calc_abun_profile</a></code>) or a set of spatial units
-(<code>locs</code>), a time window (<code>t_window</code>), simulation
-results (<code>sim</code>) and the number of species (<code>N_S</code>), 
-from which abundance profiles can be calculated. These parameters
-are explained in more detail in the documentation of 
-<code><a href='calc_abun_profile.html'>calc_abun_profile</a></code>. For each spatial and temporal unit in
-the abundance profiles, the function calculates the number of species
-present. Timepoints may be aggregated prior to this calculation using 
-<code>agg_times</code>. This can be useful for evaluating the effects 
-of sampling at different temporal scales on observed richness.
-This aggregation is relative to the timepoints
-stored in the abundance profiles array and not to the actual 
-timesteps in the simulation. For example, specifying 
-<code>agg_times=10</code> on abundance profiles containing
-every other timestep will aggregate abundances from <code>T=1:20,
-T=21:40,...</code>.</p>
+      <p>DOCUMENTATION NOT DONE
+The function calculates the number of individuals in a group of 
+species that are gained or lost per timestep. The function takes 
+a turnover matrix, returned by <code><a href='run_sim.html'>run_sim</a></code> when
+codecalc_rates=TRUE and then calculates the number of individuals
+of each species that are gained or lost per timestep, summing across
+cells in each spatial unit in <code>locs</code>. A parameter <code>agg_times</code>
+can be used to aggregate timepoints prior to calculating rates. 
+This aggregation is relative to the timepoints stored in the turnover
+array and not to the actual timesteps in the simulation. 
+For example, specifying <code>agg_times=10</code> on a turnover matrix containing
+every other timestep will aggregate individuals from <code>T=1:20,
+T=21:40,...</code> and then divide each by 20 timesteps to calculate the rates.
+Once individual species rates have been calculated, the function sums
+rates across species groups (<code>which_species</code>), given as a vector 
+that can be interpreted as a factor identifying which species 
+belong to which groups. If the user wishes to calculate
+average rates within groups they will need to divide the results by
+the number of species in each group. By default species are not grouped and 
+rates for individual species are returned.</p>
   
     </div>
       </div>
   <div class="span4">
     <!-- <ul>
-      <li>calc_rich</li>
+      <li>calc_species_turnover</li>
     </ul>
     <ul>
       
