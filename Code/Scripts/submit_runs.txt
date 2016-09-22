@@ -89,3 +89,11 @@ do
    bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/d-$d/v-$v/ ./Results/ /nas02/home/j/r/jrcoyle/Rlibs/ 50" run_simulation.R EXP1_d-"$d"_v-"$v".Rout
   done
 done
+
+# 9/15 Summarizing EXP1-turnover
+# Run from EXP1-turnover/
+for f in Results/*
+do
+ RUNID="$(echo $f | cut -f2 -d"/")"
+ bsub -q day R CMD BATCH "--args $f Parms/ Summaries/$RUNID/ /nas02/home/j/r/jrcoyle/Rlibs/" ../summarize_simulation.R "$RUNID"_sum.Rout
+done
