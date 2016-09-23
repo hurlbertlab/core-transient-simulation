@@ -97,3 +97,13 @@ do
  RUNID="$(echo $f | cut -f2 -d"/")"
  bsub -q day R CMD BATCH "--args $f Parms/ Summaries/$RUNID/ /nas02/home/j/r/jrcoyle/Rlibs/" ../summarize_simulation.R "$RUNID"_sum.Rout
 done
+
+
+# 9/23/2016 REDOing 8 runs each of EXP1 that will save data on species turnover (implemented in CTSim v 0.1.4)
+# Orginal run on 9/8 had parameter files that were missing calc_rates=T so rates were not saved.
+
+for d in a0 a0.5 a1 g1 g2 g4 g8 g16 g32 u45 
+do
+ bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 ./Parms/d-$d/ ./Results/ /nas02/home/j/r/jrcoyle/Rlibs/ 50" run_simulation.R EXP1_d-"$d".Rout
+done
+

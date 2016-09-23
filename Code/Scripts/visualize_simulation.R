@@ -130,9 +130,7 @@ for(dcorr in dimnames(abuns)[[2]]){
 }}
 dev.off()
 
-
-
-
+# THIS CODE IS PROB NOT NEEDED#
 dist_gsad=list(type='lognormal',maxN=8,P_maxN=0.001)
 make_sad(40, dist_gsad)
 use_mean = 0
@@ -149,7 +147,7 @@ while (abs(distribution$maxN - this_N) > 0.5) {
                 this_N = qlnorm(1 - distribution$P_maxN, 0, try_sig)
             }
             use_sd = try_sig
-
+###
 
 
 ### Examine run summary files
@@ -439,6 +437,96 @@ for(sp in scales){
 mtext(paste('Dispersal =', k), 3, 1, outer=T)
 }
 dev.off()
+
+
+####################################################
+### EXP1-turnover
+### Limited Experiment 1 that keeps track of colonization rates
+
+
+
+setwd(file.path(sum_dir, 'EXP1-turnover'))
+
+# Get list of runs
+runlist = list.dirs('.', full.names=F)
+runlist = runlist[runlist!='']
+
+## Currently summarized in 1x1 spatial grain only
+
+### Examine run summary files
+# Define objects to hold data
+bio = data.frame() 
+occ = data.frame()
+
+# Define subset of data to focus on
+use_subset = expression((cross_run %in% c('50%','2.5%','97.5%'))&(cross_space %in% c('mean','var')))
+
+
+### WORKING HERE- SUMMARIES DIDN'T SAVE TURNOVER OBJECT
+# Go through parameter sets
+for(d in runlist){
+	parm_vals = get_parms(d)
+	
+		
+	# Adds two data objects to environment: sim_sum and sim_sum_ind
+	# Both are lists and sim_sum summarizes across runs, whereas sim_sum_ind contains data from each of the 100 runs
+	load(file.path(d,'L1_summary.RData'))
+
+	# Extract landscape heterogeneity
+	land_het = sim_sum$land['mean','het']
+
+		# Get stats for biologically-based categories
+		dat_bio = melt(sim_sum$bio)
+		dat_bio = do.call('subset', list(x=dat_bio, subset=use_subset))
+		dat_bio = dcast(dat_bio, cross_space + cross_run + p_obs ~ category + comm_stat)
+		dat_bio$scale = scale	
+		dat_bio$land_het = land_het
+		bio = rbind(bio, cbind(dat_bio, parm_vals))
+		
+		# Get data of occupancy distribution
+		dat_occ = melt(sim_sum$occ)
+		dat_occ = do.call('subset', list(x=dat_occ, subset=use_subset))
+		dat_occ = dcast(dat_occ, cross_space + cross_run + p_obs + comm_stat ~ category)
+		dat_occ$scale = scale
+		dat_occ$land_het = land_het
+		occ = rbind(occ, cbind(dat_occ, parm_vals))
+
+		# For this run it doesn't make sense to look at xclass since it only tallies
+		# the species in the first and last occupancy classes (<0.1 and >0.9) as
+		# transient or core
+	
+	}
+}
+
+
+# Save summary files as csv
+write.csv(bio, 'EXP1_bio.csv', row.names=F)
+write.csv(occ, 'EXP1_occ.csv', row.names=F)
+
+# Load saved files
+bio = read.csv(file.path(sum_dir,'EXP1','EXP1_bio.csv'), check.names=F)
+occ = read.csv(file.path(sum_dir,'EXP1','EXP1_occ.csv'), check.names=F)
+
+# Set working directory to figure directory
+setwd(file.path(fig_dir, 'EXP1'))
+
+
+
+# Define occupancy categories
+xvals = seq(0.05, 1, 0.05)
+
+# Define dispersal kernels
+dkerns = c('a0','a0.5','a1','g1','g2','g4','g8','g16','g32','u45')
+
+# Define landscape auto correlation
+dcorrs = 2^(0:4)
+
+# Define scales
+scales = 2^(0:4)
+
+# Define detection probabilities
+pobs = seq(0.1, 1, .1)
+
 
 
 

@@ -18,6 +18,7 @@ write_parms = function(parm_list, f){
 		if(length(value)==1){
 			if(is.numeric(value)) new_line = paste(varname, value, sep='=')
 			if(is.character(value)) new_line = paste0(varname, "='", value, "'")
+			if(is.logical(value)) new_line = paste(varname, value, sep='=')
 		} else {
 			if(is.numeric(value)) new_line = paste0(varname, '=c(', paste(value, collapse=','), ')')
 			if(is.character(value)) new_line = paste0(varname, '=c(', paste0("'", value, "'", collapse=','), ')')
