@@ -114,3 +114,6 @@ do
  bsub -q week R CMD BATCH "--args $f Parms/ Summaries/$RUNID/ /nas02/home/j/r/jrcoyle/Rlibs/" ../summarize_simulation.R "$RUNID"_sum.Rout
 done
 
+# EXP 2, Submitted 9/30/2016 ~16:00, Evaluating variation in habA_prop; running from CTSim folder (implemented in CTSim v 0.1.5)
+
+bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 Parms/EXP2 Results/EXP2 /nas02/home/h/u/hurlbert/R-libs/ 50" run_simulation.R EXP2.Rout
