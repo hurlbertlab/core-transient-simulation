@@ -39,7 +39,7 @@ build('CTSim')
 
 
 # Check install
-install.packages('CTSim_0.1.4.zip', repos=NULL)
+install.packages('CTSim_0.1.5.zip', repos=NULL)
 library(CTSim)
 
 # Make static html documentation

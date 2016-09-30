@@ -1,0 +1,29 @@
+# This parameter file summarizes each cell of a 32x32 grid.
+
+# ID used for saving this summary
+sumID = 'L1'
+
+# Locations to be aggregated and evaluated
+locs = aggregate_cells(X=c(32,32), dX=1, dY=1, form='partition')
+
+# Time window used to evaluate temporal occupancy
+t_window=list(start=161, stop=200)
+
+# Detectability
+P_obs = list(.1,.2,.3,.4,.5,.6,.7,.8,.9,1)
+
+# Breakpoints for temporal occupancy-based core-transient designations
+breaks=c(0.33, 0.66)
+
+# Parameters defining how to summarize spatial and temporal units within the same run
+sum_parms=list(
+	
+	# Uses the 'last' timepoint or the 'mean' of all time windows
+	time_sum='last',
+
+	# Summary quantiles across spatial units 
+	quants=c(0.025, 0.25, .5, 0.75, .975)
+)
+
+# Function used to summarize across runs
+sum_func = default_sum_func

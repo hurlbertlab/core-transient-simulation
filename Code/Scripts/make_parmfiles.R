@@ -21,6 +21,8 @@ source('baseline_parameter_file.txt')
 expID = 'EXP1'
 expID = 'EXP1-turn' # Used for set of runs that records species turnover 9/5/2016
 
+# For EXP1-turn, save colonization rates
+calc_rates=T
 
 # Make directory
 dir.create(file.path(parm_dir, expID))

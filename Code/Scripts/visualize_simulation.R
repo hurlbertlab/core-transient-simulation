@@ -457,12 +457,12 @@ runlist = runlist[runlist!='']
 # Define objects to hold data
 bio = data.frame() 
 occ = data.frame()
+xclass = data.frame()
+turn = data.frame()
 
 # Define subset of data to focus on
 use_subset = expression((cross_run %in% c('50%','2.5%','97.5%'))&(cross_space %in% c('mean','var')))
 
-
-### WORKING HERE- SUMMARIES DIDN'T SAVE TURNOVER OBJECT
 # Go through parameter sets
 for(d in runlist){
 	parm_vals = get_parms(d)
@@ -475,27 +475,33 @@ for(d in runlist){
 	# Extract landscape heterogeneity
 	land_het = sim_sum$land['mean','het']
 
-		# Get stats for biologically-based categories
-		dat_bio = melt(sim_sum$bio)
-		dat_bio = do.call('subset', list(x=dat_bio, subset=use_subset))
-		dat_bio = dcast(dat_bio, cross_space + cross_run + p_obs ~ category + comm_stat)
-		dat_bio$scale = scale	
-		dat_bio$land_het = land_het
-		bio = rbind(bio, cbind(dat_bio, parm_vals))
+	# Get stats for biologically-based categories
+	dat_bio = melt(sim_sum$bio)
+	dat_bio = do.call('subset', list(x=dat_bio, subset=use_subset))
+	dat_bio = dcast(dat_bio, cross_space + cross_run + p_obs ~ category + comm_stat)
+	dat_bio$land_het = land_het
+	bio = rbind(bio, cbind(dat_bio, parm_vals))
 		
-		# Get data of occupancy distribution
-		dat_occ = melt(sim_sum$occ)
-		dat_occ = do.call('subset', list(x=dat_occ, subset=use_subset))
-		dat_occ = dcast(dat_occ, cross_space + cross_run + p_obs + comm_stat ~ category)
-		dat_occ$scale = scale
-		dat_occ$land_het = land_het
-		occ = rbind(occ, cbind(dat_occ, parm_vals))
+	# Get data of occupancy distribution
+	dat_occ = melt(sim_sum$occ)
+	dat_occ = do.call('subset', list(x=dat_occ, subset=use_subset))
+	dat_occ = dcast(dat_occ, cross_space + cross_run + p_obs + comm_stat ~ category)
+	dat_occ$land_het = land_het
+	occ = rbind(occ, cbind(dat_occ, parm_vals))
 
-		# For this run it doesn't make sense to look at xclass since it only tallies
-		# the species in the first and last occupancy classes (<0.1 and >0.9) as
-		# transient or core
-	
-	}
+	# Get data of occupancy distribution
+	dat_xclass = melt(sim_sum$xclass)
+	dat_xclass = do.call('subset', list(x=dat_xclass, subset=use_subset))
+	dat_xclass = dcast(dat_xclass, cross_space + cross_run + p_obs ~ ab_ct)
+	dat_xclass$land_het = land_het
+	xclass = rbind(xclass, cbind(dat_xclass, parm_vals))
+
+	# Get data of occupancy distribution
+	dat_turn = melt(sim_sum$turn)
+	dat_turn = do.call('subset', list(x=dat_turn, subset=use_subset))
+	dat_turn = dcast(dat_turn, cross_space + cross_run + rate ~ category)
+	dat_turn$land_het = land_het
+	turn = rbind(turn, cbind(dat_turn, parm_vals))
 }
 
 
