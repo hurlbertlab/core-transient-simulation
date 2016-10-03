@@ -37,22 +37,25 @@ Files for installing the package are available in the [Code](/Code/) directory. 
 1. Create a set of simulation parameters and save in a directory (e.g. 'Parms'). See [example_parameter_file.txt](/Code/Parameters/example_parameter_file.txt) for an example file and  [make_parmfiles.R](/Code/Scripts/make_parmfiles.R) for an example of generating multiple parameter files. All parameter file names must begin with 'p_'.
 2. Decide on a directory where simulation results should be saved (e.g. 'Results').
 3. Move the run_simulation.R script from the 'exec/' directory of the CTSim package to your working directory.
-4. Run R in batch mode on N cores with the run_simulation.R script: 
+4. Make sure the CTSim package is installed. If conducting sims on the High Performance Cluster (e.g. Killdevil), then copy the tarball "CTSim_0.1.5.tar.gz" to a directory there, load `R` and type `install.packages('CTSim_0.1.5.tar.gz', lib = 'path_to_package', repo = NULL`, where 'path_to_package' is the directory the tarball is saved in. When loading the library, you will similarly need to specify that directory again in `library('CTSim', lib.loc = 'path_to_package')`.
+5. Run R in batch mode on N cores with the run_simulation.R script: 
 
   `R CMD BATCH "--args N Parms/ Results/" run_simulation.R myrun.Rout`
 
-5. If the simulation stops before all runs are complete, restart the simulation without writing over already finished results using the 'restart_simulation.R' script (also found in the 'exec/' directory):
+  NOTE: Simulation progress can be checked by examining the status of the output files ending in '.Rout' using `more`.
+
+6. If the simulation stops before all runs are complete, restart the simulation without writing over already finished results using the 'restart_simulation.R' script (also found in the 'exec/' directory):
 
   `R CMD BATCH "--args N Parms/ Results/" restart_simulation.R myrun_restart.Rout`
 
-6. Create a summary parameter file (or multiple files) and save in a directory (e.g. 'Parms'). See [example_summary_parameter_file.txt](/Code/Parameters/example_summary_parameter_file.txt) for an example file. All summary parameter file names must begin with 's_'.
-7. Decide on a directory where simulation result summarise should be saved (e.g. 'Summaries').
-8. Move the summarize_simulation.R script from the 'exec/' directory of the CTSim package to your working directory.
-9. Run R in batch mode with the summarize_simulation.R script:
+7. Create a summary parameter file (or multiple files) and save in a directory (e.g. 'Parms'). See [example_summary_parameter_file.txt](/Code/Parameters/example_summary_parameter_file.txt) for an example file. All summary parameter file names must begin with 's_'.
+8. Decide on a directory where simulation result summarise should be saved (e.g. 'Summaries').
+9. Move the summarize_simulation.R script from the 'exec/' directory of the CTSim package to your working directory.
+10. Run R in batch mode with the summarize_simulation.R script:
 
   `R CMD BATCH "--args Results/ Parms/ Summaries/" summarize_simulation.R myrun_summary.Rout`
 
-10. Examine simulation summaries using your own code, or see [visualize_simulation.R](/Code/Scripts/visualize_simulation.R) for examples of how to load and examine summaries from simulations on different sets of parameters.
+11. Examine simulation summaries using your own code, or see [visualize_simulation.R](/Code/Scripts/visualize_simulation.R) for examples of how to load and examine summaries from simulations on different sets of parameters.
 
 ### Simulation Intialization
 A simulation requires three objects: a landscape, a species pool, and a global species abundance distribution (hereafter, gsad). The functions used to initialize these objects are described below.
