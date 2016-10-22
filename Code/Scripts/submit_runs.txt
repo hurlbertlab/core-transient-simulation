@@ -118,9 +118,9 @@ done
 
 bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 Parms/EXP2 Results/EXP2 /nas02/home/h/u/hurlbert/R-libs/ 50" run_simulation.R EXP2.Rout
 
-# EXP 2 summarizing sims, run from CTSim folder on Killdevil, Submitted 10/20/2016, 3:00 pm
+# EXP 2 summarizing sims, run from CTSim folder on Killdevil, Submitted 10/22/2016, 8:33 am
 for f in Results/EXP2/*
 do
  RUNID="$(echo $f | cut -f3 -d"/")"
- bsub -q day R CMD BATCH "--args $f Parms/EXP2/summary Summaries/EXP2/$RUNID /nas02/home/h/u/hurlbert/R-libs" summarize_simulation.R "$RUNID"_sum.Rout
+ bsub -q week R CMD BATCH "--args $f Parms/EXP2/summary Summaries/EXP2/$RUNID /nas02/home/h/u/hurlbert/R-libs" summarize_simulation.R "$RUNID"_sum.Rout
 done
