@@ -31,3 +31,6 @@ sum_parms=list(
 
 # Function used to summarize across runs
 sum_func = default_sum_func
+
+# Turn off the summary of turnover (colonization and extinctions) info which is very time intensive
+sum_turn = FALSE
