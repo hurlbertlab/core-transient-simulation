@@ -6,7 +6,7 @@
 \title{Summarize multiple simulations}
 \usage{
 summarize_sim_N(sim, breaks, locs, t_window, agg_times = NULL,
-  P_obs = list(1), sum_parms = NULL, sum_func = NULL)
+  P_obs = list(1), sum_parms = NULL, sum_func = NULL, sum_turn = TRUE)
 
 default_sum_func(x)
 }
@@ -50,6 +50,9 @@ and \code{\link{summarize_sim}}). Defaults to 1.}
 \item{sum_func}{function used to summarize quantities across simulation
 runs. Consider using \code{default_sum_func}. Default is no summary with 
 quantities returned for each run individually.}
+
+\item{sum_turn}{logical indicating whether turnover rates should be
+summarized. Defaults to \code{TRUE}.}
 
 \item{x}{vector of numbers to summarize
 quantities across simulation runs}

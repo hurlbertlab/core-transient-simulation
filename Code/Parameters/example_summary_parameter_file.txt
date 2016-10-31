@@ -31,3 +31,6 @@ sum_parms=list(
 
 # Function used to summarize across runs
 sum_func = default_sum_func
+
+# Indicate whether turnover rates should be summarized (if present)
+sum_turn = TRUE

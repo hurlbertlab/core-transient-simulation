@@ -467,7 +467,6 @@ use_subset = expression((cross_run %in% c('50%','2.5%','97.5%'))&(cross_space %i
 for(d in runlist){
 	parm_vals = get_parms(d)
 	
-		
 	# Adds two data objects to environment: sim_sum and sim_sum_ind
 	# Both are lists and sim_sum summarizes across runs, whereas sim_sum_ind contains data from each of the 100 runs
 	load(file.path(d,'L1_summary.RData'))
@@ -506,20 +505,19 @@ for(d in runlist){
 
 
 # Save summary files as csv
-write.csv(bio, 'EXP1_bio.csv', row.names=F)
-write.csv(occ, 'EXP1_occ.csv', row.names=F)
+write.csv(bio, 'EXP1-turn_bio.csv', row.names=F)
+write.csv(occ, 'EXP1-turn_occ.csv', row.names=F)
+write.csv(xclass, 'EXP1-turn_xclass.csv', row.names=F)
+write.csv(turn, 'EXP1-turn_turn.csv', row.names=F)
 
 # Load saved files
-bio = read.csv(file.path(sum_dir,'EXP1','EXP1_bio.csv'), check.names=F)
-occ = read.csv(file.path(sum_dir,'EXP1','EXP1_occ.csv'), check.names=F)
+bio = read.csv(file.path(sum_dir,'EXP1-turnover','EXP1-turn_bio.csv'), check.names=F)
+occ = read.csv(file.path(sum_dir,'EXP1-turnover','EXP1-turn_occ.csv'), check.names=F)
+xclass = read.csv(file.path(sum_dir,'EXP1-turnover','EXP1-turn_xclass.csv'), check.names=F)
+turn = read.csv(file.path(sum_dir,'EXP1-turnover','EXP1-turn_turn.csv'), check.names=F)
 
 # Set working directory to figure directory
-setwd(file.path(fig_dir, 'EXP1'))
-
-
-
-# Define occupancy categories
-xvals = seq(0.05, 1, 0.05)
+setwd(file.path(fig_dir, 'EXP1-turnover'))
 
 # Define dispersal kernels
 dkerns = c('a0','a0.5','a1','g1','g2','g4','g8','g16','g32','u45')
@@ -527,13 +525,59 @@ dkerns = c('a0','a0.5','a1','g1','g2','g4','g8','g16','g32','u45')
 # Define landscape auto correlation
 dcorrs = 2^(0:4)
 
-# Define scales
-scales = 2^(0:4)
-
 # Define detection probabilities
 pobs = seq(0.1, 1, .1)
 
+# Subset to mean across spatial units
+dat = subset(turn, cross_space=='mean')
 
+jit = c(-.1, .1); names(jit) = c('gain','loss')
+use_col = 1:2; names(use_col) = c('gain','loss')
+
+# Make plot
+pdf('EXP1-turn_mean_turnover_rates.pdf', height=5, width=5)
+par(lend=1)
+par(mar=c(3,4,4,1))
+
+# Make legend
+plot.new()
+legend('center', c('Core species gains','Core species loss','Transient species gains','Transient species loss'),
+	col=use_col, pch=rep(c(1, 0), each=2), bty='n'
+)
+
+# Loop through dispersal kernels
+for(kd in dkerns){
+for(kv in dkerns){
+
+	this_dat = subset(dat, d==kd & v==kv)
+	if(nrow(this_dat)>0){
+
+		# Core species rates
+		make_plot(c(0,max(dcorrs)), c(0, max(this_dat[,c('core','trans')])), ylab='Num. Individuals / Time step')
+	
+		# Add 0 line
+		abline(h=0, col='grey70')
+
+		low95 = subset(this_dat, cross_run=='2.5%')
+		up95 = subset(this_dat, cross_run=='97.5%')
+		med = subset(this_dat, cross_run=='50%')
+		segments(low95$dcorr+jit[low95$rate], low95$core, up95$dcorr+jit[up95$rate], up95$core, col=use_col[low95$rate])
+		points(med$dcorr+jit[med$rate], med$core, pch=1, col=use_col[med$rate])
+	
+		# Transient species rates
+		segments(low95$dcorr+jit[low95$rate], low95$trans, up95$dcorr+jit[up95$rate], up95$trans, col=use_col[low95$rate])
+		points(med$dcorr+jit[med$rate], med$trans, pch=0, col=use_col[med$rate])
+
+		# Add x label
+		mtext('Range', 1, 1.5, cex=0.8)
+
+		# Add parameters
+		mtext(paste('Dispersal =', kd, ', Movement =', kv), 3, 1)
+
+	}
+}}
+
+dev.off()
 
 
 

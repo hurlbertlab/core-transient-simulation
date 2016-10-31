@@ -4,7 +4,7 @@
 # Load packages needed to build CTSim
 library(devtools)
 library(roxygen2)
-library(staticdocs)
+#library(pkgdown)
 
 setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/')
 
@@ -39,11 +39,11 @@ build('CTSim')
 
 
 # Check install
-install.packages('CTSim_0.1.5.zip', repos=NULL)
+install.packages('CTSim_0.1.6.zip', repos=NULL)
 library(CTSim)
 
 # Make static html documentation
-build_site('CTSim', 'HTML')
+#build_site('CTSim')
 
 ###################################################
 ### Misc code for testing functions
@@ -102,7 +102,7 @@ data.frame(hab, trates[1,,,1], trates[1,,,2])
 myobs = sapply(c(.5, .8), function(p) sample_sim(myabuns, p), simplify='array')
 
 mysumA= summarize_sim(mymeta_t20, .5, mylocs, list(start=10, stop=20), mysp, myland, mygsad, 
-	P_obs=1, sum_parms=list(time_sum='none', hab='A'))
+	P_obs=1, sum_parms=list(time_sum='none', hab='A'),sum_turn=T)
 
 mysumA= summarize_sim(mymeta_t20, .5, mylocs, list(start=10, stop=20), mysp, myland, mygsad, 
 	P_obs=1, sum_parms=list(time_sum='none', hab='A'))

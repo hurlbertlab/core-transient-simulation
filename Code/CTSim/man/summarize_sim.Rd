@@ -5,7 +5,8 @@
 \title{Summarize a simulation}
 \usage{
 summarize_sim(sim, breaks, locs, t_window, species = NULL, land = NULL,
-  gsad = NULL, agg_times = NULL, P_obs = list(1), sum_parms = NULL)
+  gsad = NULL, agg_times = NULL, P_obs = list(1), sum_parms = NULL,
+  sum_turn = TRUE)
 }
 \arguments{
 \item{sim}{(required) either a filename for a simulation run (as saved by
@@ -56,6 +57,9 @@ vectors defining exactly which timepoints should be aggregated (see details).
         across all habitat types (default) or for just one (indicated by 
         \code{'A'} or \code{'B'}.}
 }}
+
+\item{sum_turn}{logical indicating whether turnover rates should be
+summarized. Defaults to \code{TRUE}.}
 }
 \value{
 a list of arrays defined as follows:

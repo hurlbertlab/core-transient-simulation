@@ -52,6 +52,8 @@
 #' @param sum_func function used to summarize quantities across simulation
 #' 	runs. Consider using \code{default_sum_func}. Default is no summary with 
 #' 	quantities returned for each run individually.
+#' @param sum_turn logical indicating whether turnover rates should be
+#'  summarized. Defaults to \code{TRUE}.
 #' @return a list of arrays defined in as follows
 #' 	\describe{
 #' 		\item{bio}{richness and abundance of biologically defined species,
@@ -79,7 +81,7 @@
 
 #' @describeIn summarize_sim_N Summarize multiple simulation runs 
 #' @export
-summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=list(1), sum_parms=NULL, sum_func=NULL){
+summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=list(1), sum_parms=NULL, sum_func=NULL, sum_turn=TRUE){
 
 	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
 	if(is.character(sim)){
@@ -89,7 +91,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		
 		# Read in first file
 		this_run = file.path(sim, runfiles[1])
-		this_sum = summarize_sim(this_run, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+		this_sum = summarize_sim(this_run, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_turn=sum_turn)
 
 		# Create arrays to hold summaries
 		bio_arr = this_sum$bio
@@ -103,7 +105,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 			for(i in 2:length(runfiles)){
 				f = runfiles[i]
 				this_run = file.path(sim, f)
-				this_sum = summarize_sim(this_run, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+				this_sum = summarize_sim(this_run, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_turn=sum_turn)
 				bio_arr = abind::abind(bio_arr, this_sum$bio, along=ifelse(i==2, 0, 1))	
 				occ_arr = abind::abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
 				xclass_arr = abind::abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))
@@ -120,7 +122,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		
 		# Extract first run
 		this_sum = summarize_sim(sim$results[[1]], species=sim$species[[1]], land=sim$lands[[1]], gsad=sim$gsads[[1]],
-			breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+			breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_turn=sum_turn)
 		
 		# Create arrays to hold summaries
 		bio_arr = this_sum$bio
@@ -133,7 +135,7 @@ summarize_sim_N = function(sim, breaks, locs, t_window, agg_times=NULL, P_obs=li
 		if(length(sim$results)>1){
 			for(i in 2:length(sim$results)){
 				this_sum = summarize_sim(sim$results[[i]], species=sim$species[[i]], land=sim$lands[[i]], gsad=sim$gsads[[i]],
-					breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+					breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_turn=sum_turn)
 				bio_arr = abind::abind(bio_arr, this_sum$bio, along=ifelse(i==2, 0, 1))	
 				occ_arr = abind::abind(occ_arr, this_sum$occ, along=ifelse(i==2, 0, 1))	
 				xclass_arr = abind::abind(xclass_arr, this_sum$xclass, along=ifelse(i==2, 0, 1))

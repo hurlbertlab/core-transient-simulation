@@ -103,6 +103,8 @@
 #'			across all habitat types (default) or for just one (indicated by 
 #'			\code{'A'} or \code{'B'}.}
 #'	}
+#' @param sum_turn logical indicating whether turnover rates should be
+#'  summarized. Defaults to \code{TRUE}.
 #' @return a list of arrays defined as follows:
 #' 	\describe{
 #' 		\item{bio}{richness and abundance of biologically defined species,
@@ -124,7 +126,7 @@
 #' @import abind
 #' @export
 
-summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, gsad=NULL, agg_times=NULL, P_obs=list(1), sum_parms=NULL){
+summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, gsad=NULL, agg_times=NULL, P_obs=list(1), sum_parms=NULL, sum_turn=TRUE){
 	
 	# If sim is a file, then read in simulation run. Should have objects: results, this_land, this_species, this_gsad
 	if(is.character(sim)){
@@ -235,7 +237,7 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 	# dims are now [species rank, timepoint, P]
 	
 	# Calculate species turnover rates, if present
-	if(exists('turnover')){
+	if(exists('turnover')&sum_turn){
 		# Calculate for biologically core/transient
 		# Currently does not aggregate time periods
 		turn_ab = sapply(1:length(locs), function(i){
@@ -270,7 +272,7 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 			calc_species_turnover(turnover, locs[i], t_window, agg_times, cats[i,])
 		}, simplify='array')
 		
-		## ACTUALLY DECIDED NOT TO INCLUDE THIS B/C INFO NOT NEEDED.
+		## ACTUALLY DECIDED NOT TO OUTPUT THIS B/C INFO NOT NEEDED.
 		## ALSO, TURN_CT IS USUALLY A LIST BECAUSE SOME OCCUPANCY CLASSES ARE USUALLY MISSING FROM MOST LOCATIONS
 		## WOULD NEED TO CONVERT BACK FROM LIST TO USE BY FILLING IN MISSING ARRAY DIMENSIONS
 	}

@@ -58,11 +58,12 @@ summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries
 			warning(paste(f,'may not contain sumID, t_window, breaks, or locs. Summary NOT run.'))
 		} else {
 		
-			# Assign missing parameters to NULL
+			# Assign missing parameters to NULL or default values
 			if(!exists('P_obs')) P_obs=NULL
 			if(!exists('sum_parms')) sum_parms=NULL
 			if(!exists('sum_func')) sum_func=NULL
 			if(!exists('agg_times')) agg_times=NULL
+			if(!exists('sum_turn')) sum_turn=TRUE
 
 			if(cross_time){
 				# Define time windows
@@ -74,7 +75,7 @@ summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries
 					use_twindow = list(start=endT-dT+1, stop=endT)
 
 					# Summaries for each individual run
-					sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=use_twindow, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+					sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=use_twindow, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_turn=sum_turn)
 
 					# Save
 					save(sim_sum_ind, file=file.path(results_dir, paste0(sumID,'-T', endT, '_summary.RData')))
@@ -83,10 +84,10 @@ summarize_sim_P = function(run_dir='./', parm_dir='./', results_dir='./Summaries
 				}
 			} else {
 				# Summaries for each individual run
-				sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms)
+				sim_sum_ind = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_turn=sum_turn)
 				
 				# Summaries across runs
-				sim_sum = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_func=sum_func)
+				sim_sum = summarize_sim_N(run_dir, breaks=breaks, locs=locs, t_window=t_window, agg_times=agg_times, P_obs=P_obs, sum_parms=sum_parms, sum_func=sum_func, sum_turn=sum_turn)
 
 				# Save
 				save(sim_sum_ind, sim_sum, file=file.path(results_dir, paste0(sumID,'_summary.RData')))
