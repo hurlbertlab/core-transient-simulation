@@ -8,13 +8,18 @@ library(CTSim)
 library(pracma) #erf, erfinv
 
 # Set directories
-parm_dir = 'C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/Parameters/'
+parm_dir = 'z:/git/core-transient-simulation/Code/Parameters/'
 setwd(parm_dir)
 
 # Read in baseline parameter file
 source('baseline_parameter_file.txt')
 
 
+# Run code for desired Experiment below (not all)
+
+
+
+#-------------------------------------------------------------------------------------------
 ### Experiment 1 ###
 
 # ID for this set of parameters
@@ -110,16 +115,45 @@ for(v_id in adj$id){
 }}
 
 
+#-------------------------------------------------------------------------------
 
+# Experiment 2: varying % of the landscape that is habitat A
 
+# ID for this set of parameters
+expID = 'EXP2'
 
+# save colonization rates
+calc_rates = TRUE
 
+# Define number of runs, for EXP1-turn
+nruns=100
 
+hp_parms = seq(0.5, 1, by = 0.1)
 
+# Need to create simID for every parameter combination and then 
+# make_parmlist() and write_parms()
 
+# Will need nested loops as multiple variables are explored simultaneously
+# Multiple folders needed if you wanted to submit multiple runs on cluster
+# (see EXP 1 example)
 
-
+# Make parameter files
+for(id in hp_parms){
+  # Set proportion of landscape as habitat A
+  habA_prop = id
+  
+  # Set simID
+  simID = paste0('hp-', id)
+  
+  # Write parameter file
+  parmlist = make_parmlist()
+  CTSim:::write_parms(parmlist, file.path(expID, paste0('p_', simID, '.txt')))
 
 }
+
+
+
+
+
 
 
