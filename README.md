@@ -16,7 +16,7 @@ The simulation occurs on a regular grid of cells (termed the 'landscape') and ea
    + [make_parmfiles.R](/Code/Scripts/make_parmfiles.R): code for generating parameter files used in experiments
    + [submit_runs.txt](/Code/Scripts/submit_runs.txt): shell code for submitting multiple jobs to cluster
    + [visualize_simulation.R](Code/Scripts/visualize_simulation.R): code for analyzing  CTSim runs and experiments
-  + Current package version for [Windows](/Code/CTSim_0.1.3.tar.gz) and [Unix](/Code/CTSim_0.1.3.zip)
+  + Current package version for [Windows](/Code/CTSim_0.1.6.tar.gz) and [Unix](/Code/CTSim_0.1.6.zip)
 
 **/Results**
  + **./Plots**: visualizations of simulation results, organized by experiment/run
@@ -37,7 +37,7 @@ Files for installing the package are available in the [Code](/Code/) directory. 
 1. Create a set of simulation parameters and save in a directory (e.g. 'Parms'). See [example_parameter_file.txt](/Code/Parameters/example_parameter_file.txt) for an example file and  [make_parmfiles.R](/Code/Scripts/make_parmfiles.R) for an example of generating multiple parameter files. All parameter file names must begin with 'p_'.
 2. Decide on a directory where simulation results should be saved (e.g. 'Results').
 3. Move the run_simulation.R script from the 'exec/' directory of the CTSim package to your working directory.
-4. Make sure the CTSim package is installed. If conducting sims on the High Performance Cluster (e.g. Killdevil), then copy the tarball "CTSim_0.1.5.tar.gz" to a directory there, load `R` and type `install.packages('CTSim_0.1.5.tar.gz', lib = 'path_to_package', repo = NULL`, where 'path_to_package' is the directory the tarball is saved in. When loading the library, you will similarly need to specify that directory again in `library('CTSim', lib.loc = 'path_to_package')`.
+4. Make sure the CTSim package is installed. If conducting sims on the High Performance Cluster (e.g. Killdevil), then copy the tarball "CTSim_0.1.6.tar.gz" to a directory there, load `R` and type `install.packages('CTSim_0.1.6.tar.gz', lib = 'path_to_package', repo = NULL`, where 'path_to_package' is the directory the tarball is saved in. When loading the library, you will similarly need to specify that directory again in `library('CTSim', lib.loc = 'path_to_package')`.
 5. Run R in batch mode on N cores with the run_simulation.R script: 
 
   `R CMD BATCH "--args N Parms/ Results/" run_simulation.R myrun.Rout`
