@@ -27,6 +27,9 @@ sim_dir = ifelse(is.na(args[4]), './', args[4])
 # Load package
 tryCatch(library(CTSim), error=function(e) library(CTSim, lib.loc=sim_dir))
 
+# Print versions of packages being used
+sessionInfo()
+
 # Run summary function
 summarize_sim_P(run_dir, parm_dir, results_dir, cross_time=F)
 

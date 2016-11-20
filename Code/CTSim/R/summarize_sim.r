@@ -302,7 +302,9 @@ summarize_sim = function(sim, breaks, locs, t_window, species=NULL, land=NULL, g
 		abun_ab = abun_ab[N_t,,,,drop=F]; abun_ab = abind::adrop(abun_ab, 1)
 		abun_ct = abun_ct[N_t,,,,drop=F]; abun_ct = abind::adrop(abun_ct, 1)
 		abuns_global = abuns_global[,N_t,,drop=F]; abuns_global = abind::adrop(abuns_global, 2)
-		if(exists('turn_ab')) turn_ab = turn_ab[N_t,,,,drop=F]; turn_ab = abind::adrop(turn_ab, 1)
+		if(exists('turn_ab')){
+			turn_ab = turn_ab[N_t,,,,drop=F]; turn_ab = abind::adrop(turn_ab, 1)
+		}
 	
 		# Define dimension that stores spatial units
 		sp_dim = 2

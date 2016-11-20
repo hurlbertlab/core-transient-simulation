@@ -42,6 +42,9 @@ report = as.numeric(ifelse(is.na(args[5]), 0, args[5]))
 # Load CTSim package
 tryCatch(library(CTSim), error=function(e) library(CTSim, lib.loc=sim_dir))
 
+# Print versions of packages being used
+sessionInfo()
+
 # Run function
 run_sim_P(ncores, parm_dir, results_dir, sim_dir, report, restart=T)
 
