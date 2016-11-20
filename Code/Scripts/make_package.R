@@ -39,7 +39,7 @@ build('CTSim')
 
 
 # Check install
-install.packages('CTSim_0.1.6.zip', repos=NULL)
+install.packages('CTSim_0.1.7.zip', repos=NULL)
 library(CTSim)
 
 # Make static html documentation
@@ -70,11 +70,13 @@ mymeta_t8 = run_sim(8, mymeta, myland, mysp, mygsad, d_kernel=list(type='gaussia
 	report=2, ID='testrun'
 )
 
+# Testing summary functions
 setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/Sandbox')
 run_sim_P(2, report=2)
-load('Summaries/test_summary.RData')
 
 run_sum = summarize_sim_P('Results/d-a0_v-a0_dcorr-1')
+load('Summaries/test_summary.RData')
+
 
 mylocs = aggregate_cells(X=c(5,5), dX=c(2,2), form='partition')
 mylocs = aggregate_cells(X=c(5,5), dX=c(1,1), form='partition')

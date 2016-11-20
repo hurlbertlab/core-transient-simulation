@@ -118,7 +118,7 @@ done
 
 bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 Parms/EXP2 Results/EXP2 /nas02/home/h/u/hurlbert/R-libs/ 50" run_simulation.R EXP2.Rout
 
-# EXP 2 summarizing sims, run from CTSim folder on Killdevil, Submitted 10/31/2016, 1:40 pm
+# EXP 2 summarizing sims, run from CTSim folder on Killdevil, Submitted 11/14/2016, 4:40 pm
 for f in Results/EXP2/*
 do
  RUNID="$(echo $f | cut -f3 -d"/")"
