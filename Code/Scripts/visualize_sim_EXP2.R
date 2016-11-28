@@ -12,7 +12,7 @@ library(reshape2)
 sum_dir = 'Results/Summary/EXP2'
 fig_dir = 'Results/Plots/EXP2'
 sim_dir = 'Code'
-data_dir = 'Z:/CTSim/Data'
+data_dir = 'Z:/Lab/CTSim/Data'
 
 # Load simulation functions
 #source(file.path(sim_dir, 'simulation_functions.R'))
@@ -49,6 +49,50 @@ make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL, cex=1){
   
 }
 
+
+# Function to plot core/transient dynamics for a pixel
+pixdyn = function(row, col, lab = NULL, timewindow = NULL, scale = 3) {
+  
+  if(this_land[row, col] == 1) { hab = 'A' } else { hab = 'B' }
+  
+  if(!is.null(lab)) { lab = paste(lab, "; ", sep = '') }
+  
+  # Fraction of identical landscape over (2*scale+1)x(2*scale+1) region
+  het = sum(this_land[max(row-scale, 1):min(row+scale, 32), max(col-scale, 0):min(col+scale, 32)] == this_land[row, col])/
+    length(this_land[max(row-scale, 1):min(row+scale, 32), max(col-scale, 0):min(col+scale, 32)])
+  
+  # Species #1-20 are by definition core in Habitat B; species 21-40 in Habitat A
+  if (hab == 'B') {
+    core = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) <= 20)))
+    tran = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) > 20)))
+  } else {
+    core = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) > 20)))
+    tran = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) <= 20)))
+  }
+  plot(core, type = 'l', xlab = 'Time', ylab = 'Number of species', col = 'skyblue',
+       main = paste(lab, "Landscape similarity ", round(het,2), ";\ncore (blue), transient (red)", sep = ''), 
+       lwd = 2, ylim = c(0, max(c(core, tran))))
+  points(tran, type = 'l', col = 'red', lwd = 2)
+  
+  # Optionally plot % transient species aggregated over timewindow
+  if(!is.null(timewindow)) {
+    pct.trans = c()
+    times = timewindow*1:floor(200/timewindow) - timewindow/2
+    for (t in 1:floor(200/timewindow)) {
+      uniqsp = unique(unlist(results$sim[row, col, ((t-1)*timewindow + 2):(t*timewindow+1)]))
+      if (hab == 'A') {
+        pct.trans = c(pct.trans, sum(uniqsp <= 20)/length(uniqsp))
+      } else {
+        pct.trans = c(pct.trans, sum(uniqsp > 20)/length(uniqsp))
+      }
+    }
+    par(new=T)
+    plot(times, pct.trans, xlim = c(0,200), ylim = c(0,1), xlab = '', ylab = '', yaxt = 'n',
+         xaxt = 'n', type = 'l')
+    axis(4, at = seq(0,1, by = 0.25), tcl = .3, labels = F)
+    mtext(c(1.0, 0.5, 0), 4, at = c(1, .5, 0), cex = .75)
+  }
+}
 ##########################
 
 ##### EXPERIMENT 2 #####
@@ -171,43 +215,21 @@ dev.off()
 #--------------------------------------------------------------------------------
 # Visualize pixel level dynamics
 
-# Function to plot core/transient dynamics for a pixel
-pixdyn = function(row, col, lab = NULL) {
-  if(this_land[row, col] == 1) hab = 'A'
-  else hab = 'B'
-  
-  if(!is.null(lab)) { lab = paste(lab, "; ", sep = '') }
-  
-  # Fraction of identical landscape over 5x5 region
-  het = sum(this_land[max(row-2, 1):min(row+2, 32), max(col-2, 0):min(col+2, 32)] == this_land[row, col])/
-    length(this_land[max(row-2, 1):min(row+2, 32), max(col-2, 0):min(col+2, 32)])
-  
-  # Species #1-20 are core in Habitat B; species 21-40 in Habitat A
-  if (hab == 'B') {
-    core = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) <= 20)))
-    tran = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) > 20)))
-  } else {
-    core = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) > 20)))
-    tran = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) <= 20)))
-  }
-  plot(core, type = 'l', xlab = 'Time', ylab = 'Number of species', col = 'skyblue',
-       main = paste(lab, "Landscape similarity ", het, ";\ncore (blue), transient (red)", sep = ''), 
-       lwd = 2, ylim = c(0, max(c(core, tran))))
-  points(tran, type = 'l', col = 'red', lwd = 2)
-}
+
+load(paste(data_dir, '/EXP2/hp-0.9/hp-0.9_run1.Rdata', sep = ''))
 
 pdf('Results/Plots/EXP2/hp-0.9_run1_dynamics.pdf', height = 8, width = 8)
 par(mfrow = c(3,3))
 image(this_land, main = 'hp-0.9_run1')
 
-# Points for investigation
+# Pixels for investigation
 sites = data.frame(id = c('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'), 
                    row = c(5, 1, 5, 6, 17, 19, 19, 31), 
                    col = c(25, 9, 9, 12, 7, 8, 9, 26))
 
-text(sites$col, 33-sites$row, sites$id, cex = .75)
+text(sites$col, 33-sites$row, sites$id, cex = .5)
 
-sapply(1:nrow(sites), function(x) pixdyn(sites$row[x], sites$col[x], sites$id[x]))
+sapply(1:nrow(sites), function(x) pixdyn(sites$row[x], sites$col[x], sites$id[x], timewindow = 40))
 
 dev.off()
 
