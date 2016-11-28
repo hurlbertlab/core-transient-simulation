@@ -168,4 +168,46 @@ for(p in pobs){
 mtext('Temporal Occupancy', 1, 1, outer=T)
 dev.off()
 
+#--------------------------------------------------------------------------------
+# Visualize pixel level dynamics
+
+# Function to plot core/transient dynamics for a pixel
+pixdyn = function(row, col, lab = NULL) {
+  if(this_land[row, col] == 1) hab = 'A'
+  else hab = 'B'
+  
+  if(!is.null(lab)) { lab = paste(lab, "; ", sep = '') }
+  
+  # Fraction of identical landscape over 5x5 region
+  het = sum(this_land[max(row-2, 1):min(row+2, 32), max(col-2, 0):min(col+2, 32)] == this_land[row, col])/
+    length(this_land[max(row-2, 1):min(row+2, 32), max(col-2, 0):min(col+2, 32)])
+  
+  # Species #1-20 are core in Habitat B; species 21-40 in Habitat A
+  if (hab == 'B') {
+    core = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) <= 20)))
+    tran = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) > 20)))
+  } else {
+    core = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) > 20)))
+    tran = unlist(lapply(results$sim[row, col, ], function(x) sum(unique(x) <= 20)))
+  }
+  plot(core, type = 'l', xlab = 'Time', ylab = 'Number of species', col = 'skyblue',
+       main = paste(lab, "Landscape similarity ", het, ";\ncore (blue), transient (red)", sep = ''), 
+       lwd = 2, ylim = c(0, max(c(core, tran))))
+  points(tran, type = 'l', col = 'red', lwd = 2)
+}
+
+pdf('Results/Plots/EXP2/hp-0.9_run1_dynamics.pdf', height = 8, width = 8)
+par(mfrow = c(3,3))
+image(this_land, main = 'hp-0.9_run1')
+
+# Points for investigation
+sites = data.frame(id = c('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'), 
+                   row = c(5, 1, 5, 6, 17, 19, 19, 31), 
+                   col = c(25, 9, 9, 12, 7, 8, 9, 26))
+
+text(sites$col, 33-sites$row, sites$id, cex = .75)
+
+sapply(1:nrow(sites), function(x) pixdyn(sites$row[x], sites$col[x], sites$id[x]))
+
+dev.off()
 
