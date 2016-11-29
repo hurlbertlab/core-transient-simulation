@@ -93,6 +93,17 @@ pixdyn = function(row, col, lab = NULL, timewindow = NULL, scale = 3) {
     mtext(c(1.0, 0.5, 0), 4, at = c(1, .5, 0), cex = .75)
   }
 }
+
+# Plot occupancy histogram for the final time window 162:201 (time 161:200)
+pixocchist = function(row, col, lab) {
+  tmp = results$sim[row, col, 162:201]
+  unq = lapply(tmp, function(x) unique(x))
+  occs = table(unlist(unq))
+  hist(occs, main = paste("Pixel", lab))
+}
+
+
+
 ##########################
 
 ##### EXPERIMENT 2 #####
@@ -231,5 +242,10 @@ text(sites$col, 33-sites$row, sites$id, cex = .5)
 
 sapply(1:nrow(sites), function(x) pixdyn(sites$row[x], sites$col[x], sites$id[x], timewindow = 40))
 
+image(this_land, main = 'hp-0.9_run1')
+text(sites$col, 33-sites$row, sites$id, cex = .5)
+sapply(1:nrow(sites), function(x) pixocchist(sites$row[x], sites$col[x], sites$id[x]))
+
 dev.off()
+
 
