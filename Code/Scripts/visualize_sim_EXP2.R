@@ -51,7 +51,7 @@ make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL, cex=1){
 
 
 # Function to plot core/transient dynamics for a pixel
-pixdyn = function(row, col, lab = NULL, timewindow = NULL, scale = 3) {
+pixDyn = function(row, col, lab = NULL, timewindow = NULL, scale = 3) {
   
   if(this_land[row, col] == 1) { hab = 'A' } else { hab = 'B' }
   
@@ -95,12 +95,63 @@ pixdyn = function(row, col, lab = NULL, timewindow = NULL, scale = 3) {
 }
 
 # Plot occupancy histogram for the final time window 162:201 (time 161:200)
-pixocchist = function(row, col, lab) {
-  tmp = results$sim[row, col, 162:201]
+pixOccHist = function(row, col, lab, timewindow = 40, binwidth = 4) {
+  tmp = results$sim[row, col, (202 - timewindow):201]
   unq = lapply(tmp, function(x) unique(x))
   occs = table(unlist(unq))
-  hist(occs, main = paste("Pixel", lab))
+  
+  # Define histogram breaks
+  xrange = seq(0, timewindow, binwidth)
+  
+  # Split into two groups (species ID <= or > 20)
+  ocore = occs[as.numeric(names(occs)) <= 20]
+  otran = occs[as.numeric(names(occs)) > 20]
+  
+  # compute the counts per interval
+  hv1 = hist(ocore,breaks=xrange,plot=F)$counts
+  hv2 = hist(otran,breaks=xrange,plot=F)$counts
+  
+  # Generate a a stacked histogram
+  barplot(rbind(hv1,hv2), col=c("#FF0000FF", "#FFFFBFFF"), names.arg = xrange[-1]/timewindow,
+          space = 0, las = 1, ylab = "Number of species", xlab = "Occupancy",
+          main = paste("Pixel", lab))
 }
+
+
+# Generic (fixed pixel location) dynamics for any simulation run
+# data_dir : directory where raw simulation results are stored
+# sim      : sim name specifying parameter combinations, e.g. hp-0.9
+# run      : simulation run #
+# plot_dir : directory for saving output plot
+pixelSummary = function(data_dir, sim, run=1, plot_dir, plot.pdf = TRUE) {
+  load(paste(data_dir, '/', sim, '_run', run, '.Rdata', sep = ''))
+  
+  if (plot.pdf) {
+    pdf(paste(plot_dir, '/', sim, '_run', run, '_dynamics.pdf', sep = ''), 
+        height = 10, width = 8)
+  }
+  par(mfrow = c(4,3))
+  image(this_land, main = paste(sim, '_run', run, sep = ''))
+  
+  # Gridded pixels for investigation
+  sites = data.frame(id = c('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'), 
+                     row = c(5, 5, 5, 16, 16, 16, 16, 28, 28, 28, 28), 
+                     col = c(5, 16, 27, 4, 12, 20, 28, 4, 12, 20, 28))
+  
+  text(sites$col, 33-sites$row, sites$id, cex = .5)
+  
+  sapply(1:nrow(sites), function(x) pixDyn(sites$row[x], sites$col[x], sites$id[x], timewindow = 40))
+  
+  image(this_land, main = paste(sim, '_run', run, sep = ''))
+  text(sites$col, 33-sites$row, sites$id, cex = .5)
+  sapply(1:nrow(sites), function(x) 
+    pixOccHist(sites$row[x], sites$col[x], sites$id[x], timewindow = 40, binwidth = 4))
+  
+  if (plot.pdf) {
+    dev.off()
+  }
+}
+
 
 
 
@@ -240,12 +291,13 @@ sites = data.frame(id = c('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'),
 
 text(sites$col, 33-sites$row, sites$id, cex = .5)
 
-sapply(1:nrow(sites), function(x) pixdyn(sites$row[x], sites$col[x], sites$id[x], timewindow = 40))
+sapply(1:nrow(sites), function(x) pixDyn(sites$row[x], sites$col[x], sites$id[x], timewindow = 40))
 
 image(this_land, main = 'hp-0.9_run1')
 text(sites$col, 33-sites$row, sites$id, cex = .5)
-sapply(1:nrow(sites), function(x) pixocchist(sites$row[x], sites$col[x], sites$id[x]))
+sapply(1:nrow(sites), function(x) 
+  pixOccHist(sites$row[x], sites$col[x], sites$id[x], timewindow = 40, binwidth = 4))
 
 dev.off()
 
-
+# pixelSummary(data_dir = 'Z:/Lab/CTSim/Data/EXP2/hp-0.5', sim = 'hp-0.5', plot_dir = 'Results/Plots/EXP2')
