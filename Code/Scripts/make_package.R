@@ -47,7 +47,7 @@ library(CTSim)
 
 ###################################################
 ### Misc code for testing functions
-
+library(raster)
 
 # Testing Functions
 myland = make_landscape(c(5,5), prop=.5)
@@ -76,6 +76,11 @@ run_sim_P(2, report=2)
 
 run_sum = summarize_sim_P('Results/d-a0_v-a0_dcorr-1')
 load('Summaries/test_summary.RData')
+
+
+# Check summary manually
+load('Results/d-a0_v-a0_dcorr-1/d-a0_v-a0_dcorr-1_run1.RData')
+
 
 
 mylocs = aggregate_cells(X=c(5,5), dX=c(2,2), form='partition')

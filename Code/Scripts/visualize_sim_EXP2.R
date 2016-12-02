@@ -13,6 +13,7 @@ sum_dir = 'Results/Summary/EXP2'
 fig_dir = 'Results/Plots/EXP2'
 sim_dir = 'Code'
 data_dir = 'Z:/Lab/CTSim/Data'
+data_dir = 'Z:/CTSim/Data'
 
 # Load simulation functions
 #source(file.path(sim_dir, 'simulation_functions.R'))
@@ -315,3 +316,53 @@ sapply(1:nrow(sites), function(x)
 dev.off()
 
 # pixelSummary(data_dir = 'Z:/Lab/CTSim/Data/EXP2/hp-0.5', sim = 'hp-0.5', plot_dir = 'Results/Plots/EXP2')
+
+
+## Checking summary functions manually
+
+# Define locations as single cells given above
+pix_locs = aggregate_cells(32, 32, 1, 1, form='partition')
+site_locs = sapply(1:nrow(sites), function(i) list(sites[i, c('row','col')]))
+
+# Calculate abundance profiles
+site_abun_profs = calc_abun_profile(site_locs, 161:200, results$sim, 40) 
+apply(site_abun_profs, c(2,3), sum)
+
+# Calculate species temporal occupancy
+site_occs = calc_occupancy(abuns=site_abun_profs)
+site_richCT = calc_rich_CT(site_abun_profs, site_occs, c(1/3, 2/3))
+
+# Calculate classification of species based on birth rates
+habitats = sapply(site_locs, function(x) average_habitat(x, this_land))
+b_rates = this_species[,,'b']
+cores = t(sapply(habitats, function(h) b_rates[,h]>0))
+classification = apply(cores, 1:2, function(x) ifelse(x, 'core', 'trans'))	
+occ_ab = apply(classification, 1:2, function(x) ifelse(x=='core', 1, .1))
+site_richAB = calc_rich_CT(site_abun_profs, occ_ab, 0.5)
+
+# Examine a given site:
+use_site=1 # C
+site_abun_profs[,,use_site] # abundance profiles of each species over last 40 timesteps
+site_occs[use_site,] # temporal occupancy of each species over last 40 timesteps
+sum(site_occs[use_site,]<1/3); sum(site_occs[use_site,]>2/3) # number of species classified as trans / core
+site_richCT[,,use_site] # at each timestep, number of core/trans species
+site_richAB[,,use_site]
+
+# Do summary using summarize function, averaging across all pixels
+site_sum = summarize_sim(sim=results$sim, breaks = c(1/3,2/3), locs=pix_locs, 
+	t_window=list(start=161, stop=200), species=this_species, land=this_land, gsad=this_gsad, 
+	sum_parms=list(time_sum='last'), sum_turn=F)
+
+
+# Summarizing when species richness is accumulated across a wider time window 
+site_sum_10 = summarize_sim(sim=results$sim, breaks = c(1/3,2/3), locs=pix_locs, 
+	t_window=list(start=161, stop=200), species=this_species, land=this_land, gsad=this_gsad, 
+	sum_parms=list(time_sum='last', agg_times=10), sum_turn=F)
+
+# Compare
+site_sum$occ['rich','mean',,]
+site_sum_10$occ['rich','mean',,]
+
+
+
+
