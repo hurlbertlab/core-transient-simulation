@@ -14,7 +14,7 @@
 #' 	Defaults to Exponential model with partial sill = 1.
 #' @param d range of the variogram model. Defines the distance at which cells
 #' 	are correlated. Defaults to 1/3 of the smallest dimension. 
-#' @param prop proportion of cells assigned to have value = 1.
+#' @param prop proportion of cells assigned to have value = -1 (type 'A').
 #' @param draw_plot logical indicating whether function should plot the
 #' 	landscape
 #' @return a raster object
@@ -47,7 +47,7 @@ make_landscape = function(x=NULL, y=NA, mod=NULL, d=NA, prop=NA, draw_plot=F){
 	}
 	spatial_model = gstat::gstat(formula=z~1, locations=~x+y, dummy=T, beta=0, model=mod)
 
-	# Define proportion habitat A if unspecified
+	# Define proportion habitat B if unspecified
 	if(is.na(prop)) prop = 0.5
 
 	# Simulate values at locations

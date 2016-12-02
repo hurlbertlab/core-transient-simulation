@@ -115,7 +115,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 						y = dimY
 						if(!exists('vgm_mod')) vgm_mod = NULL
 						d = ifelse(exists('vgm_dcorr'), vgm_dcorr, NA)
-						prop = ifelse(exists('habA_prop'), 1-habA_prop, 0.5)
+						prop = ifelse(exists('habA_prop'), habA_prop, 0.5)
 						make_landscape(x, y, vgm_mod, d, prop, draw_plot=F)
 					})
 				})
@@ -168,7 +168,7 @@ run_sim_N = function(nruns, parms, nparallel=1, simID='test', save_sim=NULL, rep
 
 							} else {
 
-								# Make global abundaces equal to species birth rates	
+								# Make global abundances equal to species birth rates	
 								if(dist_gsad=='b_rates'){
 				
 									A_rates = species_N[[j]][1:S_A,'A','b']
