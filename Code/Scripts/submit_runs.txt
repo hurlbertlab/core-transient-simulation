@@ -124,3 +124,8 @@ do
  RUNID="$(echo $f | cut -f3 -d"/")"
  bsub -q week R CMD BATCH "--args $f Parms/EXP2/summary Summaries/EXP2/$RUNID /nas02/home/h/u/hurlbert/R-libs" summarize_simulation.R "$RUNID"_sum.Rout
 done
+
+
+# EXP 3, Submitted 12/5/2016 ~11:30, Evaluating reduced immigration rates; running from CTSim folder (implemented in CTSim v 0.1.7)
+
+bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 Parms/EXP3 Results/EXP3 /nas02/home/h/u/hurlbert/R-libs/ 50" run_simulation.R EXP3.Rout
