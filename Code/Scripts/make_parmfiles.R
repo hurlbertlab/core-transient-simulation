@@ -153,7 +153,61 @@ for(id in hp_parms){
 
 
 
+#---------------------------------------------------------------------------------
 
+# ID for this set of parameters
+expID = 'EXP3'
+
+# save colonization rates
+calc_rates = TRUE
+
+# Define number of runs, for EXP1-turn
+nruns=100
+
+# Make directory
+dir.create(file.path(parm_dir, expID))
+
+## Define dispersal parameters
+
+# Find mean of halfnormal distribution that corresponds to P(x <= D) = 0.99 for D in {1,2,4,8,16}
+find_d = function(x, p) x/(sqrt(pi)*erfinv(p)) # function that calculates mean of halfnormal under given quantile
+D = find_d(2^(0:4), 0.99)
+
+# Set of dispersal parameters
+gaus = data.frame(kern='gaussian', d=D, id=paste0('g',2^(0:4)))
+d_parms = gaus
+rownames(d_parms) = d_parms$id
+
+# Set spatial correlation structure parameter
+vgm_dcorr = 8
+
+# Two immigration rate scenarios (both less than 0.01 of EXP 1 and 2)
+imm_rates = c(0, 0.001)
+
+# Make parameter files
+for(id in d_parms$id){
+
+  for (imm in imm_rates) {
+    # Set dispersal parameters
+    d = d_parms[id, 'd']
+    dist_d = list(mu=d, var=0)
+    d_kernel = list(type=d_parms[id, 'kern'])
+    
+    dist_v = list(mu=c(0, d_parms[id,'d']), var=c(0,0))
+    v_kernel = list(type=d_parms[id, 'kern'])
+    
+    # Set immigration
+    imm_rate = imm
+    
+    # Set simID
+    simID = paste0('d-', id, '_imm-', imm)
+
+    # Write parameter file
+    parmlist = make_parmlist()
+    CTSim:::write_parms(parmlist, file.path(expID, paste0('p_', simID, '.txt')))
+
+  }  
+}
 
 
 
