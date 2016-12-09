@@ -114,6 +114,8 @@ do
  bsub -q week R CMD BATCH "--args $f Parms/ Summaries/$RUNID/ /nas02/home/j/r/jrcoyle/Rlibs/" ../summarize_simulation.R "$RUNID"_sum.Rout
 done
 
+#--------------------------------------------------------------------------------------------------------------------------------
+
 # EXP 2, Submitted 9/30/2016 ~16:00, Evaluating variation in habA_prop; running from CTSim folder (implemented in CTSim v 0.1.5)
 
 bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 Parms/EXP2 Results/EXP2 /nas02/home/h/u/hurlbert/R-libs/ 50" run_simulation.R EXP2.Rout
@@ -126,6 +128,27 @@ do
 done
 
 
+#----------------------------------------------------------------------------------------------------------------------------------
+
 # EXP 3, Submitted 12/5/2016 ~11:30, Evaluating reduced immigration rates; running from CTSim folder (implemented in CTSim v 0.1.7)
 
 bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 6 Parms/EXP3 Results/EXP3 /nas02/home/h/u/hurlbert/R-libs/ 50" run_simulation.R EXP3.Rout
+
+# Aborted above to run in parallel with different folder structure below. (Just 50 runs per sim)
+# SUBMITTED 12/6, 16:15, finished 12/9, 01:00
+
+for d in g1 g2 g4 g8 
+do
+ bsub -q week -M 10 -n 6 -R "span[hosts=1]" R CMD BATCH "--args 4 ./Parms/EXP3/d-$d/ ./Results/EXP3/ /nas02/home/h/u/hurlbert/R-libs/ 50" run_simulation.R EXP3_d-"$d".Rout
+done
+
+
+# Summarize EXP 3 sims from CTSim directory on Killdevil, submitted 12/9/2016, ~14:50
+for f in Results/EXP3/*
+do
+ RUNID="$(echo $f | cut -f3 -d"/")"
+ bsub -q week R CMD BATCH "--args $f Parms/EXP3/summary Summaries/EXP3/$RUNID /nas02/home/h/u/hurlbert/R-libs" summarize_simulation.R "$RUNID"_sum.Rout
+done
+
+
+#bsub -q week R CMD BATCH "--args Results/EXP3/d-g2_imm-0 Parms/EXP3/summary Summaries/EXP3/d-g2_imm-0 /nas02/home/h/u/hurlbert/R-libs" summarize_simulation.R d-g2_imm-0_sum.Rout

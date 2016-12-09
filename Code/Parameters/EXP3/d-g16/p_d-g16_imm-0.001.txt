@@ -6,7 +6,7 @@ m_rates=c(0.5,0.5)
 r_rates=c(1,1)
 K=100
 nsteps=200
-nruns=100
+nruns=50
 vgm_dcorr=8
 habA_prop=0.5
 dist_b=list(type='same',p1=2)

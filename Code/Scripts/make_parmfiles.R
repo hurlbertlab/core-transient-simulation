@@ -162,7 +162,7 @@ expID = 'EXP3'
 calc_rates = TRUE
 
 # Define number of runs, for EXP1-turn
-nruns=100
+nruns=50
 
 # Make directory
 dir.create(file.path(parm_dir, expID))
@@ -187,6 +187,10 @@ imm_rates = c(0, 0.001)
 # Make parameter files
 for(id in d_parms$id){
 
+  # Make new parameter directory for each set of dispersal parameters
+  this_dir = paste('d',id, sep='-')
+  dir.create(file.path(expID,this_dir))
+  
   for (imm in imm_rates) {
     # Set dispersal parameters
     d = d_parms[id, 'd']
@@ -204,7 +208,7 @@ for(id in d_parms$id){
 
     # Write parameter file
     parmlist = make_parmlist()
-    CTSim:::write_parms(parmlist, file.path(expID, paste0('p_', simID, '.txt')))
+    CTSim:::write_parms(parmlist, file.path(expID, this_dir, paste0('p_', simID, '.txt')))
 
   }  
 }
