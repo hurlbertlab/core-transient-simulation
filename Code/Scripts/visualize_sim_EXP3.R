@@ -1,0 +1,450 @@
+## This script is used to visualize simulation summaries from EXP 3
+#   (specifically where dispersal is set as a Gaussian (99% within 2 pixels),
+#   and immigration to any pixel from the metacommunity is 0.001.)
+
+# Set options and load libraries
+options(stringsAsFactors=F)
+library(CTSim)
+library(abind)
+library(reshape2)
+
+# Define working directory
+sum_dir = 'Results/Summary/EXP3'
+fig_dir = 'Results/Plots/EXP3'
+sim_dir = 'Code'
+datadir = 'z:/lab/CTSim/Data/Exp3/d-g2_imm-0.001'
+
+# Load simulation functions
+#source(file.path(sim_dir, 'simulation_functions.R'))
+
+
+##########################
+## Functions
+
+
+# A function that extracts parameter values from a runID
+#	runID = a string in the filename that gives the parameters
+#	assoc_str = character pairing a parameter name with its value
+#	sep_str = character separating different parameter-value pairs
+get_parms = function(runID, assoc_str='-', sep_str='_'){
+  parm_pairs = sapply(strsplit(runID, sep_str), function(x) strsplit(x, assoc_str))
+  
+  vals = sapply(parm_pairs, function(x) x[2])
+  vals = as.data.frame(t(vals))
+  names(vals) = sapply(parm_pairs, function(x) x[1])
+  
+  vals
+}
+
+
+make_plot = function(xlim, ylim, xlab=NULL, ylab=NULL, cex=1){	
+  plot.new()
+  plot.window(xlim=xlim, ylim=ylim)
+  axis(1)
+  abline(h=par('usr')[3], lwd=3)
+  axis(2, las=1)
+  abline(v=par('usr')[1], lwd=3)
+  if(!is.null(xlab)) mtext(xlab, 1, 2.5, cex=cex)
+  if(!is.null(ylab)) mtext(ylab, 2, 3, cex=cex)
+  
+}
+
+
+# Function to plot core/transient dynamics for a pixel
+pixDyn = function(results, this_land, row, col, lab = NULL, timewindow = NULL, scale = 3) {
+  
+  if(this_land[row, col] == 1) { hab = 'A' } else { hab = 'B' }
+  
+  if(!is.null(lab)) { lab = paste(lab, "; ", sep = '') }
+  
+  # Fraction of identical landscape over (2*scale+1)x(2*scale+1) region
+  het = sum(this_land[max(row-scale, 1):min(row+scale, 32), max(col-scale, 1):min(col+scale, 32)] == this_land[row, col])/
+    length(this_land[max(row-scale, 1):min(row+scale, 32), max(col-scale, 1):min(col+scale, 32)])
+  
+  # Species #1-20 are by definition core in Habitat B; species 21-40 in Habitat A
+  if (hab == 'B') {
+    core = unlist(lapply(results[row, col, ], function(x) sum(unique(x) <= 20)))
+    tran = unlist(lapply(results[row, col, ], function(x) sum(unique(x) > 20)))
+  } else {
+    core = unlist(lapply(results[row, col, ], function(x) sum(unique(x) > 20)))
+    tran = unlist(lapply(results[row, col, ], function(x) sum(unique(x) <= 20)))
+  }
+  plot(core, type = 'l', xlab = 'Time', ylab = 'Number of species', col = 'skyblue',
+       main = paste(lab, "Landscape similarity ", round(het,2), ";\ncore (blue), transient (red)", sep = ''), 
+       lwd = 2, ylim = c(0, max(c(core, tran))))
+  points(tran, type = 'l', col = 'red', lwd = 2)
+  
+  # Optionally plot % transient species aggregated over timewindow
+  if(!is.null(timewindow)) {
+    pct.trans = c()
+    times = timewindow*1:floor(200/timewindow) - timewindow/2
+    for (t in 1:floor(200/timewindow)) {
+      uniqsp = unique(unlist(results[row, col, ((t-1)*timewindow + 2):(t*timewindow+1)]))
+      if (hab == 'A') {
+        pct.trans = c(pct.trans, sum(uniqsp <= 20)/length(uniqsp))
+      } else {
+        pct.trans = c(pct.trans, sum(uniqsp > 20)/length(uniqsp))
+      }
+    }
+    par(new=T)
+    plot(times, pct.trans, xlim = c(0,200), ylim = c(0,1), xlab = '', ylab = '', yaxt = 'n',
+         xaxt = 'n', type = 'l')
+    axis(4, at = seq(0,1, by = 0.25), tcl = .3, labels = F)
+    mtext(c(1.0, 0.5, 0), 4, at = c(1, .5, 0), cex = .75)
+  }
+}
+
+# Plot occupancy histogram for the final time window 162:201 (time 161:200)
+pixOccHist = function(results, row, col, lab, timewindow = 40, binwidth = 4) {
+  
+  tmp = results[row, col, (202 - timewindow):201]
+  unq = lapply(tmp, function(x) unique(x))
+  occs = table(unlist(unq))
+  
+  # Define histogram breaks
+  xrange = seq(0, timewindow, binwidth)
+  
+  # Split into two groups (species ID <= or > 20)
+  ocore = occs[as.numeric(names(occs)) <= 20]
+  otran = occs[as.numeric(names(occs)) > 20]
+  
+  # compute the counts per interval
+  hv1 = hist(ocore,breaks=xrange,plot=F)$counts
+  hv2 = hist(otran,breaks=xrange,plot=F)$counts
+  
+  # Generate a a stacked histogram
+  barplot(rbind(hv1,hv2), col=c("#FF0000FF", "#FFFFBFFF"), names.arg = xrange[-1]/timewindow,
+          space = 0, las = 1, ylab = "Number of species", xlab = "Occupancy",
+          main = paste("Pixel", lab))
+}
+
+
+# Generic (fixed pixel location) dynamics for any simulation run
+# data_dir : directory where raw simulation results are stored
+# sim      : sim name specifying parameter combinations, e.g. hp-0.9
+# run      : simulation run #
+# plot_dir : directory for saving output plot
+pixelSummary = function(data_dir, sim, run=1:20, plot_dir, plot.pdf = TRUE) {
+  
+  if (plot.pdf) {
+    pdf(paste(plot_dir, '/', sim, '_run', run[1],'-',run[length(run)], '_dynamics.pdf', sep = ''), 
+        height = 10, width = 8)
+  }
+  par(mfrow = c(4,3))
+  
+  for (r in run) {
+    suppressWarnings(rm(list = c('results', 'res', 'this_land', 'this_metacomm', 'this_species')))
+    load(paste(data_dir, '/', sim, '_run', r, '.Rdata', sep = ''))
+    
+    # Results from early sims (pre-turnover) are in slightly different structure
+    if (class(results) == 'array') {
+      res = results
+    } else {
+      res = results$sim
+    }
+    
+    image(this_land, main = paste(sim, '_run', r, sep = ''))
+    
+    # Gridded pixels for investigation
+    sites = data.frame(id = c('A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K'), 
+                       row = c(5, 5, 5, 16, 16, 16, 16, 28, 28, 28, 28), 
+                       col = c(5, 16, 27, 4, 12, 20, 28, 4, 12, 20, 28))
+    
+    text(sites$col, 33-sites$row, sites$id, cex = .5)
+    
+    sapply(1:nrow(sites), function(x) pixDyn(res, this_land, sites$row[x], sites$col[x], sites$id[x], timewindow = 40))
+    
+    image(this_land, main = paste(sim, '_run', r, sep = ''))
+    text(sites$col, 33-sites$row, sites$id, cex = .5)
+    sapply(1:nrow(sites), function(x) 
+      pixOccHist(res, sites$row[x], sites$col[x], sites$id[x], timewindow = 40, binwidth = 4))
+    
+  }
+  
+  if (plot.pdf) {
+    dev.off()
+  }
+}
+
+# Calculate similarity of landscape to focal pixel
+# (Fraction of identical landscape over (2*scale+1)x(2*scale+1) region)
+
+#   loc.xy is a matrix of x and y coordinates on the landscape grid
+#   land is the landscape grid raster
+#   scale is the (square) radius over which similarity is calculated
+land_similarity = function(loc.xy, land, scale) {
+  het = apply(loc.xy, 1, function(i) {
+    sum(land[max(i[1]-scale, 1):min(i[1]+scale, 32), max(i[2]-scale, 1):min(i[2]+scale, 32)] == land[i[1], i[2]])/
+      length(land[max(i[1]-scale, 1):min(i[1]+scale, 32), max(i[2]-scale, 1):min(i[2]+scale, 32)])
+  })
+  return(het)
+}
+
+
+# Generic pixel cross-classification analysis for all (non-edge) pixels 
+# data_dir : directory where raw simulation results are stored
+# sim      : sim name specifying parameter combinations, e.g. hp-0.9
+# run      : simulation run #
+# scale    : radius in pixels over which landscape heterogeneity is calculated
+pixelXclass = function(data_dir, sim, run=1, scale = 3, t_window = 186:200, 
+                       ct_threshold = 1/3, return = 'percent') {
+  
+  timewindow = length(t_window)
+  
+  suppressWarnings(rm(list = c('results', 'res', 'this_land', 'this_metacomm', 'this_species')))
+  load(paste(data_dir, '/', sim, '_run', run, '.Rdata', sep = ''))
+  
+  # Results from early sims (pre-turnover) are in slightly different structure
+  if (class(results) == 'array') {
+    res = results
+  } else {
+    res = results$sim
+  }
+  
+  # Check that required objects exist
+  if(!exists('this_species')|!exists('this_land')|!exists('this_gsad')){
+    stop(paste(sim, 'may not contain this_species, this_land, or this_gsad. Summary NOT run.'))		
+  } else {
+    # Assign objects
+    species = this_species
+    land = this_land
+    gsad = this_gsad
+  }
+  
+  # Number of species
+  N_S = dim(species)[1]
+  
+  # Define different scales of spatial aggregation (in a partition of the grid)
+  # Must supply grid dimensions
+  scale_locs = sapply(2^c(0:4), function(fact) aggregate_cells(X=c(32,32), dX=fact, dY=fact, form='partition'))
+  
+  # Locations to be aggregated and evaluated
+  locs = scale_locs[[1]]
+  
+  # Calculate species abundance profiles at the spatial and temporal resolution given by locs and t_window
+  abuns_act = calc_abun_profile(locs, t_window, res, N_S)
+  
+  # Range of detection probabilities to examine
+  P_obs = seq(0.1, 1, by = .1)
+  
+  # Apply observation bias
+  abuns_obs = sapply(P_obs, function(p){
+    sample_sim(abuns_act, probs = p, return='abundance')
+  }, simplify='array')
+  dimnames(abuns_obs)[[2]] = 1:N_S # Name columns with species names
+  # dims are now [timepoint, species, spatial unit, P]
+  
+  # Calculate species occupancy
+  occ = sapply(1:length(P_obs), function(i){
+    use_abun = abuns_obs[,,,i, drop=FALSE]
+    use_abun = abind::adrop(use_abun, 4) 
+    calc_occupancy(abuns=use_abun, agg_times=NULL, do_freq=F)
+  }, simplify='array')
+  # dims are now: [spatial unit, species, P]
+  
+  breaks = seq(ct_threshold, 0.9999, by = ct_threshold)
+  
+  # Get species birth rates
+  b_rates = species[,,'b']
+  
+  # Get habitat types for spatial units
+  habitats = sapply(locs, function(x) average_habitat(x, land))
+  
+  # Calculate classification of species based on birth rates
+  cores = t(sapply(habitats, function(h) b_rates[,h]>0))
+  classification = apply(cores, 1:2, function(x) ifelse(x, 'core', 'trans'))	
+  
+  # Calculate proportion mis-classified
+  xclass = sapply(1:length(P_obs), function(i){
+    use_occ = occ[,,i, drop=FALSE]
+    use_occ = abind::adrop(use_occ, 3)
+    tabs = cross_classify(use_occ, breaks, classification=classification, do_each=T, return='counts')
+    reshape2::acast(reshape2::melt(tabs, varnames=c('bio','occ','sp_unit')), sp_unit ~ bio+occ)
+  }, simplify='array')
+  # dims are now [spatial unit, category, P]
+  
+  xclass.pct = array(dim = dim(xclass))
+  for (d in 1:dim(xclass)[1]) {
+    co = xclass[d,1:2,] #biologically core spp classified as either core or transient
+    tr = xclass[d,3:4,] #biologically transient spp classified as either core or transient
+    corepct = sapply(1:ncol(co), function(i) {
+      if (colSums(co)[i] == 0) { 
+        c(NA, NA) 
+      } else { 
+        co[,i]/matrix(colSums(co)[i], nrow=1)
+      }
+    })
+    
+    tranpct = sapply(1:ncol(tr), function(i) {
+      if (colSums(tr)[i] == 0) { 
+        c(NA, NA) 
+      } else { 
+        tr[,i]/matrix(colSums(tr)[i], nrow=1)
+      }
+    })
+    
+    xclass.pct[d,,] = rbind(corepct, tranpct)
+  }
+  
+  loc.xy = matrix(unlist(locs), ncol = 2, byrow = TRUE)
+  
+  landsim = land_similarity(loc.xy, land, scale)
+  
+  landscapeS = data.frame(x = loc.xy[,1], y = loc.xy[,2], sim = landsim)
+  
+  if(return == 'count') {
+    return(list(xclass=xclass, landSim = landscapeS))
+  } else if (return == 'percent') {
+    return(list(xclass = xclass.pct, landSim = landscapeS))
+  }
+}
+
+run1 = r1$xclass[r1$landSim$sim > 2/3 & 
+                   r1$landSim$x > scale & r1$landSim$x < max(r1$landSim) - scale &
+                   r1$landSim$y > scale & r1$landSim$y < max(r1$landSim) - scale ,,]
+
+
+xclass.out = c()
+land.out = c()
+xclass.ct = c()
+scale = 3
+for (r in 1:50) {
+  #temp = pixelXclass(datadir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
+  #                      ct_threshold = 1/3, return = 'percent')
+  tmp = pixelXclass(datadir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
+                    ct_threshold = 1/3, return = 'count')
+  
+  # Eliminate pixels within a distance 'scale' from the grid edge
+  #temp2 = temp$xclass[temp$landSim$x > scale & temp$landSim$x < max(temp$landSim) - scale &
+  #           temp$landSim$y > scale & temp$landSim$y < max(temp$landSim) - scale ,,]
+  #xclass.out = abind(xclass.out, temp2, along = 1)
+  
+  tmp2 = tmp$xclass[tmp$landSim$x > scale & tmp$landSim$x < max(tmp$landSim) - scale &
+                      tmp$landSim$y > scale & tmp$landSim$y < max(tmp$landSim) - scale ,,]
+  xclass.ct = abind(xclass.ct, tmp2, along = 1)
+  
+  
+  #land2 = temp$landSim[#temp$landSim$sim > 2/3 & 
+  #                      temp$landSim$x > scale & temp$landSim$x < max(temp$landSim) - scale &
+  #                     temp$landSim$y > scale & temp$landSim$y < max(temp$landSim) - scale ,,]
+  #land.out = rbind(land.out, land2)
+  
+  print(paste(r, Sys.time()))
+}
+
+save(xclass.out, xclass.ct, land.out, file = 'Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary.Rdata')
+
+
+# CAN START FROM HERE ONCE THE ABOVE HAS BEEN RUN ONCE:
+# Load
+load('Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary.Rdata')
+
+
+
+# Classification error as a function of detection probability
+#   (only for pixels with heterogeneity/similarity > 2/3)
+means = apply(xclass.out[land.out$sim > 2/3 , , ], c(2,3), function(x) 100*mean(x, na.rm = T))
+ul95 = apply(xclass.out[land.out$sim > 2/3 , , ], c(2,3), function(x) 100*quantile(x, 0.975, na.rm = T))
+ll95 = apply(xclass.out[land.out$sim > 2/3 , , ], c(2,3), function(x) 100*quantile(x, 0.025, na.rm = T))
+P_obs = seq(0.1, 1, by = .1)
+
+
+# Analysis based on counts (not %s) of species in each classification group
+
+rel.error = c()
+for (p in 1:10) {# loop over 10 detection probabilities
+  tmp = xclass.ct[,,p]
+  bio_core = tmp[,1] + tmp[,2]
+  occ_core = tmp[,1] + tmp[,3]
+  bio_tran = tmp[,4] + tmp[,3]
+  occ_tran = tmp[,4] + tmp[,2]
+  core.rel = occ_core/bio_core
+  tran.rel = occ_tran/bio_tran
+  rel.error = abind(rel.error, cbind(core.rel, tran.rel), along = 3)
+}
+
+mean.rel = apply(rel.error[land.out$sim > 2/3 , , ], c(2,3), function(x) 
+  mean(x[x!=Inf], na.rm = T))
+ul95.rel = apply(rel.error[land.out$sim > 2/3 , , ], c(2,3), function(x) 
+  quantile(x[x!=Inf], 0.975, na.rm = T))
+ll95.rel = apply(rel.error[land.out$sim > 2/3 , , ], c(2,3), function(x) 
+  quantile(x[x!=Inf], 0.025, na.rm = T))
+
+
+
+# Misclassification and over/underestimation as a function of detection probability
+
+pdf('Results/Plots/EXP3/classification_errors_v_detect_prob.pdf', height = 5, width = 12)
+par(mfrow = c(1,2), mar = c(5,6,1,4), mgp = c(3, 1, 0), cex.lab = 1.5, cex.axis = 1.25, las = 1)
+
+# PANEL A) Percent of species that are classified accurately in each category
+
+# Core classification
+plot(P_obs, means[1,], type = 'n', lwd = 4, ylim = c(0,100), 
+     xlab = "Detection probability", ylab = "Percent correctly classified")
+axis(4)
+polygon(c(P_obs, rev(P_obs)), c(ul95[1,], rev(ll95[1,])), col = rgb(0,0,1,0.1), border = NA)
+points(P_obs, means[1,], type = 'l', lwd = 4, col = 'cornflowerblue') 
+
+# Transient classificaiton
+polygon(c(P_obs, rev(P_obs)), c(ul95[4,], rev(ll95[4,])), col = rgb(1,0,0,0.1), border = NA)
+points(P_obs, means[4,], type = 'l', lwd = 4, col = 'salmon')
+
+abline(h=90, lty = 'dotted')
+legend("bottomright", c('Core', 'Transient'), col = c('cornflowerblue', 'salmon'),
+       lwd = 4, cex = 1.5)
+
+
+# PANEL B) Degree of over/underestimation of true values by observed occupancy
+plot(P_obs, mean.rel[1,], type = 'n', lwd = 4, ylim = c(0,3),
+     xlab = "Detection probability", ylab = "Observed/True Richness")
+axis(4)
+polygon(c(P_obs, rev(P_obs)), c(ul95.rel[1,], rev(ll95.rel[1,])), col = rgb(0,0,1,0.1), border = NA)
+points(P_obs, mean.rel[1,], type = 'l', lwd = 4, col = 'cornflowerblue') 
+
+# Transient classificaiton
+polygon(c(P_obs, rev(P_obs)), c(ul95.rel[2,], rev(ll95.rel[2,])), col = rgb(1,0,0,0.1), border = NA)
+points(P_obs, mean.rel[2,], type = 'l', lwd = 4, col = 'salmon')
+
+abline(h=1, lty = 'dotted')
+
+dev.off()
+
+
+# Misclassification and over/underestimation as a function of landscape similarity
+
+# eliminate NA and Inf values from transient vals
+
+pdf('Results/Plots/EXP3/classification_errors_v_landscape.pdf', height = 10, width = 12)
+par(mfrow = c(2, 2), mar = c(5,5,1,1), mgp = c(3, 1, 0), cex.lab = 1.5, cex.axis = 1.25, las = 1)
+scatter.smooth(land.out$sim, xc2.p1[,1], degree = 2, xlab = 'Landscape similarity',
+               ylab = 'Core % correct', col = 'cornflowerblue', pch = 16, 
+               lpars = list(lwd = 3, col = 'darkblue'))
+scatter.smooth(land.out$sim, xc2.p1[,2], degree = 2, xlab = 'Landscape similarity',
+               ylab = 'Transient % correct', col = 'salmon', pch = 17, 
+               lpars = list(lwd = 3, col = 'darkred'))
+
+scatter.smooth(land.out$sim[!rel.error[,1,10] %in% c(0, Inf)], 
+               rel.error[!rel.error[,1,10] %in% c(0, Inf),1,10], ylim = c(0,4),
+               degree = 2, xlab = 'Landscape similarity',
+               ylab = 'Obs/True Core Richness', col = 'cornflowerblue', pch = 16, 
+               lpars = list(lwd = 3, col = 'darkblue'))
+abline(h = 1, lty = 'dotted')
+text(0.5, 4, "Repeated immigration by transients\n makes them appear to be core")
+
+scatter.smooth(land.out$sim[!rel.error[,2,10] %in% c(Inf, 0) & !is.na(rel.error[,2,10])], 
+               rel.error[!rel.error[,2,10] %in% c(Inf, 0) & !is.na(rel.error[,2,10]),2,10], 
+               degree = 2, xlab = 'Landscape similarity', ylim = c(0,4),
+               ylab = 'Obs/True Transient Richness', col = 'salmon', pch = 17, 
+               lpars = list(lwd = 3, col = 'darkred'))
+abline(h = 1, lty = 'dotted')
+text(0.15, 1.5, "High # of true transients\ndue to dispersal")
+text(0.6, 3.6, "Rare core spp show up\non connected landscapes and\nappear to be transient")
+
+dev.off()
+
+
+
+
+
+
