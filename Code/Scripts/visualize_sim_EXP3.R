@@ -309,25 +309,24 @@ land.out = c()
 xclass.ct = c()
 scale = 3
 for (r in 1:50) {
-  #temp = pixelXclass(datadir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
-  #                      ct_threshold = 1/3, return = 'percent')
+  temp = pixelXclass(datadir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
+                        ct_threshold = 1/3, return = 'percent')
   tmp = pixelXclass(datadir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
                     ct_threshold = 1/3, return = 'count')
   
   # Eliminate pixels within a distance 'scale' from the grid edge
-  #temp2 = temp$xclass[temp$landSim$x > scale & temp$landSim$x < max(temp$landSim) - scale &
-  #           temp$landSim$y > scale & temp$landSim$y < max(temp$landSim) - scale ,,]
-  #xclass.out = abind(xclass.out, temp2, along = 1)
+  temp2 = temp$xclass[temp$landSim$x > scale & temp$landSim$x < max(temp$landSim) - scale &
+             temp$landSim$y > scale & temp$landSim$y < max(temp$landSim) - scale ,,]
+  xclass.out = abind(xclass.out, temp2, along = 1)
   
   tmp2 = tmp$xclass[tmp$landSim$x > scale & tmp$landSim$x < max(tmp$landSim) - scale &
                       tmp$landSim$y > scale & tmp$landSim$y < max(tmp$landSim) - scale ,,]
   xclass.ct = abind(xclass.ct, tmp2, along = 1)
   
   
-  #land2 = temp$landSim[#temp$landSim$sim > 2/3 & 
-  #                      temp$landSim$x > scale & temp$landSim$x < max(temp$landSim) - scale &
-  #                     temp$landSim$y > scale & temp$landSim$y < max(temp$landSim) - scale ,,]
-  #land.out = rbind(land.out, land2)
+  land2 = temp$landSim[temp$landSim$x > scale & temp$landSim$x < max(temp$landSim) - scale &
+                       temp$landSim$y > scale & temp$landSim$y < max(temp$landSim) - scale ,,]
+  land.out = rbind(land.out, land2)
   
   print(paste(r, Sys.time()))
 }
@@ -358,11 +357,16 @@ for (p in 1:10) {# loop over 10 detection probabilities
   occ_core = tmp[,1] + tmp[,3]
   bio_tran = tmp[,4] + tmp[,3]
   occ_tran = tmp[,4] + tmp[,2]
-  core.rel = occ_core/bio_core
-  tran.rel = occ_tran/bio_tran
-  rel.error = abind(rel.error, cbind(core.rel, tran.rel), along = 3)
+  core.rel = occ_core/bio_core # estimated/actual core richness
+  tran.rel = occ_tran/bio_tran # estimated/actual transient richness
+  core.pct = tmp[,1]/occ_core # fraction of spp perceived to be core that actually are
+  tran.pct = tmp[,4]/occ_tran # fraction of spp perceived to be transient that actually are
+  core.dif = occ_core - bio_core # estimated - actual core richness
+  tran.dif = occ_tran - bio_tran # estimated - actual transient richness
+  rel.error = abind(rel.error, cbind(core.rel, tran.rel, core.pct, tran.pct, core.dif, tran.dif), along = 3)
 }
 
+# Mean values by detection probability for pixels with landscape similarity > 2/3
 mean.rel = apply(rel.error[land.out$sim > 2/3 , , ], c(2,3), function(x) 
   mean(x[x!=Inf], na.rm = T))
 ul95.rel = apply(rel.error[land.out$sim > 2/3 , , ], c(2,3), function(x) 
@@ -371,22 +375,28 @@ ll95.rel = apply(rel.error[land.out$sim > 2/3 , , ], c(2,3), function(x)
   quantile(x[x!=Inf], 0.025, na.rm = T))
 
 
+# Classification error as a function of landscape similarity (when P_obs == 1)
+xc2.p1 = 100*xclass.out[, , 10]
+re.p1 = cbind(rel.error[, 1:2, 10], 100*rel.error[, 3:4, 10])
+
+
 
 # Misclassification and over/underestimation as a function of detection probability
 
-pdf('Results/Plots/EXP3/classification_errors_v_detect_prob.pdf', height = 5, width = 12)
-par(mfrow = c(1,2), mar = c(5,6,1,4), mgp = c(3, 1, 0), cex.lab = 1.5, cex.axis = 1.25, las = 1)
+pdf('Results/Plots/EXP3/classification_errors_v_detect_prob.pdf', height = 10, width = 12)
+par(mfrow = c(2,2), mar = c(5,6,3,4), mgp = c(3, 1, 0), 
+    cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.25, las = 1)
 
-# PANEL A) Percent of species that are classified accurately in each category
-
+# PANEL A) Classification rate based on true biological status
 # Core classification
 plot(P_obs, means[1,], type = 'n', lwd = 4, ylim = c(0,100), 
-     xlab = "Detection probability", ylab = "Percent correctly classified")
+     xlab = "Detection probability", ylab = "Percent correctly classified",
+     main = "% of spp whose occupancy matches their status")
 axis(4)
 polygon(c(P_obs, rev(P_obs)), c(ul95[1,], rev(ll95[1,])), col = rgb(0,0,1,0.1), border = NA)
 points(P_obs, means[1,], type = 'l', lwd = 4, col = 'cornflowerblue') 
 
-# Transient classificaiton
+# Transient classification
 polygon(c(P_obs, rev(P_obs)), c(ul95[4,], rev(ll95[4,])), col = rgb(1,0,0,0.1), border = NA)
 points(P_obs, means[4,], type = 'l', lwd = 4, col = 'salmon')
 
@@ -397,7 +407,8 @@ legend("bottomright", c('Core', 'Transient'), col = c('cornflowerblue', 'salmon'
 
 # PANEL B) Degree of over/underestimation of true values by observed occupancy
 plot(P_obs, mean.rel[1,], type = 'n', lwd = 4, ylim = c(0,3),
-     xlab = "Detection probability", ylab = "Observed/True Richness")
+     xlab = "Detection probability", ylab = "Observed/True Richness",
+     main = "Relative error")
 axis(4)
 polygon(c(P_obs, rev(P_obs)), c(ul95.rel[1,], rev(ll95.rel[1,])), col = rgb(0,0,1,0.1), border = NA)
 points(P_obs, mean.rel[1,], type = 'l', lwd = 4, col = 'cornflowerblue') 
@@ -408,6 +419,30 @@ points(P_obs, mean.rel[2,], type = 'l', lwd = 4, col = 'salmon')
 
 abline(h=1, lty = 'dotted')
 
+
+# PANEL C) Classification rate based on occupancy class
+plot(P_obs, 100*mean.rel[3,], type = 'n', lwd = 4, ylim = c(0,100),
+     xlab = "Detection probability", ylab = "% correctly classified",
+     main = "% of spp of a given occupancy class that are of that class")
+axis(4)
+polygon(c(P_obs, rev(P_obs)), c(100*ul95.rel[3,], rev(100*ll95.rel[3,])), col = rgb(0,0,1,0.1), border = NA)
+points(P_obs, 100*mean.rel[3,], type = 'l', lwd = 4, col = 'cornflowerblue') 
+
+# Transient classificaiton
+polygon(c(P_obs, rev(P_obs)), c(100*ul95.rel[4,], rev(100*ll95.rel[4,])), col = rgb(1,0,0,0.1), border = NA)
+points(P_obs, 100*mean.rel[4,], type = 'l', lwd = 4, col = 'salmon')
+
+
+# PANEL D) Absolute degree of over/underestimation of richness in each class
+par(mar = c(5,6,3,5))
+plot(P_obs, mean.rel[6,], type = 'n', lwd = 4, ylim = c(-1,11),
+     xlab = "Detection probability", ylab = "Overestimate of transient species",
+     main = "Absolute error")
+axis(4)
+mtext("Underestimate of core species", 4, cex = 1.25, line = 3.5, las = 0)
+polygon(c(P_obs, rev(P_obs)), c(ul95.rel[6,], rev(ll95.rel[6,])), col = rgb(0,0,0,0.1), border = NA)
+points(P_obs, mean.rel[6,], type = 'l', lwd = 4, col = 'gray20') 
+
 dev.off()
 
 
@@ -415,14 +450,28 @@ dev.off()
 
 # eliminate NA and Inf values from transient vals
 
-pdf('Results/Plots/EXP3/classification_errors_v_landscape.pdf', height = 10, width = 12)
-par(mfrow = c(2, 2), mar = c(5,5,1,1), mgp = c(3, 1, 0), cex.lab = 1.5, cex.axis = 1.25, las = 1)
+pdf('Results/Plots/EXP3/classification_errors_v_landscape.pdf', height = 15, width = 12)
+par(mfrow = c(3, 2), mar = c(5,5,3,1), mgp = c(3, 1, 0), 
+    cex.main = 1.5, cex.lab = 1.5, cex.axis = 1.25, las = 1)
 scatter.smooth(land.out$sim, xc2.p1[,1], degree = 2, xlab = 'Landscape similarity',
                ylab = 'Core % correct', col = 'cornflowerblue', pch = 16, 
-               lpars = list(lwd = 3, col = 'darkblue'))
-scatter.smooth(land.out$sim, xc2.p1[,2], degree = 2, xlab = 'Landscape similarity',
+               lpars = list(lwd = 3, col = 'darkblue'),
+               main = "Fraction of core species that have high occupancy")
+scatter.smooth(land.out$sim, xc2.p1[,4], degree = 2, xlab = 'Landscape similarity',
                ylab = 'Transient % correct', col = 'salmon', pch = 17, 
-               lpars = list(lwd = 3, col = 'darkred'))
+               lpars = list(lwd = 3, col = 'darkred'),
+               main = "Fraction of transient species that have low occupancy")
+
+scatter.smooth(land.out$sim[!re.p1[,3] %in% c(0, Inf)], 
+               re.p1[!re.p1[,3] %in% c(0, Inf),3], degree = 2, xlab = 'Landscape similarity',
+               ylab = 'Core % correct', col = 'cornflowerblue', pch = 16, 
+               lpars = list(lwd = 3, col = 'darkblue'),
+               main = "Fraction of high occupancy species that are actually core")
+scatter.smooth(land.out$sim[!re.p1[,4] %in% c(0, Inf)], 
+               re.p1[!re.p1[,4] %in% c(0, Inf),4], degree = 2, xlab = 'Landscape similarity',
+               ylab = 'Transient % correct', col = 'salmon', pch = 17, 
+               lpars = list(lwd = 3, col = 'darkred'),
+               main = "Fraction of low occupancy species that are actually transient")
 
 scatter.smooth(land.out$sim[!rel.error[,1,10] %in% c(0, Inf)], 
                rel.error[!rel.error[,1,10] %in% c(0, Inf),1,10], ylim = c(0,4),
@@ -438,7 +487,7 @@ scatter.smooth(land.out$sim[!rel.error[,2,10] %in% c(Inf, 0) & !is.na(rel.error[
                ylab = 'Obs/True Transient Richness', col = 'salmon', pch = 17, 
                lpars = list(lwd = 3, col = 'darkred'))
 abline(h = 1, lty = 'dotted')
-text(0.15, 1.5, "High # of true transients\ndue to dispersal")
+text(0.15, 1.5, "High # of true transients\nevery year due\n to dispersal")
 text(0.6, 3.6, "Rare core spp show up\non connected landscapes and\nappear to be transient")
 
 dev.off()
