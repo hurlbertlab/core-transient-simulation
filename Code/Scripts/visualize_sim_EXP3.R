@@ -12,7 +12,7 @@ library(reshape2)
 sum_dir = 'Results/Summary/EXP3'
 fig_dir = 'Results/Plots/EXP3'
 sim_dir = 'Code'
-datadir = 'z:/lab/CTSim/Data/Exp3/d-g2_imm-0.001'
+data_dir = 'z:/lab/CTSim/Data/Exp3/d-g2_imm-0.001'
 
 # Load simulation functions
 #source(file.path(sim_dir, 'simulation_functions.R'))
@@ -299,10 +299,135 @@ pixelXclass = function(data_dir, sim, run=1, scale = 3, t_window = 186:200,
   }
 }
 
-run1 = r1$xclass[r1$landSim$sim > 2/3 & 
-                   r1$landSim$x > scale & r1$landSim$x < max(r1$landSim) - scale &
-                   r1$landSim$y > scale & r1$landSim$y < max(r1$landSim) - scale ,,]
 
+
+# Generic pixel cross-classification analysis for all (non-edge) pixels 
+# data_dir : directory where raw simulation results are stored
+# sim      : sim name specifying parameter combinations, e.g. hp-0.9
+# run      : simulation run #
+# scale    : radius in pixels over which landscape heterogeneity is calculated
+pixelXclassBySpecies = function(data_dir, sim, run=1, scale = 3, t_window = 186:200, 
+                       ct_threshold = 1/3) {
+  
+  timewindow = length(t_window)
+  
+  suppressWarnings(rm(list = c('results', 'res', 'this_land', 'this_metacomm', 'this_species')))
+  load(paste(data_dir, '/', sim, '_run', run, '.Rdata', sep = ''))
+  
+  # Results from early sims (pre-turnover) are in slightly different structure
+  if (class(results) == 'array') {
+    res = results
+  } else {
+    res = results$sim
+  }
+  
+  # Check that required objects exist
+  if(!exists('this_species')|!exists('this_land')|!exists('this_gsad')){
+    stop(paste(sim, 'may not contain this_species, this_land, or this_gsad. Summary NOT run.'))		
+  } else {
+    # Assign objects
+    species = this_species
+    land = this_land
+    gsad = this_gsad
+  }
+  
+  # Number of species
+  N_S = dim(species)[1]
+  
+  # Define different scales of spatial aggregation (in a partition of the grid)
+  # Must supply grid dimensions
+  scale_locs = sapply(2^c(0:4), function(fact) aggregate_cells(X=c(32,32), dX=fact, dY=fact, form='partition'))
+  
+  # Locations to be aggregated and evaluated
+  locs = scale_locs[[1]]
+  
+  # Calculate species abundance profiles at the spatial and temporal resolution given by locs and t_window
+  abuns_act = calc_abun_profile(locs, t_window, res, N_S)
+  
+  # Get total abundance of each species across the entire grid (remove 1st col describing empty cells)
+  sad.grid = data.frame(sp = 1:40, Ngrid = apply(abuns_act[, -1, ], 2, sum))
+  
+  # Get abundance of each species in each pixel averaged over timewindow
+  sad.cell = t(apply(abuns_act[, -1, ], 2:3, sum)) %>% data.frame() %>%
+    mutate(pix = 1:1024) %>%
+    gather("sp", "Ncell", 1:40) %>%
+    mutate(sp = as.numeric(substr(sp, 2, nchar(sp)))) 
+           
+  
+  # Range of detection probabilities to examine
+  P_obs = seq(0.1, 1, by = .1)
+  
+  # Apply observation bias
+  abuns_obs = sapply(P_obs, function(p){
+    sample_sim(abuns_act, probs = p, return='abundance')
+  }, simplify='array')
+  dimnames(abuns_obs)[[2]] = 1:N_S # Name columns with species names
+  # dims are now [timepoint, species, spatial unit, P]
+  
+  # Calculate species occupancy
+  occ = sapply(1:length(P_obs), function(i){
+    use_abun = abuns_obs[,,,i, drop=FALSE]
+    use_abun = abind::adrop(use_abun, 4) 
+    calc_occupancy(abuns=use_abun, agg_times=NULL, do_freq=F)
+  }, simplify='array')
+  # dims are now: [spatial unit, species, P]
+  
+  breaks = seq(ct_threshold, 0.9999, by = ct_threshold)
+  
+  # Get species birth rates
+  b_rates = species[,,'b']
+  
+  # Get habitat types for spatial units
+  habitats = sapply(locs, function(x) average_habitat(x, land))
+  
+  # Calculate classification of species based on birth rates
+  cores = t(sapply(habitats, function(h) b_rates[,h]>0))
+  classification = apply(cores, 1:2, function(x) ifelse(x, 'core', 'trans'))	
+  
+  # compare classification to occupancy-based designation
+  xclass.sp = sapply(1:length(P_obs), function(i){
+    use_occ = occ[,,i, drop=FALSE]
+    use_occ = abind::adrop(use_occ, 3)
+    xclass = classification
+    xclass[classification == 'core' & use_occ > (1 - ct_threshold)] = 'c-c'
+    xclass[classification == 'core' & use_occ <= ct_threshold & use_occ > 0] = 'c-t'
+    xclass[classification == 'trans' & use_occ > (1 - ct_threshold)] = 't-c'
+    xclass[classification == 'trans' & use_occ <= ct_threshold & use_occ > 0] = 't-t'
+    xclass[xclass == 'core'] = 'c-int'  # biologically core but intermediate occupancy
+    xclass[xclass =='trans'] = 't-int'  # biologically transient but intermediate occupancy
+    xclass[use_occ == 0] = NA           # absent over the time period
+    return(xclass)
+  }, simplify='array')
+  
+  
+  # Calculate landscape similarity to focal pixel
+  loc.xy = matrix(unlist(locs), ncol = 2, byrow = TRUE)
+  landsim = land_similarity(loc.xy, land, scale)
+  landscapeS = data.frame(pix = 1:1024, x = loc.xy[,1], y = loc.xy[,2], sim = landsim)
+  
+  # xclass.sp flattened out into 2 dimensions 
+  #   (rows increase in pixel.id first, then species, then P_obs)
+  #   and then adding in landscape sim, abundances, etc
+  xc2 = apply(xclass.sp, 2, I) %>% data.frame() %>% 
+    mutate(pix = rep(1:1024, times = 10), 
+           p = rep(P_obs, each = 1024)) %>% 
+    gather("sp", "xc", 1:40) %>%
+    mutate(sp = as.numeric(substr(sp, 2, nchar(sp)))) %>%
+    full_join(sad.cell) %>%
+    full_join(sad.grid) %>%
+    full_join(landscapeS) %>%
+    filter(x > scale & x < max(x) - scale & y > scale & y < max(y) - scale, 
+           !is.na(xc)) %>%
+    arrange(pix, p, sp) %>%
+    select(pix, sim, p, sp, Ncell, Ngrid, xc)
+    
+  return(xclass = xc2)
+}
+
+
+
+
+#---------------------------------------------------------------------------------
 
 xclass.out = c()
 land.out = c()
@@ -331,13 +456,25 @@ for (r in 1:50) {
   print(paste(r, Sys.time()))
 }
 
-save(xclass.out, xclass.ct, land.out, file = 'Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary.Rdata')
 
+# Conduct cross-classification by species and pixel
+#   (generates ~7M rows, may have memory issues)
+xclass.sp = c()
+for (r in 1:50) {
+  tmp = pixelXclassBySpecies(datadir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
+                     ct_threshold = 1/3)
+  xclass.sp = rbind(xclass.sp, tmp)
+  rm(tmp)
+  print(paste(r, Sys.time()))
+}
+
+
+save(xclass.out, xclass.ct, land.out, file = 'Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary.Rdata')
+save(xclass.sp, file = 'Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary_bysp.Rdata')
 
 # CAN START FROM HERE ONCE THE ABOVE HAS BEEN RUN ONCE:
 # Load
 load('Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary.Rdata')
-
 
 
 # Classification error as a function of detection probability
@@ -493,7 +630,26 @@ text(0.6, 3.6, "Rare core spp show up\non connected landscapes and\nappear to be
 dev.off()
 
 
+#----------------------------------------------------------------------------------
+# Analysis at pixel/species level
 
+load('Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary_bysp.Rdata')
 
+xc.sp.p1 = xclass.sp[xclass.sp$sim < 2/3 & xclass.sp$p == 1,]
+xc.sp.p.5 = xclass.sp[xclass.sp$sim < 2/3 & xclass.sp$p == 0.5,]
 
+pdf('Results/Plots/EXP3/classification_errors_v_abundance.pdf', height = 8, width = 5)
+par(mfrow = c(2,1), mar = c(4, 4, 2, 1), mgp = c(2.5,.5,0))
 
+# 2 panels for p = 1
+boxplot(log10(xc.sp.p1$Ngrid) ~ xc.sp.p1$xc, col = c(rep('cornflowerblue', 3), rep('salmon', 3)),
+        ylab = "log10 Grid Abundance", xlab = "[biological classification]-[occupancy classification]",
+        main = "Pixels >2/3 landscape similarity, P_obs = 1")
+abline(h = c(4,4.5,5), lty = 'dotted')
+boxplot(log10(xc.sp.p1$Ncell) ~ xc.sp.p1$xc, col = c(rep('cornflowerblue', 3), rep('salmon', 3)),
+        ylab = "log10 Pixel Abundance", xlab = "[biological classification]-[occupancy classification]")
+abline(h = c(1,2), lty = 'dotted')
+
+dev.off()
+
+spmod = lm()
