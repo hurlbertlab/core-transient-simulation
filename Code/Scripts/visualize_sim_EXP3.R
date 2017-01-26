@@ -5,6 +5,8 @@
 # Set options and load libraries
 options(stringsAsFactors=F)
 library(CTSim)
+library(dplyr)
+library(tidyr)
 library(abind)
 library(reshape2)
 
@@ -372,6 +374,13 @@ pixelXclassBySpecies = function(data_dir, sim, run=1, scale = 3, t_window = 186:
   }, simplify='array')
   # dims are now: [spatial unit, species, P]
   
+  # Flatten occupancy data
+  occ2 = apply(occ, 2, I) %>% data.frame() %>%
+    mutate(pix = rep(1:1024, times = 10),
+           p = rep(seq(0.1, 1, 0.1), each = 1024)) %>%
+    gather("sp", "occ", 1:40) %>%
+    mutate(sp = as.numeric(substr(sp, 2, nchar(sp)))) 
+  
   breaks = seq(ct_threshold, 0.9999, by = ct_threshold)
   
   # Get species birth rates
@@ -413,13 +422,14 @@ pixelXclassBySpecies = function(data_dir, sim, run=1, scale = 3, t_window = 186:
            p = rep(P_obs, each = 1024)) %>% 
     gather("sp", "xc", 1:40) %>%
     mutate(sp = as.numeric(substr(sp, 2, nchar(sp)))) %>%
-    full_join(sad.cell) %>%
-    full_join(sad.grid) %>%
-    full_join(landscapeS) %>%
+    full_join(landscapeS, by = "pix") %>%
     filter(x > scale & x < max(x) - scale & y > scale & y < max(y) - scale, 
            !is.na(xc)) %>%
+    inner_join(sad.cell, by = c("pix", "sp")) %>%
+    inner_join(sad.grid, by = "sp") %>%
+    inner_join(occ2, by = c("pix", "p", "sp")) %>%
     arrange(pix, p, sp) %>%
-    select(pix, sim, p, sp, Ncell, Ngrid, xc)
+    select(pix, sim, p, sp, Ncell, Ngrid, occ, xc)
     
   return(xclass = xc2)
 }
@@ -461,7 +471,7 @@ for (r in 1:50) {
 #   (generates ~7M rows, may have memory issues)
 xclass.sp = c()
 for (r in 1:50) {
-  tmp = pixelXclassBySpecies(datadir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
+  tmp = pixelXclassBySpecies(data_dir, 'd-g2_imm-0.001', run=r, scale = 3, t_window = 186:200, 
                      ct_threshold = 1/3)
   xclass.sp = rbind(xclass.sp, tmp)
   rm(tmp)
@@ -652,4 +662,7 @@ abline(h = c(1,2), lty = 'dotted')
 
 dev.off()
 
-spmod = lm()
+# Linear models for perfect detection
+spmod.p1 = lm(occ ~ sim + Ncell, data = xc.sp.p1)
+round(cor(xc.sp.p1[,c('occ', 'sim', 'Ncell', 'Ngrid')]), 2)
+
