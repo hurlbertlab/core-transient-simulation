@@ -648,18 +648,51 @@ load('Results/Summary/EXP3/d-g2_imm-0.001/pixel_xclass_summary_bysp.Rdata')
 xc.sp.p1 = xclass.sp[xclass.sp$sim < 2/3 & xclass.sp$p == 1,]
 xc.sp.p.5 = xclass.sp[xclass.sp$sim < 2/3 & xclass.sp$p == 0.5,]
 
-pdf('Results/Plots/EXP3/classification_errors_v_abundance.pdf', height = 8, width = 5)
-par(mfrow = c(2,1), mar = c(4, 4, 2, 1), mgp = c(2.5,.5,0))
+# Number of species occurrences in each classification class
+cat.counts.p1 = xc.sp.p1 %>% count(xc)
+cat.counts.p.5 = xc.sp.p.5 %>% count(xc)
+
+# Cross-classification %s
+pct.bio_core1 = round(100*cat.counts.p1$n[1:3]/sum(cat.counts.p1$n[1:3]), 0)
+pct.bio_tran1 = round(100*cat.counts.p1$n[4:6]/sum(cat.counts.p1$n[4:6]), 0)
+pct.occ_core1 = round(100*cat.counts.p1$n[c(1,4)]/(cat.counts.p1$n[1] + cat.counts.p1$n[4]), 0)
+pct.occ_tran1 = round(100*cat.counts.p1$n[c(3,6)]/(cat.counts.p1$n[3] + cat.counts.p1$n[6]), 0)
+
+pct.bio_core.5 = round(100*cat.counts.p.5$n[1:3]/sum(cat.counts.p.5$n[1:3]), 0)
+pct.bio_tran.5 = round(100*cat.counts.p.5$n[4:6]/sum(cat.counts.p.5$n[4:6]), 0)
+pct.occ_core.5 = round(100*cat.counts.p.5$n[c(1,4)]/(cat.counts.p.5$n[1] + cat.counts.p.5$n[4]), 0)
+pct.occ_tran.5 = round(100*cat.counts.p.5$n[c(3,6)]/(cat.counts.p.5$n[3] + cat.counts.p.5$n[6]), 0)
+
+pdf('Results/Plots/EXP3/classification_errors_v_abundance.pdf', height = 8, width = 10)
+par(mfcol = c(2,2), mar = c(4, 4, 2, 1), mgp = c(2.5,.5,0))
 
 # 2 panels for p = 1
 boxplot(log10(xc.sp.p1$Ngrid) ~ xc.sp.p1$xc, col = c(rep('cornflowerblue', 3), rep('salmon', 3)),
         ylab = "log10 Grid Abundance", xlab = "[biological classification]-[occupancy classification]",
         main = "Pixels >2/3 landscape similarity, P_obs = 1")
 abline(h = c(4,4.5,5), lty = 'dotted')
-boxplot(log10(xc.sp.p1$Ncell) ~ xc.sp.p1$xc, col = c(rep('cornflowerblue', 3), rep('salmon', 3)),
-        ylab = "log10 Pixel Abundance", xlab = "[biological classification]-[occupancy classification]")
-abline(h = c(1,2), lty = 'dotted')
 
+boxplot(log10(xc.sp.p1$Ncell) ~ xc.sp.p1$xc, col = c(rep('cornflowerblue', 3), rep('salmon', 3)),
+        ylab = "log10 Pixel Abundance", xlab = "[biological classification]-[occupancy classification]",
+        ylim = c(0, 4))
+abline(h = c(1,2), lty = 'dotted')
+text(1:3, rep(3.3, 3), pct.bio_core1, col = 'cornflowerblue', cex = 1.5)
+text(4:6, rep(3.3, 3), pct.bio_tran1, col = 'salmon', cex = 1.5)
+text(c(1,4,3,6), rep(3.8, 4), c(pct.occ_core1, pct.occ_tran1), cex = 1.5)
+
+# 2 panels for p = .5
+boxplot(log10(xc.sp.p.5$Ngrid) ~ xc.sp.p.5$xc, col = c(rep('cornflowerblue', 3), rep('salmon', 3)),
+        ylab = "log10 Grid Abundance", xlab = "[biological classification]-[occupancy classification]",
+        main = "Pixels >2/3 landscape similarity, P_obs = .5")
+abline(h = c(4,4.5,5), lty = 'dotted')
+
+boxplot(log10(xc.sp.p.5$Ncell) ~ xc.sp.p.5$xc, col = c(rep('cornflowerblue', 3), rep('salmon', 3)),
+        ylab = "log10 Pixel Abundance", xlab = "[biological classification]-[occupancy classification]",
+        ylim = c(0, 4))
+abline(h = c(1,2), lty = 'dotted')
+text(1:3, rep(3.3, 3), pct.bio_core.5, col = 'cornflowerblue', cex = 1.5)
+text(4:6, rep(3.3, 3), pct.bio_tran.5, col = 'salmon', cex = 1.5)
+text(c(1,4,3,6), rep(3.8, 4), c(pct.occ_core.5, pct.occ_tran.5), cex = 1.5)
 dev.off()
 
 # Linear models for perfect detection
