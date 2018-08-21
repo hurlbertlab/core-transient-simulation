@@ -41,4 +41,3 @@ Code is set up so that abundance may be correlated with another
 	To add a correlation, generate x as a multivariate random normal 
 	variable with specified covariance matrix.
 }
-

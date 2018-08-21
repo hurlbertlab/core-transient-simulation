@@ -25,4 +25,3 @@ This function creates a parameter file that can be read by
 \code{\link{run_sim_P}}. It should be used in conjection with 
 \code{\link{make_parmlist}}.
 }
-

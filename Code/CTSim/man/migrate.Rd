@@ -24,4 +24,3 @@ the landscape.
 Species identity is determined probabilistically according to a
 global species abundance distribution (\code{gsad}).
 }
-

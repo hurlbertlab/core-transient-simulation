@@ -36,4 +36,3 @@ For each spatial unit it counts the number of cells that are the dominant
 habitat typeand then compares the variance and mean of these frequencies. 
 A value of zero indicates random distribution at that scale.
 }
-

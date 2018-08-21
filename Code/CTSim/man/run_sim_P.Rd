@@ -43,4 +43,3 @@ by the function.
 \code{\link{run_simulation}} and \code{\link{restart_simulation}}
 for command line execution
 }
-

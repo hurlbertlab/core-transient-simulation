@@ -145,4 +145,3 @@ The function proceeds as follows:
 	metacommunity for each set of observed abundances (from step 2).
 }
 }
-

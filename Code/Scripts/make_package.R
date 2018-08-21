@@ -4,9 +4,10 @@
 # Load packages needed to build CTSim
 library(devtools)
 library(roxygen2)
-#library(pkgdown)
+library(gstat)
 
-setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/GitHub/Code/')
+setwd('/Users/sheldontaylor/core-transient-simulation/Code/')
+# /Users/sheldontaylor/core-transient-simulation/Code/
 
 current_code = as.package('CTSim')
 
@@ -39,7 +40,7 @@ build('CTSim')
 
 
 # Check install
-install.packages('CTSim_0.1.7.zip', repos=NULL)
+install.packages('CTSim_0.1.7.zip')
 library(CTSim)
 
 # Make static html documentation
@@ -71,11 +72,11 @@ mymeta_t8 = run_sim(8, mymeta, myland, mysp, mygsad, d_kernel=list(type='gaussia
 )
 
 # Testing summary functions
-setwd('C:/Users/jrcoyle/Documents/Research/CT-Sim/Sandbox')
+setwd('/Users/sheldontaylor/core-transient-simulation/scratch')
 run_sim_P(2, report=2)
 
-run_sum = summarize_sim_P('Results/d-a0_v-a0_dcorr-1')
-load('Summaries/test_summary.RData')
+run_sum = summarize_sim_P('d-a0_v-a0_dcorr-1')
+load('Summaries/test_summary.RData') # d/n work
 
 
 # Check summary manually

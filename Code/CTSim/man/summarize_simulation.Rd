@@ -31,4 +31,3 @@ installed. To run, move script to working directory and use:
 \code{\link{summarize_sim_P}} for a description of parameters 
 that can be passed through args
 }
-

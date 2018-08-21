@@ -14,7 +14,7 @@ library(reshape2)
 sum_dir = 'Results/Summary/EXP3'
 fig_dir = 'Results/Plots/EXP3'
 sim_dir = 'Code'
-data_dir = 'z:/lab/CTSim/Data/Exp3/d-g2_imm-0.001'
+data_dir = '/Users/sheldontaylor/core-transient-simulation/d-g2_imm-0.001'
 
 # Load simulation functions
 #source(file.path(sim_dir, 'simulation_functions.R'))

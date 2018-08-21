@@ -22,4 +22,3 @@ Inserts a dimension into an array at a specified location
 The function inserts a dimension into the array \code{x}
 at each dimension given in \code{where}.
 }
-

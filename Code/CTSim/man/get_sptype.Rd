@@ -25,4 +25,3 @@ User should supply an array \code{species} in which the third dimension
 \seealso{
 \code{\link{make_species}}
 }
-

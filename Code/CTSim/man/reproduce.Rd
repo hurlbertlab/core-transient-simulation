@@ -23,4 +23,3 @@ Generates a pool of propagules produced by a community during one time step.
 The order of \code{b_rates} designates which species each birth rate
 applies to. For example, \code{b_rates[1]} is the birth rate of species 1.
 }
-

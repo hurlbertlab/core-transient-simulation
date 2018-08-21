@@ -104,4 +104,3 @@ be found in the documentation on the functions they are passed to:
 Developers should note that this function must be manually  
 updated whenever new parameters are added to simulation functions.
 }
-

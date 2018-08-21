@@ -20,7 +20,7 @@ Defaults to Exponential model with partial sill = 1.}
 \item{d}{range of the variogram model. Defines the distance at which cells
 are correlated. Defaults to 1/3 of the smallest dimension.}
 
-\item{prop}{proportion of cells assigned to have value = 1.}
+\item{prop}{proportion of cells assigned to have value = -1 (type 'A').}
 
 \item{draw_plot}{logical indicating whether function should plot the
 landscape}
@@ -39,4 +39,3 @@ Habitat heterogeneity increases as the ratio between \code{d} and grid
 \seealso{
 \code{\link{vgm}} for how to specify variogram model
 }
-

@@ -58,4 +58,3 @@ average rates within groups they will need to divide the results by
 the number of species in each group. By default species are not grouped and 
 rates for individual species are returned.
 }
-

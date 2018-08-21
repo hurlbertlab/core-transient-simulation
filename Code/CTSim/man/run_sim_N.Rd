@@ -95,4 +95,3 @@ arrays.
 \code{\link{make_parmlist}} for parameters that can be passed to the 
 simulation
 }
-

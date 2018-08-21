@@ -82,4 +82,3 @@ microsite (through death or movement).
 \code{\link{run_sim_N}} for running multiple independent simulations on 
 	the same set of parameters.
 }
-

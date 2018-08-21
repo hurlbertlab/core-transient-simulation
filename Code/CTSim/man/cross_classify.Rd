@@ -66,4 +66,3 @@ or a list of the species that are in each category (specify with
 \code{return}). It can also return a separate table for each location if
 \code{do_each=TRUE}.
 }
-

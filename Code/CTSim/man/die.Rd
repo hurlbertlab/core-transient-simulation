@@ -27,4 +27,3 @@ probabilities provided in \code{m_rates}. The order of \code{m_rates}
 designates which species each mortality rate applies to. 
 For example, \code{m_rates[1]} is the mortality rate of species 1.
 }
-

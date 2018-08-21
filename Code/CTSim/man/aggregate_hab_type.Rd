@@ -24,4 +24,3 @@ Determine the dominant habitat type in a set of spatial units
 The function determined which habitat type is present in the majority of
 cells in each spatial unit specified in the list \code{locs}.
 }
-

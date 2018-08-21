@@ -60,4 +60,3 @@ timesteps in the simulation. For example, specifying
 every other timestep will aggregate abundances from \code{T=1:20,
 T=21:40,...}.
 }
-

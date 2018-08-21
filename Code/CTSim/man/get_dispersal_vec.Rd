@@ -45,4 +45,3 @@ with the \code{type} argument in the list which is passed as the parameter
 \code{\link{disperse}} for dispersal of propagules with different 
 expected dispersal distances.
 }
-

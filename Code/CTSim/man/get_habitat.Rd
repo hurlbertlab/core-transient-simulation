@@ -19,4 +19,3 @@ Determines the habitat type that corresponds to a numeric value
 \note{
 Does not work directly on vectors. Use \code{sapply(x, get_habitat)}.
 }
-

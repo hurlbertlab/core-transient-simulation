@@ -48,4 +48,3 @@ The function returns an array of species' abundances with dimensions:
 \code{[timepoint, species, spatial unit]}. It will include a column labeled
 \code{'0'} for the number of empty spaces.
 }
-

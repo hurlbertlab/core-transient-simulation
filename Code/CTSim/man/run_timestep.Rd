@@ -88,4 +88,3 @@ of operations is as follows:
 \code{\link{run_sim}} for running multiple timesteps of 
 	the simulation.
 }
-

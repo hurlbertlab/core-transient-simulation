@@ -19,4 +19,3 @@ average_habitat(locs, land)
 Calculate the habitat type that corresponds to the average
 habitat value across a set of cells in a landscape.
 }
-

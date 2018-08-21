@@ -36,4 +36,3 @@ in the tally and the function returns the proportion of potential spaces
 that each species occupies. Ranked abundances can be returned using the 
 parameter \code{ranked}.
 }
-

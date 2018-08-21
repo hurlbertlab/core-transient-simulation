@@ -70,4 +70,3 @@ The spatial distribution of individuals is then defined by the
 Species are chosen at random according to their relative abundance, 
 as specified by \code{gsad}.
 }
-

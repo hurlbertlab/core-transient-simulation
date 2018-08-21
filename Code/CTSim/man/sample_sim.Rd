@@ -33,4 +33,3 @@ be the same for all species by only providing a single number. It returns
 an array with the same dimensions as \code{abun} containing either the
 observed abundances or presence/absence (depending on \code{return}).
 }
-

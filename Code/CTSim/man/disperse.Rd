@@ -47,4 +47,3 @@ intervals \code{[1,x] and [1,y]}.
 \code{\link{get_dispersal_vec}} for calculation of dispersal vectors 
 	and for how to specify dispersal kernels.
 }
-

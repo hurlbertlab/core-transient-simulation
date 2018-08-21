@@ -84,4 +84,3 @@ control how established individuals move from their current cell. Movement,
 mortality, and recruitment rates can be set to differe systematically between
 preferred and non-preferred habitats.
 }
-

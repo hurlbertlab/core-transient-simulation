@@ -52,4 +52,3 @@ by the function. Filenames follow the convention
 \seealso{
 \code{\link{summarize_simulation}} for command line execution
 }
-

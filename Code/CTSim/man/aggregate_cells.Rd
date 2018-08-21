@@ -58,4 +58,3 @@ The function implements three methods for aggregating cells:
 		cells given in \code{locs}.}
 }
 }
-

@@ -41,4 +41,3 @@ stochastically from the pool of potential recruits provided in
 Species recruitment rates define the probability that an individual 
 selected for an empty space will actually establish.
 }
-
