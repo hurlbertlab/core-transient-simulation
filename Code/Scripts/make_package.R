@@ -6,7 +6,7 @@ library(devtools)
 library(roxygen2)
 library(gstat)
 
-setwd('/Users/sheldontaylor/core-transient-simulation/Code/')
+setwd('C:/git/core-transient-simulation/Code/')
 # /Users/sheldontaylor/core-transient-simulation/Code/
 
 current_code = as.package('CTSim')
@@ -46,7 +46,7 @@ library(CTSim)
 # Make static html documentation
 #build_site('CTSim')
 
-###################################################
+################################################### DO NOT RUN THIS, D/N WORK
 ### Misc code for testing functions
 library(raster)
 
