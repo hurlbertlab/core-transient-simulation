@@ -1,0 +1,7 @@
+module load r/3.4.1
+for d in g1 g2 g4 g8 ;  
+do sbatch -J $d --time=3-0 --mem=10G --ntasks=4 --wrap="R CMD BATCH \"--args 4 
+./Code/Parameters/EXP3.5/d-${d}/ ./Results/Summary/EXP3.5/ ~/R/x86_64-pc-linux-gnu-library/3.4/ 50\" 
+./Code/CTSim/exec/run_simulation.R EXP3.5_d-${d}.Rout";  done
+
+
