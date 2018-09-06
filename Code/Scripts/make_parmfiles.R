@@ -213,11 +213,11 @@ for(id in d_parms$id){
   }  
 }
 
-######### EXP 3.5 TEST ############
+######### EXP 4 TEST ############
 # goal is vary dispersal and landscape similarity
 
 # ID for this set of parameters
-expID = 'EXP3.5'
+expID = 'EXP4'
 
 # save colonization rates
 calc_rates = TRUE
@@ -249,10 +249,10 @@ imm_rates = 0.01
 hp_parms = seq(0.5, 1, by = 0.1)
 
 # Make parameter files
-for(id in d_parms$id){
+for(did in d_parms$id){
   
   # Make new parameter directory for each set of dispersal parameters
-  this_dir = paste('d',id, sep='-')
+  this_dir = paste('d',did, sep='-')
   dir.create(file.path(expID,this_dir))
   
     # Need to create simID for every parameter combination and then 
@@ -271,7 +271,7 @@ for(id in d_parms$id){
       simID = paste0('hp-', id)
       
       # Set dispersal parameters
-    d = d_parms[id, 'd']
+    d = d_parms[did, 'd']
     dist_d = list(mu=d, var=0)
     d_kernel = list(type=d_parms[id, 'kern'])
     
@@ -279,12 +279,12 @@ for(id in d_parms$id){
     v_kernel = list(type=d_parms[id, 'kern'])
     
     # Set simID
-    simID = paste0('d-', id, '_hp-', id)
+    simID = paste0('d-', did, '_hp-', id)
     print(simID)
        
     # Write parameter file
     parmlist = make_parmlist()
-    CTSim:::write_parms(parmlist, file.path(expID, this_dir, paste0('p_', simID, '.txt'))) 
+    CTSim:::write_parms(parmlist, file.path(expID, this_dir, paste0('d_', simID, '.txt')))
     }
 }  
 
