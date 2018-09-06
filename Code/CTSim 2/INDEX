@@ -1,0 +1,42 @@
+CTSim                   CTSim: a package for simulating core and
+                        transient species dynamics in a spatially
+                        explicit metacommunity
+add_dim                 Add array dimension
+aggregate_cells         Aggregate cells
+aggregate_hab_type      Aggregate habitat types
+average_habitat         Average habitat values
+calc_abun               Calculate global relative abundance
+calc_abun_profile       Abundance profiles
+calc_occupancy          Temporal occupancy
+calc_rich               Richness profiles
+calc_rich_CT            Calculate core/transient richness and abundance
+calc_species_turnover   Species turnover
+cross_classify          Classify occupancy vs residency
+die                     Death
+disperse                Disperse individuals
+establish               Establishment
+get_dispersal_vec       Calculate dispersal vector
+get_habitat             Determine habitat type
+get_sptype              Determine species type
+make_landscape          Creation of new landscape
+make_parmlist           Make list of simulation parameters
+make_sad                Abundance distribution generation
+make_species            Creation of species pool
+migrate                 Immigration
+populate_landscape      Create a metacommunity
+reproduce               Generate propagules
+restart_simulation      Restart simulation
+run_sim                 Run simulation
+run_sim_N               Run multiple simulations
+run_sim_P               Run multiple parameter sets
+run_simulation          Run simulation
+run_timestep            Run simulation timestep
+sample_sim              Sample simulation with imperfect detection
+summarize_land          Summarize landscape habitats
+summarize_sim           Summarize a simulation
+summarize_sim_N         Summarize multiple simulations
+summarize_sim_P         Summarize with multiple parameter sets
+summarize_simulation    Summarize simulations
+summarize_simulation_cross_time
+                        Summarize simulations through time
+write_parms             Write a parameter file
