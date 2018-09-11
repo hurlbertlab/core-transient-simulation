@@ -4,8 +4,9 @@
 \alias{run_sim_N}
 \title{Run multiple simulations}
 \usage{
-run_sim_N(nruns, parms, nparallel = 1, simID = "test", save_sim = NULL,
-  report = 0, return_results = T, restart = F, lib_loc = NULL)
+run_sim_N(nruns, parms, nparallel = 1, simID = "test",
+  save_sim = NULL, report = 0, return_results = T, restart = F,
+  lib_loc = NULL)
 }
 \arguments{
 \item{nruns}{(required) number of replicate simulations}
