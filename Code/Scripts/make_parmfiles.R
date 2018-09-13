@@ -214,11 +214,7 @@ for(id in d_parms$id){
 }
 
 ######### EXP 4 TEST ############
-<<<<<<< HEAD
-######### EXP 4 TEST ############
 # goal is vary dispersal and landscape similarity
-=======
->>>>>>> e6a8d294ca3d155a339223bcdc3bb0af33402952
 
 # ID for this set of parameters
 expID = 'EXP4'
