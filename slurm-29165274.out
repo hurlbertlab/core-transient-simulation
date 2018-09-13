@@ -1,3 +1,0 @@
-slurmstepd: error: task/cgroup: unable to add task[pid=173491] to memory cg '(null)'
-slurmstepd: error: xcgroup_instantiate: unable to create cgroup '/sys/fs/cgroup/memory/slurm/uid_239223' : No space left on device
-slurmstepd: error: jobacct_gather/cgroup: unable to instanciate user 239223 memory cgroup

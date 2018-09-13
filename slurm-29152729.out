@@ -1,4 +1,0 @@
-slurmstepd: error: task/cgroup: unable to add task[pid=22866] to memory cg '(null)'
-slurmstepd: error: xcgroup_instantiate: unable to create cgroup '/sys/fs/cgroup/memory/slurm/uid_239223/job_29152729/step_batch' : No space left on device
-slurmstepd: error: jobacct_gather/cgroup: unable to instantiate jobstep 29152729.4294967294 memory cgroup
-/var/spool/slurmd/job29152729/slurm_script: line 4: R: command not found
