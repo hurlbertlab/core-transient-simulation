@@ -1,5 +1,5 @@
 ## This script makes sets of parameter values for CAMM to be run on the cluster
-
+# setwd("C:/git/core-transient-simulation/")
 options(stringsAsFactors=F)
 
 # Load CTSim
@@ -255,22 +255,22 @@ for(did in d_parms$id){
   this_dir = paste('d',did, sep='-')
   dir.create(file.path(expID,this_dir))
   
-  # Need to create simID for every parameter combination and then
-  # make_parmlist() and write_parms()
-  
-  # Will need nested loops as multiple variables are explored simultaneously
-  # Multiple folders needed if you wanted to submit multiple runs on cluster
-  # (see EXP 1 example)
-  
-  # Make parameter files
-  for(id in hp_parms){
-    # Set proportion of landscape as habitat A
-    habA_prop = id
+    # Need to create simID for every parameter combination and then 
+    # make_parmlist() and write_parms()
     
-    # Set simID
-    simID = paste0('hp-', id)
+    # Will need nested loops as multiple variables are explored simultaneously
+    # Multiple folders needed if you wanted to submit multiple runs on cluster
+    # (see EXP 1 example)
     
-    # Set dispersal parameters
+    # Make parameter files
+    for(id in hp_parms){
+      # Set proportion of landscape as habitat A
+      habA_prop = id
+      
+      # Set simID
+      simID = paste0('hp-', id)
+      
+      # Set dispersal parameters
     d = d_parms[did, 'd']
     dist_d = list(mu=d, var=0)
     d_kernel = list(type=d_parms[id, 'kern'])
@@ -281,13 +281,12 @@ for(did in d_parms$id){
     # Set simID
     simID = paste0('d-', did, '_hp-', id)
     print(simID)
-    
+       
     # Write parameter file
     parmlist = make_parmlist()
     CTSim:::write_parms(parmlist, file.path(expID, this_dir, paste0('d_', simID, '.txt')))
-  }
-}
-
+    }
+}  
 
 
 

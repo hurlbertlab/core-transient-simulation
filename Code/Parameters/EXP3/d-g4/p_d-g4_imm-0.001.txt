@@ -8,7 +8,7 @@ K=100
 nsteps=200
 nruns=50
 vgm_dcorr=8
-habA_prop=0.5
+habA_prop=1
 dist_b=list(type='same',p1=2)
 dist_d=list(mu=1.23903328485869,var=0)
 dist_v=list(mu=c(0,1.23903328485869),var=c(0,0))
