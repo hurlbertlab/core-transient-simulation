@@ -1,0 +1,2 @@
+./Code/CTSim/exec/run_simulation.R: line 16: syntax error near unexpected token `stringsAsFactors=F'
+./Code/CTSim/exec/run_simulation.R: line 16: `options(stringsAsFactors=F)'

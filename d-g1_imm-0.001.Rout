@@ -1,0 +1,78 @@
+starting worker pid=73868 on localhost:11137 at 11:13:06.020
+starting worker pid=73877 on localhost:11137 at 11:13:06.254
+starting worker pid=73887 on localhost:11137 at 11:13:06.475
+starting worker pid=73897 on localhost:11137 at 11:13:06.694
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+[using unconditional Gaussian simulation]
+loaded CTSim and set parent environment
+loaded CTSim and set parent environment
+loaded CTSim and set parent environment
+loaded CTSim and set parent environment
+[1] "2018-09-13 11:18:19: Start run 2"
+[1] "2018-09-13 11:18:19: Start run 1"
+[1] "2018-09-13 11:18:19: Start run 4"
+[1] "2018-09-13 11:18:19: Start run 3"
+[1] "2018-09-13 11:32:36 : Finished 50 of 200 from run 2"
+[1] "2018-09-13 11:44:39 : Finished 50 of 200 from run 3"
+[1] "2018-09-13 11:45:05 : Finished 50 of 200 from run 1"
+[1] "2018-09-13 11:45:11 : Finished 50 of 200 from run 4"
+[1] "2018-09-13 11:46:59 : Finished 100 of 200 from run 2"
+[1] "2018-09-13 12:01:24 : Finished 150 of 200 from run 2"
+[1] "2018-09-13 12:10:56 : Finished 100 of 200 from run 3"
+[1] "2018-09-13 12:12:03 : Finished 100 of 200 from run 1"
+[1] "2018-09-13 12:12:10 : Finished 100 of 200 from run 4"
+[1] "2018-09-13 12:16:02 : Finished 200 of 200 from run 2"
+[1] "2018-09-13 12:17:31: Start run 5"
+[1] "2018-09-13 12:32:03 : Finished 50 of 200 from run 5"
+[1] "2018-09-13 12:37:28 : Finished 150 of 200 from run 3"
+[1] "2018-09-13 12:39:04 : Finished 150 of 200 from run 1"
+[1] "2018-09-13 12:39:07 : Finished 150 of 200 from run 4"
+[1] "2018-09-13 12:46:44 : Finished 100 of 200 from run 5"
