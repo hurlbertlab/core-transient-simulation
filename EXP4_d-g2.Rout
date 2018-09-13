@@ -17,6 +17,8 @@ Type 'demo()' for some demos, 'help()' for on-line help, or
 'help.start()' for an HTML browser interface to help.
 Type 'q()' to quit R.
 
+[Previously saved workspace restored]
+
 > #' Run simulation 
 > #' 
 > #' Script used to run simulations on a set of parameter files
@@ -48,6 +50,13 @@ Type 'q()' to quit R.
 > 
 > # Load CTSim package
 > tryCatch(library(CTSim), error=function(e) library(CTSim, lib.loc=sim_dir))
+
+Attaching package: ‘CTSim’
+
+The following object is masked _by_ ‘.GlobalEnv’:
+
+    run_sim_P
+
 Warning message:
 package ‘CTSim’ was built under R version 3.4.3 
 > 
@@ -86,9 +95,6 @@ loaded via a namespace (and not attached):
 > 
 > # Run function
 > run_sim_P(ncores, parm_dir, results_dir, sim_dir, report)
-> 
-> # Quit R without saving workspace
-> quit('no')
-> proc.time()
-   user  system elapsed 
-  2.037   0.187   2.721 
+Loading required package: foreach
+Loading required package: iterators
+Loading required package: parallel
