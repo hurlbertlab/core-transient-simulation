@@ -6,5 +6,6 @@ do sbatch -J $d --time=3-0 --mem=10G --ntasks=4 --wrap="R CMD BATCH \"--args 4
 
 
 
-sbatch -J $d --time=3-0 --mem=10G --ntasks=4 --wrap="R CMD BATCH \'--args 4 ./Code/Parameters/EXP4/d-g2/ ./Results/Summary/EXP4/ ~/R/x86_64-pc-linux-gnu-library/3.4/ 50\' run_simulation.R  EXP4_d-g2.Rout"
-
+sbatch -J $d --time=3-0 --mem=10G --ntasks=4 --wrap="R CMD BATCH \"--args 4 
+./Code/Parameters/EXP4/d-g2/ ./Results/Summary/EXP4/ ~/R/x86_64-pc-linux-gnu-library/3.4/ 50\" 
+./Code/CTSim/exec/run_simulation.R EXP4_d-g2.Rout"
