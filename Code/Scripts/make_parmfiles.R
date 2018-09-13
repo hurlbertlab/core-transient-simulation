@@ -294,7 +294,3 @@ for(did in d_parms$id){
   }
 }  
 
-<<<<<<< HEAD
-=======
-
->>>>>>> e6a8d294ca3d155a339223bcdc3bb0af33402952
