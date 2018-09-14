@@ -6,8 +6,7 @@
 \title{Summarize multiple simulations}
 \usage{
 summarize_sim_N(sim, breaks, locs, t_window, agg_times = NULL,
-  P_obs = list(1), sum_parms = NULL, sum_func = NULL,
-  sum_turn = TRUE)
+  P_obs = list(1), sum_parms = NULL, sum_func = NULL, sum_turn = TRUE)
 
 default_sum_func(x)
 }

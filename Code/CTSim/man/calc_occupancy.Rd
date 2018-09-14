@@ -4,9 +4,8 @@
 \alias{calc_occupancy}
 \title{Temporal occupancy}
 \usage{
-calc_occupancy(locs = NULL, t_window = NULL, sim = NULL,
-  N_S = NULL, abuns = NULL, agg_times = NULL, which_species = NULL,
-  do_freq = F)
+calc_occupancy(locs = NULL, t_window = NULL, sim = NULL, N_S = NULL,
+  abuns = NULL, agg_times = NULL, which_species = NULL, do_freq = F)
 }
 \arguments{
 \item{locs}{(required) either a two-column matrix of cell locations where 

@@ -1,5 +1,6 @@
 ## This script makes sets of parameter values for CAMM to be run on the cluster
-setwd("/proj/hurlbertlab/ssnell/core-transient-simulation/")
+# setwd("/proj/hurlbertlab/ssnell/core-transient-simulation/")
+# setwd("/Users/sheldontaylor/core-transient-simulation")
 options(stringsAsFactors=F)
 
 # Load CTSim
@@ -214,11 +215,8 @@ for(id in d_parms$id){
 }
 
 ######### EXP 4 TEST ############
-<<<<<<< HEAD
-######### EXP 4 TEST ############
 # goal is vary dispersal and landscape similarity
-=======
->>>>>>> e6a8d294ca3d155a339223bcdc3bb0af33402952
+
 
 # ID for this set of parameters
 expID = 'EXP4'
@@ -294,7 +292,3 @@ for(did in d_parms$id){
   }
 }  
 
-<<<<<<< HEAD
-=======
-
->>>>>>> e6a8d294ca3d155a339223bcdc3bb0af33402952

@@ -6,7 +6,7 @@ library(devtools)
 library(roxygen2)
 library(gstat)
 
-setwd('C:/git/core-transient-simulation/Code/')
+# setwd('C:/git/core-transient-simulation/Code/')
 # /Users/sheldontaylor/core-transient-simulation/Code/
 
 current_code = as.package('CTSim')
