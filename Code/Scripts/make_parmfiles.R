@@ -187,7 +187,7 @@ imm_rates = c(0, 0.001)
 
 # Make parameter files
 for(id in d_parms$id){
-
+  
   # Make new parameter directory for each set of dispersal parameters
   this_dir = paste('d',id, sep='-')
   dir.create(file.path(expID,this_dir))
@@ -206,17 +206,19 @@ for(id in d_parms$id){
     
     # Set simID
     simID = paste0('d-', id, '_imm-', imm)
-
+    
     # Write parameter file
     parmlist = make_parmlist()
     CTSim:::write_parms(parmlist, file.path(expID, this_dir, paste0('p_', simID, '.txt')))
-
+    
   }  
 }
 
+
+
+
 ######### EXP 4 TEST ############
 # goal is vary dispersal and landscape similarity
-
 # ID for this set of parameters
 expID = 'EXP4'
 
@@ -246,48 +248,35 @@ vgm_dcorr = 8
 # Two immigration rate scenarios (both less than 0.01 of EXP 1 and 2)
 imm_rates = 0.01
 
-
+# set habitat similarity parameter
 hp_parms = seq(0.5, 1, by = 0.1)
 
 # Make parameter files
-for(did in d_parms$id){
+for(id in d_parms$id){
   
   # Make new parameter directory for each set of dispersal parameters
-  this_dir = paste('d',did, sep='-')
+  this_dir = paste('d',id, sep='-')
   dir.create(file.path(expID,this_dir))
   
-  # Need to create simID for every parameter combination and then 
-  # make_parmlist() and write_parms()
-  
-  # Will need nested loops as multiple variables are explored simultaneously
-  # Multiple folders needed if you wanted to submit multiple runs on cluster
-  # (see EXP 1 example)
-  
-  # Make parameter files
-  for(id in hp_parms){
-    # Set proportion of landscape as habitat A
-    habA_prop = id
-    
-    # Set simID
-    simID = paste0('hp-', id)
-    
+  for (hp in hp_parms) {
     # Set dispersal parameters
-    d = d_parms[did, 'd']
+    d = d_parms[id, 'd']
     dist_d = list(mu=d, var=0)
     d_kernel = list(type=d_parms[id, 'kern'])
     
     dist_v = list(mu=c(0, d_parms[id,'d']), var=c(0,0))
     v_kernel = list(type=d_parms[id, 'kern'])
     
-    habA_prop = id
+    # Set immigration
+    hab_sim = hp
     
     # Set simID
-    simID = paste0('d-', did, '_hp-', id)
-    print(simID)
+    simID = paste0('d-', id, '_hp-', hp)
     
     # Write parameter file
     parmlist = make_parmlist()
     CTSim:::write_parms(parmlist, file.path(expID, this_dir, paste0('p_', simID, '.txt')))
-  }
-}  
+    
+  }  
+}
 
